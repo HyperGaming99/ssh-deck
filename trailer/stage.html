@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SSH Deck trailer stage</title>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: #15161a; }
+  body { font-family: "Inter", "Ubuntu", "Noto Sans", system-ui, sans-serif; color: #f2f3f5; -webkit-font-smoothing: antialiased; position: relative; }
+  .abs { position: absolute; }
+
+  /* ruhiger Hintergrund: neutral, feines Punktraster mit Parallaxe, leichte Vignette, Filmkorn */
+  #dots { inset: 0; background-image: radial-gradient(circle, rgba(255,255,255,.11) 1.3px, transparent 1.6px); background-size: 64px 64px; }
+  #vignette { inset: 0; pointer-events: none; z-index: 60; background: radial-gradient(95% 85% at 50% 50%, transparent 55%, rgba(0,0,0,.42) 100%); }
+  #grain { left: 0; top: 0; width: 1920px; height: 1080px; z-index: 65; opacity: .028; pointer-events: none; image-rendering: auto; }
+
+  /* Welt + Kacheln (Quellkoordinaten: 1 Einheit = 1 Pixel der 1920x1080-Aufnahme) */
+  #world { left: 0; top: 0; width: 1px; height: 1px; transform-origin: 0 0; z-index: 5; }
+  .tile { width: 1920px; height: 1080px; border-radius: 22px; overflow: hidden; background: #0a0a0a; box-shadow: 0 0 0 2px rgba(255,255,255,.11), 0 40px 120px rgba(0,0,0,.6); }
+  .tile img { left: 0; top: 0; width: 1920px; height: 1080px; opacity: 0; }
+  .dim { inset: 0; background: #000; opacity: 0; }
+  .panel { left: 1520px; top: 0; width: 400px; height: 1080px; overflow: hidden; opacity: 0; box-shadow: -30px 0 80px rgba(0,0,0,.45); }
+  .panel img { left: -1520px; opacity: 1; }
+  .dlg { overflow: hidden; border-radius: 14px; opacity: 0; box-shadow: 0 30px 90px rgba(0,0,0,.6); }
+  .dlg img { opacity: 1; }
+  #cursor { width: 44px; height: 44px; z-index: 120; opacity: 0; filter: drop-shadow(0 5px 8px rgba(0,0,0,.5)); }
+  .ripple { width: 28px; height: 28px; margin: -14px 0 0 -14px; border-radius: 50%; border: 3px solid rgba(255,255,255,.75); opacity: 0; z-index: 119; }
+  #chip { z-index: 118; opacity: 0; padding: 11px 20px 11px 14px; border-radius: 11px; background: #1b1c20; border: 1px solid rgba(255,255,255,.16);
+    font-size: 21px; display: flex; gap: 11px; align-items: center; box-shadow: 0 16px 44px rgba(0,0,0,.55); }
+  #chip svg { width: 22px; height: 22px; }
+
+  /* Untertitel: schlicht, ohne Verlauf; Zeilen gleiten aus einer Maske */
+  #shade { left: 0; right: 0; bottom: 0; height: 560px; z-index: 30; background: linear-gradient(to top, rgba(6,6,8,.9), rgba(6,6,8,.55) 45%, rgba(6,6,8,0)); opacity: 0; }
+  .cap { left: 112px; bottom: 104px; z-index: 31; opacity: 0; }
+  .cap .lab { font: 500 21px/1 "JetBrains Mono", "DejaVu Sans Mono", monospace; letter-spacing: .2em; color: #8da2ff; margin-bottom: 26px; display: flex; align-items: center; gap: 14px; }
+  .cap .lab::before { content: ""; width: 34px; height: 2px; background: #8da2ff; display: block; }
+  .mask { overflow: hidden; padding-bottom: .14em; margin-bottom: -.14em; }
+  .cap .t { font-size: 80px; line-height: 1.06; font-weight: 620; letter-spacing: -.04em; }
+  .cap .s { margin-top: 26px; font-size: 31px; font-weight: 420; color: #9aa1ae; letter-spacing: -.005em; }
+  .ln { will-change: transform; }
+
+  /* Logo (Intro/Outro) */
+  .logo { left: 0; top: 0; width: 1920px; height: 1080px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 40; opacity: 0; }
+  .logo svg { width: 150px; height: 150px; overflow: visible; filter: drop-shadow(0 18px 40px rgba(20,60,200,.35)); }
+  .logo .tile2 { fill: #2563eb; } .logo .chev { fill: none; stroke: #fff; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; } .logo .cur { fill: #fff; }
+  .logo .name { margin-top: 36px; font-size: 104px; font-weight: 650; letter-spacing: -.045em; }
+  .logo .tag { margin-top: 12px; font-size: 38px; color: #9aa1ae; letter-spacing: -.01em; }
+  .logo .feat { margin-top: 54px; font: 500 22px/1 "JetBrains Mono", "DejaVu Sans Mono", monospace; letter-spacing: .16em; color: #7f8796; display: flex; gap: 22px; text-transform: uppercase; }
+  .logo .feat i { color: #3d4452; font-style: normal; }
+  #scrim { inset: 0; z-index: 38; background: radial-gradient(60% 55% at 50% 50%, rgba(8,8,10,.92), rgba(8,8,10,.55) 70%, rgba(8,8,10,.2)); opacity: 0; }
+  #fade { inset: 0; background: #000; opacity: 0; z-index: 70; pointer-events: none; }
+</style>
+</head>
+<body>
+<div id="dots" class="abs"></div>
+<div id="world" class="abs">
+  <div id="tiles"></div>
+  <div id="ripples"></div>
+  <div id="chip" class="abs"><svg viewBox="0 0 24 24" fill="none" stroke="#a9b8ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>package.json</div>
+  <svg id="cursor" class="abs" viewBox="0 0 24 24"><path d="M4 2.5 L4 19 L8.6 14.8 L11.7 21.5 L14.4 20.3 L11.3 13.7 L17.6 13.4 Z" fill="#fff" stroke="#0b0d14" stroke-width="1.5" stroke-linejoin="round"/></svg>
+</div>
+<div id="shade" class="abs"></div>
+<div id="caps"></div>
+<div id="scrim" class="abs"></div>
+<div id="introLogo" class="logo abs"></div>
+<div id="outroLogo" class="logo abs"></div>
+<canvas id="grain" class="abs" width="480" height="270"></canvas>
+<div id="vignette" class="abs"></div>
+<div id="fade" class="abs"></div>
+
+<script src="timeline.js"></script>
+<script>
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+const easeOutExpo = (t) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
+const easeInOut = (t) => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const easeFlight = (t) => (t < .5 ? 16 * Math.pow(t, 5) : 1 - Math.pow(-2 * t + 2, 5) / 2); // weicher Start und Landung
+const easeOutBack = (t) => { const c = 1.6; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, parent) => { const e = document.createElement(tag); if (cls) e.className = cls; if (parent) parent.appendChild(e); return e; };
+
+const BPM = +(new URLSearchParams(location.search).get('bpm')) || 100;
+const TL = buildTimeline(BPM), T = TL.T;
+window.DURATION = TL.duration;
+
+// ---------- Kacheln + Bildzustände ----------
+const tiles = {}, imgEls = [];
+for (const [name, pos] of Object.entries(TL.TILES)) {
+  const t = el('div', 'tile abs', $('tiles')); t.style.left = pos.x + 'px'; t.style.top = pos.y + 'px';
+  tiles[name] = { root: t, imgs: el('div', 'abs', t) };
+}
+// Bilder je Kachel; "bis" = Beginn des nächsten Zustands + Überblendung (danach ist es verdeckt und kann entladen werden)
+const byTile = {};
+for (const im of TL.images) (byTile[im.tile] = byTile[im.tile] || []).push(im);
+for (const [tile, list] of Object.entries(byTile)) {
+  list.sort((a, b) => a.t0 - b.t0);
+  list.forEach((im, i) => {
+    im.t1 = i + 1 < list.length ? list[i + 1].t0 + list[i + 1].fade + 0.2 : TL.duration + 1;
+    im.el = el('img', 'abs', tiles[tile].imgs); im.z = i + 1; im.el.style.zIndex = im.z; imgEls.push(im);
+  });
+}
+// Overlays: Host-Panel (aus 'sheet'), Dialoge (aus 'hostkey'/'hostkey_changed'); nur Ausschnitte der Aufnahmen
+const dimHosts = el('div', 'dim abs', tiles.hosts.root); dimHosts.style.zIndex = 50;
+const panel = el('div', 'panel abs', tiles.hosts.root); panel.style.zIndex = 60;
+const panelImg = el('img', 'abs', panel);
+const dimSec = el('div', 'dim abs', tiles.sec.root); dimSec.style.zIndex = 50;
+const DLG = { hostkey: [640, 425, 640, 273], hostkey_changed: [704, 388, 512, 304] };
+const dlgEls = {};
+for (const [id, [x, y, w, h]] of Object.entries(DLG)) {
+  const d = el('div', 'dlg abs', tiles.sec.root); d.style.cssText += `left:${x}px;top:${y}px;width:${w}px;height:${h}px;z-index:61`;
+  const i = el('img', 'abs', d); i.style.left = -x + 'px'; i.style.top = -y + 'px'; dlgEls[id] = { d, i };
+}
+const OV = [ // [Element, Datei, von, bis] – nur zum Laden/Entladen
+  [panelImg, 'sheet', TL.panel.t0 - 2.5, TL.duration], [dlgEls.hostkey.i, 'hostkey', TL.dialogs[0].t0 - 2.5, TL.duration], [dlgEls.hostkey_changed.i, 'hostkey_changed', TL.dialogs[1].t0 - 2.5, TL.duration],
+];
+
+// Lädt nur Bilder in Zeitnähe (Speicher) und dekodiert neue nacheinander (viele große Bilder gleichzeitig scheitern)
+const decoded = new WeakSet();
+async function ensure(t) {
+  const need = [];
+  const sync = (e, name, on) => {
+    if (on && !e.getAttribute('src')) e.src = `shots/${name}.png`;
+    if (!on && e.getAttribute('src')) { e.removeAttribute('src'); decoded.delete(e); }
+    if (on) need.push(e);
+  };
+  for (const im of imgEls) {
+    // dicht getaktete Tipp-Zustände (fade < .3) nur kurz vorher laden, Kachel-Wechsel großzügiger
+    const lead = im.t0 < -1 ? 99 : im.fade >= 0.3 ? 1.0 : 0.4;
+    sync(im.el, im.name, t >= im.t0 - lead && t <= im.t1 + (im.fade >= 0.3 ? 0.4 : 0.1));
+  }
+  for (const [e, name, a, b] of OV) sync(e, name, t >= a && t <= b);
+  for (const e of need) {
+    if (decoded.has(e)) continue;
+    try { await e.decode(); decoded.add(e); } catch (err) { throw new Error('Bild nicht ladbar: ' + e.src + ' (' + (err && err.message) + ')'); }
+  }
+}
+
+// ---------- Kamera ----------
+function cam(t) {
+  const S = TL.stops;
+  if (t <= S[0].a) return { x: S[0].p.x, y: S[0].p.y, z: S[0].z };
+  for (let i = 0; i < S.length; i++) {
+    const s = S[i];
+    if (t >= s.a && t <= s.l) return { x: s.p.x, y: s.p.y, z: s.z + s.dz * easeInOut(seg(t, s.a, s.l)) }; // langsame Annäherung
+    const n = S[i + 1];
+    if (n && t > s.l && t < n.a) { // Flug: weich, leicht gebogen, mit Zoom-Bogen (zieht beim Flug etwas auf)
+      const p = easeFlight(seg(t, s.l, n.a)), dx = n.p.x - s.p.x, dy = n.p.y - s.p.y, dist = Math.hypot(dx, dy) || 1;
+      const arc = (dist < 1200 ? .05 : clamp(dist / 9000, .12, .32)), curve = Math.sin(Math.PI * p) * dist * .035;
+      return { x: lerp(s.p.x, n.p.x, p) - dy / dist * curve, y: lerp(s.p.y, n.p.y, p) + dx / dist * curve, z: lerp(s.z + s.dz, n.z, p) * (1 - arc * Math.sin(Math.PI * p)) };
+    }
+  }
+  const e = S[S.length - 1]; return { x: e.p.x, y: e.p.y, z: e.z };
+}
+
+// ---------- Mauszeiger ----------
+const cursor = $('cursor'), ripples = TL.clicks.map(() => { const d = el('div', 'ripple abs', $('ripples')); return d; });
+function curAt(t) {
+  const C = TL.cursor; let i = 0; while (i < C.length - 2 && t > C[i + 1].t) i++;
+  const a = C[i], b = C[i + 1], p = easeInOut(seg(t, a.t, b.t)), dx = b.x - a.x, dy = b.y - a.y, dist = Math.hypot(dx, dy) || 1, off = Math.sin(Math.PI * p) * dist * .09;
+  return { x: lerp(a.x, b.x, p) - dy / dist * off, y: lerp(a.y, b.y, p) + dx / dist * off, v: lerp(a.v, b.v, p) };
+}
+
+// ---------- Untertitel ----------
+const capEls = TL.caps.map((c) => {
+  const e = el('div', 'cap abs', $('caps'));
+  const lab = el('div', 'lab', e); lab.textContent = c.label;
+  const t = el('div', 't', e), lines = c.title.map((tx) => { const m = el('div', 'mask', t), ln = el('div', 'ln', m); ln.textContent = tx; return ln; });
+  const sm = el('div', 'mask s', e), sl = el('div', 'ln', sm); sl.textContent = c.sub;
+  return { e, lab, lines, sl, c };
+});
+
+// ---------- Logo ----------
+const LOGO = `<svg viewBox="0 0 64 64"><rect class="tile2" width="64" height="64" rx="16"/><path class="chev" pathLength="1" d="M20 22 L32 32 L20 42"/><rect class="cur" x="36" y="40" width="13" height="5" rx="2.5"/></svg>`;
+$('introLogo').innerHTML = LOGO + '<div class="mask"><div class="name ln">SSH Deck</div></div><div class="mask"><div class="tag ln">Every server. One deck.</div></div>';
+$('outroLogo').innerHTML = LOGO + '<div class="mask"><div class="name ln">SSH Deck</div></div><div class="mask"><div class="tag ln">Your servers. One deck.</div></div><div class="feat">SSH<i>/</i>SFTP<i>/</i>Keychain<i>/</i>Known hosts<i>/</i>Tor<i>/</i>Cloud sync</div>';
+function logo(root, l, withFeat) { // l = Sekunden seit Start
+  const q = (s) => root.querySelector(s);
+  const pop = easeOutBack(seg(l, .1, .8)); q('svg').style.transform = `scale(${lerp(.72, 1, pop)})`; q('svg').style.opacity = clamp(seg(l, .1, .45));
+  q('.chev').style.strokeDashoffset = 1 - easeOut(seg(l, .5, 1.0));
+  const c = seg(l, .95, 1.2); q('.cur').style.opacity = c * (l > 1.4 ? (Math.floor((l - 1.4) / .5) % 2 ? .15 : 1) : 1);
+  const n = easeOutExpo(seg(l, .7, 1.4)); q('.name').style.transform = `translateY(${(1 - n) * 112}%)`;
+  const g = easeOutExpo(seg(l, 1.0, 1.7)); q('.tag').style.transform = `translateY(${(1 - g) * 112}%)`;
+  if (withFeat) { const f = q('.feat'), k = easeOut(seg(l, 1.4, 2.1)); f.style.opacity = k; f.style.transform = `translateY(${(1 - k) * 12}px)`; }
+}
+
+// ---------- Filmkorn (deterministisch je Bild) ----------
+const gctx = $('grain').getContext('2d'), gdata = gctx.createImageData(480, 270);
+function grain(frame) {
+  let s = (frame * 9301 + 49297) >>> 0; const d = gdata.data;
+  for (let i = 0; i < d.length; i += 4) { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; const v = (s >>> 24); d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255; }
+  gctx.putImageData(gdata, 0, 0);
+}
+
+// ---------- Hauptfunktion ----------
+window.renderAt = async (t) => {
+  await ensure(t);
+  const c = cam(t);
+  // leichter Puls im Takt (0,35 %): fühlt sich an, als atme die Kamera mit der Musik
+  const beatPhase = (t / (TL.bar / 4)) % 1, z = c.z * (1 + .0035 * Math.exp(-7 * beatPhase));
+  $('world').style.transform = `translate(960px, 540px) scale(${z}) translate(${-c.x}px, ${-c.y}px)`;
+  $('dots').style.backgroundPosition = `${(-c.x * z * .22) % 64}px ${(-c.y * z * .22) % 64}px`;
+
+  // Kacheln: erste Kachel blendet ein, wenn die Kamera ankommt
+  tiles.hosts.root.style.opacity = clamp(seg(t, T(1.15), T(1.85)));
+  tiles.hosts.root.style.transform = `translateY(${(1 - easeOutExpo(seg(t, T(1.15), T(1.95)))) * 60}px)`;
+
+  // Bildzustände: später gestartete blenden über die früheren (kein Helligkeits-Dip)
+  for (const im of imgEls) { const op = t < im.t0 ? 0 : t > im.t1 ? 0 : clamp((t - im.t0) / im.fade); im.el.style.opacity = op > 0 ? op : 0; }
+
+  // Host-Panel schiebt von rechts herein; Rest der Kachel wird gedimmt
+  const pp = easeOutExpo(seg(t, TL.panel.t0, TL.panel.t1));
+  panel.style.opacity = clamp(pp * 4); panel.style.transform = `translateX(${(1 - pp) * 440}px)`; dimHosts.style.opacity = .55 * pp;
+  // Dialoge poppen (leichtes Überschwingen); der zweite ersetzt den ersten
+  const [d1, d2] = TL.dialogs, a1 = seg(t, d1.t0, d1.t0 + .2), a2 = seg(t, d2.t0, d2.t0 + .2);
+  const s1 = lerp(.93, 1, easeOutBack(seg(t, d1.t0, d1.t0 + .5))), s2 = lerp(.93, 1, easeOutBack(seg(t, d2.t0, d2.t0 + .5)));
+  dlgEls.hostkey.d.style.opacity = a1 * (1 - a2); dlgEls.hostkey.d.style.transform = `scale(${s1})`;
+  dlgEls.hostkey_changed.d.style.opacity = a2; dlgEls.hostkey_changed.d.style.transform = `scale(${s2})`;
+  dimSec.style.opacity = .62 * easeOut(seg(t, d1.t0 - .1, d1.t0 + .5));
+
+  // Mauszeiger + Klick-Ringe (Zeiger drückt kurz ein)
+  const p = curAt(t); let press = 1;
+  TL.clicks.forEach((cl, i) => {
+    const r = seg(t, cl.t, cl.t + .55), e = ripples[i];
+    e.style.left = cl.x + 'px'; e.style.top = cl.y + 'px'; e.style.opacity = r > 0 && r < 1 ? (1 - r) * .9 : 0; e.style.transform = `scale(${lerp(.5, 3.2, easeOut(r))})`;
+    const d = Math.abs(t - cl.t); if (d < .1) press = Math.min(press, 1 - .16 * (1 - d / .1));
+  });
+  cursor.style.left = (p.x - 6) + 'px'; cursor.style.top = (p.y - 4) + 'px'; cursor.style.opacity = clamp(p.v); cursor.style.transform = `scale(${1.15 * press})`;
+
+  // Datei-Chip beim Ziehen im SFTP
+  const ch = TL.chip, cp = easeInOut(seg(t, ch.t0, ch.t1)), chip = $('chip');
+  chip.style.left = lerp(ch.from.x, ch.to.x, cp) + 'px'; chip.style.top = lerp(ch.from.y, ch.to.y, cp) - Math.sin(cp * Math.PI) * 50 + 'px';
+  chip.style.opacity = t < ch.t0 ? 0 : t < ch.t1 ? 1 : 1 - seg(t, ch.t1, ch.t1 + .3);
+  chip.style.transform = `scale(${lerp(1, 1.08, Math.sin(cp * Math.PI))}) rotate(${Math.sin(cp * Math.PI) * -2.5}deg)`;
+
+  // Untertitel: Zeilen gleiten aus ihrer Maske
+  let shade = 0;
+  for (const { e, lab, lines, sl, c: cc } of capEls) {
+    const live = t >= cc.a && t <= cc.b + .6; e.style.opacity = live ? 1 : 0; if (!live) continue;
+    const out = easeOut(seg(t, cc.b, cc.b + .5));
+    lab.style.opacity = easeOut(seg(t, cc.a, cc.a + .4)) * (1 - out);
+    lines.forEach((ln, i) => { const q = easeOutExpo(seg(t, cc.a + .08 + i * .1, cc.a + .8 + i * .1)); ln.style.transform = `translateY(${(1 - q) * 112 + out * -112}%)`; });
+    const sq = easeOutExpo(seg(t, cc.a + .35, cc.a + 1.0)); sl.style.transform = `translateY(${(1 - sq) * 112 + out * -112}%)`;
+    shade = Math.max(shade, easeOut(seg(t, cc.a, cc.a + .5)) * (1 - out));
+  }
+  $('shade').style.opacity = shade;
+
+  // Logo-Szenen
+  const il = $('introLogo'), iIn = seg(t, 0, .35), iOut = easeInOut(seg(t, T(1.45), T(1.95)));
+  il.style.opacity = iIn * (1 - iOut); il.style.transform = `translateY(${-iOut * 50}px)`; if (iOut < 1) logo(il, t, false);
+  const o0 = T(18.7), ol = $('outroLogo'), oIn = easeOut(seg(t, o0, o0 + .8));
+  ol.style.opacity = oIn; $('scrim').style.opacity = oIn; if (t >= o0) logo(ol, t - o0, true);
+  $('world').style.opacity = 1 - .8 * oIn; // im Abspann tritt die Fläche in den Hintergrund
+  $('fade').style.opacity = t < .3 ? 1 - t / .3 : easeInOut(seg(t, TL.duration - .9, TL.duration));
+  grain(Math.round(t * 30));
+};
+
+window.ready = window.renderAt(0).then(() => true);
+</script>
+</body>
+</html>

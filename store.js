@@ -1,0 +1,61 @@
+// Speicher: JSON-Dateien. Hosts mit verschlüsseltem Geheimnis (Electron safeStorage), sonst plain.
+const fs = require('fs');
+const crypto = require('crypto');
+
+const rd = (file) => { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return []; } };
+const wr = (file, d) => fs.writeFileSync(file, JSON.stringify(d, null, 2), { mode: 0o600 });
+
+// Einfache Sammlung. Jeder Eintrag trägt updatedAt; Löschen hinterlässt einen Marker { id, deleted, updatedAt } für den Cloud-Sync.
+const plain = (file) => {
+  const all = () => rd(file);
+  return {
+    raw: () => all().map((r) => (r.updatedAt ? r : { ...r, updatedAt: 1 })), // alte Einträge ohne Zeitstempel zählen als älteste
+    setRaw: (arr) => wr(file, arr),
+    list: () => all().filter((r) => !r.deleted),
+    save: (r) => {
+      const rec = { ...r, id: r.id || crypto.randomUUID(), updatedAt: Date.now() };
+      delete rec.deleted;
+      const a = all();
+      wr(file, a.some((x) => x.id === rec.id) ? a.map((x) => (x.id === rec.id ? rec : x)) : [...a, rec]);
+      return rec.id;
+    },
+    remove: (id) => wr(file, all().map((x) => (x.id === id ? { id, deleted: true, updatedAt: Date.now() } : x))),
+  };
+};
+
+const hosts = (file, crypt) => {
+  const base = plain(file);
+  return {
+    list: () => base.list().map(({ secret, ...h }) => ({ ...h, hasSecret: !!secret })),
+    get: (id) => { const h = base.list().find((x) => x.id === id); return h && { ...h, secret: h.secret ? crypt.decrypt(h.secret) : '' }; },
+    // secret === undefined: bestehendes Geheimnis behalten
+    save: (h) => {
+      const old = base.list().find((x) => x.id === h.id);
+      const secret = h.secret === undefined ? (old ? old.secret : '') : (h.secret ? crypt.encrypt(h.secret) : '');
+      return base.save({ id: h.id, name: h.name, group: h.group || '', host: h.host, port: +h.port || 22, user: h.user, keyPath: h.keyPath || '', keyId: h.keyId || '', icon: h.icon || '', tags: Array.isArray(h.tags) ? h.tags.map(String) : (old ? old.tags || [] : []), autoIcon: old ? old.autoIcon || '' : '', secret });
+    },
+    // vom Server erkanntes Betriebssystem-Icon (icon = manuelle Wahl hat Vorrang)
+    setAutoIcon: (id, slug) => { const h = base.list().find((x) => x.id === id); if (h) base.save({ ...h, autoIcon: slug }); },
+    // für den Sync: Geheimnisse im Klartext raus (der Sync verschlüsselt selbst), beim Einlesen lokal neu verschlüsseln
+    raw: () => base.raw().map((r) => (r.secret ? { ...r, secret: crypt.decrypt(r.secret) } : r)),
+    setRaw: (arr) => base.setRaw(arr.map((r) => (r.secret ? { ...r, secret: crypt.encrypt(r.secret) } : r))),
+    remove: base.remove,
+  };
+};
+
+// Schlüssel: Private Keys (nur generierte) und Passphrasen verschlüsselt.
+const keys = (file, crypt) => {
+  const base = plain(file);
+  const sec = (s) => (s ? crypt.encrypt(s) : undefined);
+  const find = (id) => base.list().find((x) => x.id === id);
+  return {
+    list: () => base.list().map(({ privateKey, passphrase, ...k }) => ({ ...k, hasPassphrase: !!passphrase })),
+    get: (id) => { const k = find(id); return k && { ...k, privateKey: k.privateKey ? crypt.decrypt(k.privateKey) : undefined, passphrase: k.passphrase ? crypt.decrypt(k.passphrase) : '' }; },
+    add: (k) => base.save({ ...k, privateKey: sec(k.privateKey), passphrase: sec(k.passphrase) }),
+    setPassphrase: (id, p) => { const k = find(id); if (k) base.save({ ...k, passphrase: sec(p) }); },
+    rename: (id, name) => { const k = find(id); if (k) base.save({ ...k, name }); },
+    remove: base.remove,
+  };
+};
+
+module.exports = { plain, hosts, keys };

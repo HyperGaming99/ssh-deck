@@ -1,0 +1,7 @@
+node_modules/
+dist/
+trailer/out/
+trailer/shots/
+trailer/shots2/
+trailer/music/
+*.log

@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SSH Deck trailer 2</title>
+<style>
+  @font-face { font-family: "JB"; src: url("../node_modules/@fontsource/jetbrains-mono/files/jetbrains-mono-latin-400-normal.woff2"); font-weight: 400; }
+  @font-face { font-family: "JB"; src: url("../node_modules/@fontsource/jetbrains-mono/files/jetbrains-mono-latin-700-normal.woff2"); font-weight: 700; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: #06070b; }
+  body { font-family: "Inter", "Ubuntu", "Noto Sans", system-ui, sans-serif; color: #f4f5f8; -webkit-font-smoothing: antialiased; position: relative; }
+  .abs { position: absolute; }
+  #aurora { inset: 0; }
+  #dots { inset: 0; background-image: radial-gradient(circle, rgba(255,255,255,.07) 1.3px, transparent 1.6px); background-size: 64px 64px; }
+  #vignette { inset: 0; pointer-events: none; z-index: 60; background: radial-gradient(95% 85% at 50% 50%, transparent 52%, rgba(0,0,0,.5) 100%); }
+  #grain { left: 0; top: 0; width: 1920px; height: 1080px; z-index: 65; opacity: .03; pointer-events: none; }
+  #fade { inset: 0; background: #000; opacity: 0; z-index: 70; pointer-events: none; }
+
+  #stage3d { inset: 0; perspective: 2400px; }
+  #world { left: 0; top: 0; width: 1px; height: 1px; transform-origin: 0 0; z-index: 5; }
+  #screen { left: 0; top: 0; width: 1920px; height: 1080px; border-radius: 20px; overflow: hidden; background: #0a0a0a; opacity: 0; }
+  #screen img { left: 0; top: 0; width: 1920px; height: 1080px; opacity: 0; }
+  #term { overflow: hidden; opacity: 0; background: var(--bg); color: var(--fg); font-family: "JB", monospace; }
+  #term .in { padding: 14px 18px; white-space: pre; }
+  #term .ln { min-height: 1.55em; line-height: 1.55; }
+  #term .blk { display: inline-block; width: .6em; height: 1.15em; vertical-align: text-bottom; background: var(--fg); }
+  .k-fg { color: var(--fg); } .k-dim { color: var(--dim); } .k-red { color: var(--red); } .k-green { color: var(--green); } .k-yellow { color: var(--yellow); }
+  .k-blue { color: var(--blue); } .k-magenta { color: var(--magenta); } .k-cyan { color: var(--cyan); } .b { font-weight: 700; }
+  #cursor { width: 44px; height: 44px; z-index: 120; opacity: 0; filter: drop-shadow(0 5px 8px rgba(0,0,0,.5)); }
+  #chip { z-index: 118; opacity: 0; padding: 11px 20px 11px 14px; border-radius: 11px; background: #1b1c20; border: 1px solid rgba(255,255,255,.16); font-size: 21px; display: flex; gap: 11px; align-items: center; box-shadow: 0 16px 44px rgba(0,0,0,.55); color: #f2f3f5; }
+  #chip svg { width: 22px; height: 22px; }
+  #sizeNum { z-index: 80; opacity: 0; display: grid; place-items: center; font: 400 14px/1 "Inter", "Ubuntu", "Noto Sans", system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+  .ripple { width: 28px; height: 28px; margin: -14px 0 0 -14px; border-radius: 50%; border: 3px solid rgba(255,255,255,.8); opacity: 0; z-index: 119; }
+
+  #shade { left: 0; right: 0; bottom: 0; height: 520px; z-index: 30; background: linear-gradient(to top, rgba(5,6,10,.82), rgba(5,6,10,.45) 50%, rgba(5,6,10,0)); opacity: 0; }
+  .cap { left: 112px; bottom: 100px; z-index: 31; opacity: 0; }
+  .cap .lab { font: 500 21px/1 "JB", monospace; letter-spacing: .2em; color: var(--acc, #8da2ff); margin-bottom: 26px; display: flex; align-items: center; gap: 14px; }
+  .cap .lab::before { content: ""; width: 34px; height: 2px; background: var(--acc, #8da2ff); display: block; }
+  .mask { overflow: hidden; padding-bottom: .14em; margin-bottom: -.14em; }
+  .cap .t { font-size: 80px; line-height: 1.06; font-weight: 640; letter-spacing: -.04em; }
+  .cap .s { margin-top: 26px; font-size: 30px; font-weight: 420; color: #a3a9b6; }
+  .ln2 { will-change: transform; }
+
+  #tname { right: 112px; bottom: 100px; z-index: 32; opacity: 0; display: flex; align-items: center; gap: 22px; padding: 18px 34px 18px 24px; border-radius: 999px;
+    background: rgba(10,11,16,.62); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(14px); }
+  #tname i { width: 20px; height: 20px; border-radius: 50%; display: block; box-shadow: 0 0 24px currentColor; background: currentColor; }
+  #tname .lab { font: 500 17px/1 "JB", monospace; letter-spacing: .22em; color: #8d94a3; }
+  #tname .mask { height: 66px; padding-bottom: 0; margin: 0; }
+  #tname .nm { font-size: 56px; line-height: 66px; font-weight: 640; letter-spacing: -.03em; }
+
+  .logo { left: 0; top: 0; width: 1920px; height: 1080px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 40; opacity: 0; }
+  .logo svg { width: 150px; height: 150px; overflow: visible; filter: drop-shadow(0 18px 50px rgba(60,90,255,.5)); }
+  .logo .tile2 { fill: #3b5bff; } .logo .chev { fill: none; stroke: #fff; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; } .logo .cur { fill: #fff; }
+  .logo .name { margin-top: 36px; font-size: 108px; font-weight: 660; letter-spacing: -.045em; }
+  .logo .tag { margin-top: 12px; font-size: 38px; color: #a3a9b6; }
+  .logo .feat { margin-top: 54px; font: 500 22px/1 "JB", monospace; letter-spacing: .16em; color: #8189a0; display: flex; gap: 22px; text-transform: uppercase; }
+  .logo .feat i { color: #3d4452; font-style: normal; }
+  #scrim { inset: 0; z-index: 38; background: radial-gradient(60% 55% at 50% 50%, rgba(6,7,11,.9), rgba(6,7,11,.5) 70%, rgba(6,7,11,.15)); opacity: 0; }
+</style>
+</head>
+<body>
+<div id="aurora" class="abs"></div>
+<div id="dots" class="abs"></div>
+<div id="stage3d" class="abs">
+  <div id="world" class="abs">
+    <div id="screen" class="abs">
+      <div id="layers"></div>
+      <div id="term" class="abs"><div class="in" id="termIn"></div></div>
+      <div id="ripples"></div>
+      <div id="sizeNum" class="abs"></div>
+      <div id="chip" class="abs"><svg viewBox="0 0 24 24" fill="none" stroke="#a9b8ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>package.json</div>
+    </div>
+    <svg id="cursor" class="abs" viewBox="0 0 24 24"><path d="M4 2.5 L4 19 L8.6 14.8 L11.7 21.5 L14.4 20.3 L11.3 13.7 L17.6 13.4 Z" fill="#fff" stroke="#0b0d14" stroke-width="1.5" stroke-linejoin="round"/></svg>
+  </div>
+</div>
+<div id="shade" class="abs"></div>
+<div id="caps"></div>
+<div id="tname" class="abs"><i id="tdot"></i><div><div class="lab">THEME</div></div><div class="mask"><div class="nm ln2" id="tnm"></div></div></div>
+<div id="scrim" class="abs"></div>
+<div id="introLogo" class="logo abs"></div>
+<div id="outroLogo" class="logo abs"></div>
+<canvas id="grain" class="abs" width="480" height="270"></canvas>
+<div id="vignette" class="abs"></div>
+<div id="fade" class="abs"></div>
+
+<script src="layout.js"></script>
+<script src="themes.js"></script>
+<script src="timeline2.js"></script>
+<script>
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+const easeOutExpo = (t) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
+const easeInOut = (t) => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const easeOutBack = (t) => { const c = 1.6; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, parent) => { const e = document.createElement(tag); if (cls) e.className = cls; if (parent) parent.appendChild(e); return e; };
+
+const BPM = +(new URLSearchParams(location.search).get('bpm')) || 100;
+const TL = buildTimeline2(BPM), T = TL.T;
+window.DURATION = TL.duration;
+
+// ---------- Farben: Theme-Palette (blendet beim Wechsel weich über) ----------
+const DEF = { black: '#000000', red: '#cd3131', green: '#0dbc79', yellow: '#e5e510', blue: '#2472c8', magenta: '#bc3fbc', cyan: '#11a8cd', white: '#e5e5e5' };
+const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const mixc = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+const css = (c) => `rgb(${c.map(Math.round).join(',')})`;
+function palette(id) {
+  const th = id === 'auto' ? TH.AUTO.dark : TH.THEMES.find((x) => x.id === id).theme, g = (k) => hex(th[k] || DEF[k]);
+  const bg = hex(th.background), fg = hex(th.foreground);
+  return { bg, fg, dim: mixc(fg, bg, .5), red: g('red'), green: g('green'), yellow: g('yellow'), blue: g('blue'), magenta: g('magenta'), cyan: g('cyan'),
+    a1: id === 'auto' ? hex('#5b6cff') : g('blue'), a2: id === 'auto' ? hex('#a855f7') : g('magenta'), a3: id === 'auto' ? hex('#14b8a6') : g('green') };
+}
+const PAL = {}; for (const id of ['auto', ...TH.THEMES.map((x) => x.id)]) PAL[id] = palette(id);
+function palAt(t) {
+  const S = TL.themeSeq; let i = -1; while (i + 1 < S.length && S[i + 1].t <= t) i++;
+  if (i < 0) return PAL.auto;
+  const cur = PAL[S[i].id], prev = i > 0 ? PAL[S[i - 1].id] : PAL.auto, p = easeInOut(seg(t, S[i].t, S[i].t + .35));
+  const out = {}; for (const k of Object.keys(cur)) out[k] = mixc(prev[k], cur[k], p); return out;
+}
+
+// ---------- Bildzustände des Fensters ----------
+const layers = TL.layers.map((l, i) => ({ ...l, el: el('img', 'abs', $('layers')), z: i + 1 }));
+layers.forEach((l, i) => { l.t1 = i + 1 < layers.length ? layers[i + 1].t0 + layers[i + 1].fade + .2 : TL.duration + 1; l.el.style.zIndex = l.z; });
+const decoded = new WeakSet();
+async function ensure(t) {
+  const need = [];
+  for (const l of layers) {
+    const on = t >= l.t0 - 1.2 && t <= l.t1 + .3, e = l.el;
+    if (on && !e.getAttribute('src')) e.src = `shots2/${l.name}.png`;
+    if (!on && e.getAttribute('src')) { e.removeAttribute('src'); decoded.delete(e); }
+    if (on) need.push(e);
+  }
+  for (const e of need) { if (decoded.has(e)) continue; try { await e.decode(); decoded.add(e); } catch (err) { throw new Error('Bild nicht ladbar: ' + e.src); } }
+}
+const termEl = $('term'), R = TL.termRect;
+termEl.style.cssText += `left:${R.x}px;top:${R.y}px;width:${R.w}px;height:${R.h}px;z-index:50`;
+
+// ---------- Terminal-Inhalt ----------
+const P = [['green b', 'root@web-prod-01'], ['fg', ':'], ['blue b', '~'], ['fg', '# ']];
+const L = (...s) => s; // Zeile = Liste aus [Farbe, Text]
+const ls = (perm, sz, date, name, c) => L(['dim', `${perm} 1 root root ${String(sz).padStart(5)} ${date} `], [c, name]);
+const MOTD = [
+  L(['fg', 'Welcome to Ubuntu 24.04.1 LTS (GNU/Linux 6.8.0-45-generic x86_64)']), L(),
+  L(['dim', '  System load: '], ['cyan', '0.08'], ['dim', '          Processes:  '], ['cyan', '142']),
+  L(['dim', '  Memory usage: '], ['cyan', '31%'], ['dim', '          Users logged in: '], ['cyan', '1']), L(),
+  L(['dim', 'Last login: Tue Oct 14 19:28:24 2026 from 10.0.0.2']),
+];
+const OUT = [
+  [L(['dim', 'total 48']),
+    L(['dim', 'drwxr-xr-x  6 root root  4096 Oct 14 19:12 '], ['blue b', '.']), L(['dim', '-rw-r--r--  1 root root   220 Jan  6  2026 '], ['fg', '.bash_logout']),
+    L(['dim', 'drwxr-xr-x  4 root root  4096 Oct 12 08:41 '], ['blue b', 'app']), L(['dim', '-rwxr-xr-x  1 root root  1894 Oct 13 22:05 '], ['green b', 'deploy.sh']),
+    L(['dim', '-rw-r--r--  1 root root  9120 Oct 14 09:30 '], ['fg', 'docker-compose.yml']), L(['dim', 'drwxr-xr-x  2 root root  4096 Oct 10 17:20 '], ['blue b', 'logs']),
+    L(['dim', '-rw-r--r--  1 root root 91204 Oct 11 13:02 '], ['red b', 'backup.tar.gz'])],
+  [L(['dim', 'CONTAINER ID   IMAGE         STATUS       PORTS                   NAMES']),
+    L(['yellow', 'a1b2c3d4e5f6'], ['fg', '   nginx:1.27    '], ['green', 'Up 3 days'], ['fg', '    0.0.0.0:443->443/tcp    '], ['cyan b', 'web']),
+    L(['yellow', 'f6e5d4c3b2a1'], ['fg', '   postgres:16   '], ['green', 'Up 3 days'], ['fg', '    5432/tcp                '], ['cyan b', 'db']),
+    L(['yellow', '9c8d7e6f5a4b'], ['fg', '   redis:7       '], ['green', 'Up 3 days'], ['fg', '    6379/tcp                '], ['cyan b', 'cache'])],
+  [L(['red', '* '], ['yellow', 'a3f9c21 '], ['yellow', '('], ['cyan b', 'HEAD -> '], ['green b', 'main'], ['yellow', ', '], ['red b', 'origin/main'], ['yellow', ') '], ['fg', 'feat: terminal themes']),
+    L(['red', '* '], ['yellow', '7be1d04 '], ['fg', 'feat: connection screen with host key check']), L(['red', '* '], ['yellow', '52c8e9a '], ['fg', 'feat: port forwarding wizard']),
+    L(['red', '* '], ['yellow', '1d4f7b3 '], ['fg', 'fix: ask for missing credentials']), L(['red', '* '], ['yellow', '09ac6e8 '], ['fg', 'chore: bundle monospace fonts'])],
+];
+const CMDS = ['ls -la', 'docker ps', 'git log --oneline --graph'];
+const html = (line) => line.map(([c, tx]) => `<span class="${c.split(' ').map((x) => (x === 'b' ? 'b' : 'k-' + x)).join(' ')}">${tx.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`).join('');
+let lastKey = '';
+function termHtml(t, blink) {
+  const out = MOTD.map(html), blk = blink ? '<span class="blk"></span>' : '<span class="blk" style="opacity:0"></span>';
+  let idle = true;
+  for (let i = 0; i < TL.term.length; i++) {
+    const c = TL.term[i];
+    if (t < c.t0) break;
+    const n = Math.min(CMDS[i].length, Math.floor((t - c.t0) * c.cps) + 1), typing = n < CMDS[i].length || t < c.t0 + CMDS[i].length / c.cps + .12;
+    out.push(html(P) + `<span class="k-fg">${CMDS[i].slice(0, n)}</span>` + (typing ? blk : ''));
+    if (typing) { idle = false; break; }
+    const t1 = c.t0 + CMDS[i].length / c.cps + .22, shown = Math.floor((t - t1) / .05) + 1;
+    OUT[i].slice(0, Math.max(0, shown)).forEach((ln) => out.push(html(ln)));
+    if (shown < OUT[i].length) { idle = false; break; }
+    if (i === TL.term.length - 1) idle = true;
+  }
+  if (idle) out.push(html(P) + blk);
+  return out.slice(-17).map((x) => `<div class="ln">${x || ' '}</div>`).join(''); // wie im echten Terminal: Ältestes scrollt weg
+}
+
+// ---------- Kamera ----------
+function cam(t) {
+  const K = TL.cam;
+  if (t <= K[0].t) return K[0];
+  for (let i = 0; i < K.length - 1; i++) {
+    const a = K[i], b = K[i + 1];
+    if (t >= a.t && t <= b.t) { const p = easeInOut(seg(t, a.t, b.t)); return { x: lerp(a.x, b.x, p), y: lerp(a.y, b.y, p), z: Math.exp(lerp(Math.log(a.z), Math.log(b.z), p)) }; }
+  }
+  return K[K.length - 1];
+}
+
+// ---------- Mauszeiger ----------
+const cursor = $('cursor'), ripples = TL.clicks.map(() => el('div', 'ripple abs', $('ripples')));
+function curAt(t) {
+  const C = TL.cursor; if (t <= C[0].t) return { ...C[0], v: 0 }; let i = 0; while (i < C.length - 2 && t > C[i + 1].t) i++;
+  const a = C[i], b = C[i + 1], p = easeInOut(seg(t, a.t, b.t)), dx = b.x - a.x, dy = b.y - a.y, dist = Math.hypot(dx, dy) || 1, off = Math.sin(Math.PI * p) * Math.min(dist, 600) * .08;
+  return { x: lerp(a.x, b.x, p) - dy / dist * off, y: lerp(a.y, b.y, p) + dx / dist * off, v: lerp(a.v, b.v, p) };
+}
+
+// ---------- Untertitel + Theme-Name ----------
+const capEls = TL.caps.map((c) => {
+  const e = el('div', 'cap abs', $('caps')), lab = el('div', 'lab', e), t = el('div', 't', e);
+  lab.textContent = c.label;
+  const lines = c.title.map((tx) => { const m = el('div', 'mask', t), ln = el('div', 'ln2', m); ln.textContent = tx; return ln; });
+  const sm = el('div', 'mask s', e), sl = el('div', 'ln2', sm); sl.textContent = c.sub;
+  return { e, lab, lines, sl, c };
+});
+
+// ---------- Logo ----------
+const LOGO = `<svg viewBox="0 0 64 64"><rect class="tile2" width="64" height="64" rx="16"/><path class="chev" pathLength="1" d="M20 22 L32 32 L20 42"/><rect class="cur" x="36" y="40" width="13" height="5" rx="2.5"/></svg>`;
+$('introLogo').innerHTML = LOGO + '<div class="mask"><div class="name ln2">SSH Deck</div></div><div class="mask"><div class="tag ln2">Your terminal. Your colors.</div></div>';
+$('outroLogo').innerHTML = LOGO + '<div class="mask"><div class="name ln2">SSH Deck</div></div><div class="mask"><div class="tag ln2">Your servers. One deck.</div></div><div class="feat">SSH<i>/</i>SFTP<i>/</i>Themes<i>/</i>Keychain<i>/</i>Tor<i>/</i>Cloud sync</div>';
+function logo(root, l, withFeat) {
+  const q = (s) => root.querySelector(s);
+  const pop = easeOutBack(seg(l, .1, .8)); q('svg').style.transform = `scale(${lerp(.72, 1, pop)})`; q('svg').style.opacity = clamp(seg(l, .1, .45));
+  q('.chev').style.strokeDashoffset = 1 - easeOut(seg(l, .5, 1.0));
+  const c = seg(l, .95, 1.2); q('.cur').style.opacity = c * (l > 1.4 ? (Math.floor((l - 1.4) / .5) % 2 ? .15 : 1) : 1);
+  q('.name').style.transform = `translateY(${(1 - easeOutExpo(seg(l, .7, 1.4))) * 112}%)`;
+  q('.tag').style.transform = `translateY(${(1 - easeOutExpo(seg(l, 1.0, 1.7))) * 112}%)`;
+  if (withFeat) { const f = q('.feat'), k = easeOut(seg(l, 1.4, 2.1)); f.style.opacity = k; f.style.transform = `translateY(${(1 - k) * 12}px)`; }
+}
+
+const gctx = $('grain').getContext('2d'), gdata = gctx.createImageData(480, 270);
+function grain(frame) { let s = (frame * 9301 + 49297) >>> 0; const d = gdata.data; for (let i = 0; i < d.length; i += 4) { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; d[i] = d[i + 1] = d[i + 2] = s >>> 24; d[i + 3] = 255; } gctx.putImageData(gdata, 0, 0); }
+
+// ---------- Hauptfunktion ----------
+let lastName = '', nameT0 = 0;
+window.renderAt = async (t) => {
+  await ensure(t);
+  const pal = palAt(t), c = cam(t);
+
+  // Hintergrund: weiche Farbwolken in den Farben des aktuellen Themes
+  const dr = (k) => Math.sin(t * .35 + k) * 6;
+  $('aurora').style.background = `radial-gradient(52% 58% at ${22 + dr(0)}% ${30 + dr(1)}%, ${css(pal.a1).replace('rgb', 'rgba').replace(')', ',.55)')}, transparent 70%),
+    radial-gradient(50% 55% at ${80 + dr(2)}% ${72 + dr(3)}%, ${css(pal.a2).replace('rgb', 'rgba').replace(')', ',.45)')}, transparent 70%),
+    radial-gradient(46% 50% at ${62 + dr(4)}% ${14 + dr(5)}%, ${css(pal.a3).replace('rgb', 'rgba').replace(')', ',.30)')}, transparent 70%), #06070b`;
+  document.documentElement.style.setProperty('--acc', css(mixc(pal.a1, [255, 255, 255], .25)));
+  $('dots').style.backgroundPosition = `${(-c.x * c.z * .2) % 64}px ${(-c.y * c.z * .2) % 64}px`;
+
+  // Kamera + sanfter Takt-Puls; zu Beginn/Ende kippt das Fenster leicht im Raum
+  const beatPhase = (t / TL.beat) % 1, z = c.z * (1 + .003 * Math.exp(-7 * beatPhase));
+  $('world').style.transform = `translate(960px, 540px) scale(${z}) translate(${-c.x}px, ${-c.y}px)`;
+  const OA = TL.outroAt, tin = 1 - easeOut(seg(t, T(.8), T(2.1))), tout = easeInOut(seg(t, OA - T(.4), OA + T(.4)));
+  $('stage3d').style.transform = `rotateY(${-13 * tin + 9 * tout}deg) rotateX(${7 * tin - 5 * tout}deg)`;
+  const sc = $('screen'); sc.style.opacity = easeOut(seg(t, T(.8), T(1.5))) * (1 - .85 * easeInOut(seg(t, OA - T(.2), OA + T(.6))));
+  sc.style.boxShadow = `0 0 0 2px rgba(255,255,255,.1), 0 50px 140px rgba(0,0,0,.65), 0 0 200px ${css(pal.a1).replace('rgb', 'rgba').replace(')', ',.28)')}`;
+
+  // Fenster-Bilder
+  for (const l of layers) { // neue Bilder blenden weich ein und schieben dabei leicht heran (keine harten Schnitte)
+    const q = t < l.t0 ? 0 : t > l.t1 ? 0 : clamp((t - l.t0) / l.fade);
+    l.el.style.opacity = q; l.el.style.transform = l.fade >= .4 && q > 0 && q < 1 ? `scale(${1 + .04 * (1 - easeOut(q))})` : '';
+  }
+
+  // Terminal-Overlay: Farben aus dem Theme, Schrift wächst bei den "+"-Klicks
+  const ov = TL.overlay, vis = easeOut(seg(t, ov.t0, ov.t0 + .35)) * (1 - easeOut(seg(t, ov.t1, ov.t1 + .35)));
+  termEl.style.opacity = vis;
+  if (vis > 0) {
+    for (const k of ['bg', 'fg', 'dim', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan']) termEl.style.setProperty('--' + k, css(pal[k]));
+    const grow = TL.fontClicks.reduce((s, ft) => s + easeOut(seg(t, ft, ft + .25)), 0);
+    termEl.style.fontSize = (17 + grow * 2) + 'px';
+    const dm = easeOut(seg(t, TL.dimAt, TL.dimAt + .3));
+    termEl.style.filter = `brightness(${1 - .5 * dm})`; termEl.style.width = (dm > 0 ? 1536 : R.w) + 'px'; // das Seitenblatt (ab x=1536) bleibt sichtbar
+    const blink = Math.floor(t / (TL.beat * 2)) % 2 === 0 || t < TL.term[2].t0 + 3;
+    const key = Math.floor(t * 30) + '|' + blink; if (key !== lastKey) { $('termIn').innerHTML = termHtml(t, blink); lastKey = key; }
+  }
+
+  // Schriftgröße im Panel: die Zahl zählt mit jedem "+"-Klick hoch (14 -> 17), passend zur wachsenden Terminal-Schrift
+  const sn = $('sizeNum'), SN = TL.sizeNum, passed = TL.fontClicks.filter((ft) => t >= ft).length, lastClick = passed ? TL.fontClicks[passed - 1] : -9;
+  sn.style.cssText += `left:${SN.x}px;top:${SN.y}px;width:${SN.w}px;height:${SN.h}px;`;
+  sn.style.background = css(pal.bg); sn.style.color = css(pal.fg); sn.textContent = 14 + passed;
+  sn.style.opacity = clamp((t - TL.fontShow[0]) / .25) * (1 - clamp((t - TL.fontShow[1]) / .22));
+  sn.style.transform = `scale(${1 + .25 * Math.exp(-14 * Math.max(0, t - lastClick)) * (passed ? 1 : 0)})`;
+
+  // Mauszeiger + Klick-Ringe
+  const p = curAt(t); let press = 1;
+  TL.clicks.forEach((cl, i) => {
+    const r = seg(t, cl.t, cl.t + .5), e = ripples[i];
+    e.style.left = cl.x + 'px'; e.style.top = cl.y + 'px'; e.style.opacity = r > 0 && r < 1 ? (1 - r) * .9 : 0; e.style.transform = `scale(${lerp(.5, 3, easeOut(r))})`;
+    const d = Math.abs(t - cl.t); if (d < .1) press = Math.min(press, 1 - .16 * (1 - d / .1));
+  });
+  cursor.style.left = (p.x - 6) + 'px'; cursor.style.top = (p.y - 4) + 'px'; cursor.style.opacity = clamp(p.v) * sc.style.opacity; cursor.style.transform = `scale(${1.1 * press})`;
+
+  // Datei-Chip beim Ziehen im SFTP
+  const ch = TL.chip, cp = easeInOut(seg(t, ch.t0, ch.t1)), chip = $('chip');
+  chip.style.left = lerp(ch.from.x, ch.to.x, cp) + 'px'; chip.style.top = lerp(ch.from.y, ch.to.y, cp) - Math.sin(cp * Math.PI) * 40 + 'px';
+  chip.style.opacity = t < ch.t0 ? 0 : t < ch.t1 ? 1 : 1 - seg(t, ch.t1, ch.t1 + .3) * 1;
+  chip.style.transform = `scale(${lerp(1, 1.08, Math.sin(cp * Math.PI))}) rotate(${Math.sin(cp * Math.PI) * -2.5}deg)`;
+
+  // Untertitel
+  let shade = 0;
+  for (const { e, lab, lines, sl, c: cc } of capEls) {
+    const live = t >= cc.a && t <= cc.b + .6; e.style.opacity = live ? 1 : 0; if (!live) continue;
+    const out = easeOut(seg(t, cc.b, cc.b + .5));
+    lab.style.opacity = easeOut(seg(t, cc.a, cc.a + .4)) * (1 - out);
+    lines.forEach((ln, i) => { const q = easeOutExpo(seg(t, cc.a + .08 + i * .1, cc.a + .8 + i * .1)); ln.style.transform = `translateY(${(1 - q) * 112 + out * -112}%)`; });
+    const sq = easeOutExpo(seg(t, cc.a + .35, cc.a + 1.0)); sl.style.transform = `translateY(${(1 - sq) * 112 + out * -112}%)`;
+    shade = Math.max(shade, easeOut(seg(t, cc.a, cc.a + .5)) * (1 - out));
+  }
+  $('shade').style.opacity = shade;
+
+  // Theme-Name oben links: wechselt mit jedem Wechsel (gleitet aus der Maske)
+  const S = TL.themeSeq, a0 = S[1].t - .05, a1 = S[S.length - 1].t + .9;
+  let si = 0; while (si + 1 < S.length && S[si + 1].t <= t) si++;
+  const nm = TL.NAMES[S[si].id]; if (nm !== lastName) { $('tnm').textContent = nm; lastName = nm; }
+  const sinceSwitch = t - S[si].t, tn = $('tname');
+  tn.style.opacity = easeOut(seg(t, a0, a0 + .3)) * (1 - easeOut(seg(t, a1, a1 + .4)));
+  $('tnm').style.transform = `translateY(${(1 - easeOutExpo(seg(sinceSwitch, 0, .28))) * 105}%)`;
+  $('tdot').style.color = css(pal.a1);
+
+  // Logo-Szenen
+  const il = $('introLogo'), iIn = seg(t, 0, .35), iOut = easeInOut(seg(t, T(1.0), T(1.55)));
+  il.style.opacity = iIn * (1 - iOut); il.style.transform = `translateY(${-iOut * 50}px)`; if (iOut < 1) logo(il, t, false);
+  const o0 = OA, ol = $('outroLogo'), oIn = easeOut(seg(t, o0, o0 + .8));
+  ol.style.opacity = oIn; $('scrim').style.opacity = oIn; if (t >= o0) logo(ol, t - o0, true);
+  $('fade').style.opacity = t < .3 ? 1 - t / .3 : easeInOut(seg(t, TL.duration - .9, TL.duration));
+  grain(Math.round(t * 30));
+};
+window.ready = window.renderAt(0).then(() => true);
+</script>
+</body>
+</html>
