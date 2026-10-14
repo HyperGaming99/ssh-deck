@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronLeft, Eye, EyeOff, LayoutGrid, List, CloudOff, Fingerprint, Languages, ShieldCheck, Check, FileText, Palette, Settings as SettingsIcon, User, Folder, FolderPlus, Menu, Minus, Square, ArrowLeftRight, Code2, Copy, Download, FileUp, FolderOpen, KeyRound, Lock, Moon, Pencil, Plus, RefreshCw, Search, Send, Server, Sun, PanelRight, Terminal as TermIcon, Trash2, Users, X } from 'lucide-react';
+import { ChevronDown, ChevronLeft, Eye, EyeOff, LayoutGrid, List, CloudOff, Fingerprint, Languages, ShieldCheck, Check, FileText, Palette, Settings as SettingsIcon, User, Folder, FolderPlus, Menu, Minus, Square, ArrowLeftRight, Code2, Copy, Download, Ellipsis, FileUp, FolderOpen, KeyRound, Lock, Moon, Pencil, Plus, RefreshCw, Search, Send, Server, Sun, PanelRight, Terminal as TermIcon, Trash2, Users, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,7 @@ import HostKeyDialog from '@/components/HostKeyDialog';
 import ImportDialog from '@/components/ImportDialog';
 import KeyImportSheet from '@/components/KeyImportSheet';
 import { maskFingerprint, maskHost } from '@/lib/censor.mjs';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import Terminal, { writers } from '@/components/Terminal';
 import SftpTab from '@/components/SftpTab';
 import LoginScreen from '@/components/LoginScreen';
@@ -143,11 +143,40 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
     load();
   };
 
+  // Klonen / in einen anderen Tresor klonen oder verschieben
+  const copyTo = async (h, target, move) => {
+    const r = await api.hosts.copy(h.id, target, move, !move && target === vault ? `${h.name} (${t('Kopie')})` : undefined);
+    if (r.error) return toast(r.error);
+    toast((move ? t('Host verschoben.') : t('Host geklont.')) + (r.keyDropped ? ` ${t('Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.')}` : ''));
+    load();
+  };
+  const hostMenu = (h) => {
+    const others = vaults.filter((x) => x.id !== vault);
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="size-8" aria-label={t('Mehr')} onClick={(e) => e.stopPropagation()}><Ellipsis className="size-3.5" /></Button></DropdownMenuTrigger>
+        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+          {writable && <DropdownMenuItem onSelect={() => copyTo(h, vault, false)}><Copy className="size-4" />{t('Klonen')}</DropdownMenuItem>}
+          {others.length > 0 && <>
+            {writable && <DropdownMenuSeparator />}
+            <DropdownMenuLabel className="text-xs text-muted-foreground">{t('In Tresor klonen')}</DropdownMenuLabel>
+            {others.map((x) => <DropdownMenuItem key={`c${x.id}`} onSelect={() => copyTo(h, x.id, false)}>{x.id === 'personal' ? <User className="size-4" /> : <Users className="size-4" />}{x.name}</DropdownMenuItem>)}
+            {writable && <>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs text-muted-foreground">{t('In Tresor verschieben')}</DropdownMenuLabel>
+              {others.map((x) => <DropdownMenuItem key={`m${x.id}`} onSelect={() => copyTo(h, x.id, true)}>{x.id === 'personal' ? <User className="size-4" /> : <Users className="size-4" />}{x.name}</DropdownMenuItem>)}
+            </>}
+          </>}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
   const hostCard = (h) => (
     <Item key={h.id} dark={dark} icon={<HostIcon slug={h.icon || h.autoIcon} />} sub={`${h.user}@${h.host}:${h.port}`}
       title={<span className="flex items-center gap-2">{h.name}{(h.tags || []).slice(0, 2).map((tg) => <Badge key={tg} variant="secondary" className="px-1.5 py-0 text-xs">{tg}</Badge>)}</span>}
       onClick={() => connect(h)}
       actions={<><IconButton label="SFTP" onClick={() => openSftp(h)}><FolderOpen className="size-3.5" /></IconButton>
+        {(writable || vaults.some((x) => x.id !== vault)) && hostMenu(h)}
         {writable && <><IconButton label={t('Bearbeiten')} onClick={() => edit(h)}><Pencil className="size-3.5" /></IconButton>
         <IconButton label={t('Löschen')} onClick={async () => { await api.hosts.remove(h.id); load(); }}><Trash2 className="size-3.5" /></IconButton></>}</>} />
   );

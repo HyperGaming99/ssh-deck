@@ -374,5 +374,13 @@
  "Tresor öffnen": "Kasayı aç",
  "{n} Mitglieder": "{n} üye",
  "Team-Aktion fehlgeschlagen": "Ekip işlemi başarısız oldu",
- "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "Sunucu henüz ekipleri tanımıyor. Lütfen sunucuyu güncelleyin."
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "Sunucu henüz ekipleri tanımıyor. Lütfen sunucuyu güncelleyin.",
+ "Klonen": "Kopyala",
+ "Kopie": "kopya",
+ "In Tresor klonen": "Kasaya kopyala",
+ "In Tresor verschieben": "Kasaya taşı",
+ "Mehr": "Daha fazla",
+ "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "Anahtar kendi kasasına ait olduğu için taşınmadı.",
+ "Host geklont.": "Ana makine kopyalandı.",
+ "Host verschoben.": "Ana makine taşındı."
 }

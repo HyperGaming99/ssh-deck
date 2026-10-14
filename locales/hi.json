@@ -374,5 +374,13 @@
  "Tresor öffnen": "वॉल्ट खोलें",
  "{n} Mitglieder": "{n} सदस्य",
  "Team-Aktion fehlgeschlagen": "टीम कार्रवाई विफल रही",
- "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "सर्वर अभी टीम को नहीं जानता। कृपया सर्वर अपडेट करें।"
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "सर्वर अभी टीम को नहीं जानता। कृपया सर्वर अपडेट करें।",
+ "Klonen": "क्लोन करें",
+ "Kopie": "प्रति",
+ "In Tresor klonen": "वॉल्ट में क्लोन करें",
+ "In Tresor verschieben": "वॉल्ट में ले जाएँ",
+ "Mehr": "और",
+ "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "कुंजी अपने वॉल्ट की है और साथ नहीं ली गई।",
+ "Host geklont.": "होस्ट क्लोन हो गया।",
+ "Host verschoben.": "होस्ट ले जाया गया।"
 }

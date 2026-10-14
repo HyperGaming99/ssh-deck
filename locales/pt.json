@@ -374,5 +374,13 @@
  "Tresor öffnen": "Abrir cofre",
  "{n} Mitglieder": "{n} membros",
  "Team-Aktion fehlgeschlagen": "A ação da equipe falhou",
- "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "O servidor ainda não conhece equipes. Atualize o servidor."
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "O servidor ainda não conhece equipes. Atualize o servidor.",
+ "Klonen": "Clonar",
+ "Kopie": "cópia",
+ "In Tresor klonen": "Clonar para um cofre",
+ "In Tresor verschieben": "Mover para um cofre",
+ "Mehr": "Mais",
+ "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "A chave pertence ao seu cofre e não foi incluída.",
+ "Host geklont.": "Host clonado.",
+ "Host verschoben.": "Host movido."
 }

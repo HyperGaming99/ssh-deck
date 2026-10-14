@@ -374,5 +374,13 @@
  "Tresor öffnen": "Kluis openen",
  "{n} Mitglieder": "{n} leden",
  "Team-Aktion fehlgeschlagen": "Teamactie mislukt",
- "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "De server kent nog geen teams. Werk de server bij."
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "De server kent nog geen teams. Werk de server bij.",
+ "Klonen": "Klonen",
+ "Kopie": "kopie",
+ "In Tresor klonen": "Klonen naar kluis",
+ "In Tresor verschieben": "Verplaatsen naar kluis",
+ "Mehr": "Meer",
+ "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "De sleutel hoort bij zijn kluis en is niet meegenomen.",
+ "Host geklont.": "Host gekloond.",
+ "Host verschoben.": "Host verplaatst."
 }

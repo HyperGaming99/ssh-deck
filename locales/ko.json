@@ -374,5 +374,13 @@
  "Tresor öffnen": "보관함 열기",
  "{n} Mitglieder": "구성원 {n}명",
  "Team-Aktion fehlgeschlagen": "팀 작업에 실패했습니다",
- "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "서버가 아직 팀을 지원하지 않습니다. 서버를 업데이트하세요."
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "서버가 아직 팀을 지원하지 않습니다. 서버를 업데이트하세요.",
+ "Klonen": "복제",
+ "Kopie": "사본",
+ "In Tresor klonen": "보관함으로 복제",
+ "In Tresor verschieben": "보관함으로 이동",
+ "Mehr": "더보기",
+ "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "키는 해당 보관함에 속해 있어 함께 옮겨지지 않았습니다.",
+ "Host geklont.": "호스트를 복제했습니다.",
+ "Host verschoben.": "호스트를 이동했습니다."
 }

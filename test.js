@@ -605,3 +605,28 @@ const mock = {
   assert.equal(st.keys.list().length, 1);
   console.log('vaults ok');
 })();
+
+// Host klonen/verschieben zwischen Tresoren (gleiche Logik wie hosts:copy in main.js, hier mit echten Speichern)
+(() => {
+  const { plain, hosts: mkHosts } = require('./store');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'deck-copy-'));
+  const crypt = { encrypt: (x) => 'enc:' + x, decrypt: (x) => String(x).replace(/^enc:/, '') };
+  const hosts = mkHosts(path.join(dir, 'h.json'), crypt);
+  const vOf = (r) => (r && r.vault) || 'personal';
+  const copy = (id, vault, move, name) => { // wie hosts:copy
+    const h = hosts.get(id), same = vOf(h) === vault;
+    const nid = hosts.save({ name: name || h.name, group: h.group, host: h.host, port: h.port, user: h.user, keyPath: h.keyPath, keyId: same ? h.keyId : '', icon: h.icon, tags: h.tags, secret: h.secret || undefined, ...(vault !== 'personal' && { vault }) });
+    if (move) hosts.remove(id);
+    return { id: nid, keyDropped: !!h.keyId && !same };
+  };
+  const a = hosts.save({ name: 'web', host: 'w', user: 'u', secret: 'pw', keyId: 'k1', tags: ['x'] });
+  const c1 = copy(a, 'personal', false, 'web (copy)');
+  assert.equal(hosts.get(c1.id).keyId, 'k1', 'Klon im selben Tresor behält den Schlüssel');
+  const c2 = copy(a, 'T9', false);
+  assert(c2.keyDropped && hosts.get(c2.id).keyId === '' && hosts.get(c2.id).vault === 'T9' && hosts.get(c2.id).secret === 'pw', 'Klon ins Team: Passwort mit, Schlüssel nicht');
+  assert(hosts.list().some((h) => h.id === a), 'Original bleibt beim Klonen');
+  const m = copy(c2.id, 'personal', true);
+  assert(!hosts.list().some((h) => h.id === c2.id) && hosts.get(m.id).vault === undefined, 'Verschieben löscht das Original und nutzt den Zielort');
+  assert(hosts.list().length === 3 && hosts.get(m.id).tags[0] === 'x');
+  console.log('copy ok');
+})();

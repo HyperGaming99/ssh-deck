@@ -374,5 +374,13 @@
  "Tresor öffnen": "Відкрити сховище",
  "{n} Mitglieder": "Учасників: {n}",
  "Team-Aktion fehlgeschlagen": "Не вдалося виконати дію з командою",
- "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "Сервер ще не підтримує команди. Оновіть сервер."
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "Сервер ще не підтримує команди. Оновіть сервер.",
+ "Klonen": "Клонувати",
+ "Kopie": "копія",
+ "In Tresor klonen": "Клонувати до сховища",
+ "In Tresor verschieben": "Перемістити до сховища",
+ "Mehr": "Більше",
+ "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "Ключ належить своєму сховищу й не був перенесений.",
+ "Host geklont.": "Хост клоновано.",
+ "Host verschoben.": "Хост переміщено."
 }

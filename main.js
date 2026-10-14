@@ -135,7 +135,7 @@ async function runSync() {
 const scheduleSync = () => { if (!loadSyncCfg()) return; clearTimeout(syncTimer); syncTimer = setTimeout(runSync, 3000); };
 
 // Änderungen über diese Kanäle lösen einen Sync aus
-const MUTATING = new Set(['hosts:save', 'hosts:remove', 'groups:create', 'groups:rename', 'groups:remove', 'snippets:save', 'snippets:remove', 'fwd:save', 'fwd:remove', 'known:remove', 'known:import', 'import:commit']);
+const MUTATING = new Set(['hosts:save', 'hosts:copy', 'hosts:remove', 'groups:create', 'groups:rename', 'groups:remove', 'snippets:save', 'snippets:remove', 'fwd:save', 'fwd:remove', 'known:remove', 'known:import', 'import:commit']);
 const handle = (ch, fn) => ipcMain.handle(ch, MUTATING.has(ch) ? async (...a) => { const r = await fn(...a); scheduleSync(); return r; } : fn);
 
 
@@ -541,6 +541,16 @@ app.whenReady().then(() => {
       return id;
     }
     return hosts.save({ ...h, vault: vault === 'personal' ? undefined : vault });
+  });
+  // Klonen (Kopie bleibt neben dem Original) oder Verschieben (Original wird gelöscht) in einen Tresor. Schlüssel aus der Keychain gehören zu ihrem Tresor und gehen nicht mit.
+  handle('hosts:copy', (_, id, vault = 'personal', move = false, name) => {
+    const h = hosts.get(id);
+    if (!h) return { error: 'Host nicht gefunden' };
+    const same = vOf(h) === vault;
+    ensureGroup(h.group, vault);
+    const nid = hosts.save({ name: name || h.name, group: h.group, host: h.host, port: h.port, user: h.user, keyPath: h.keyPath, keyId: same ? h.keyId : '', icon: h.icon, tags: h.tags, secret: h.secret || undefined, ...(vault !== 'personal' && { vault }) });
+    if (move) hosts.remove(id);
+    return { id: nid, keyDropped: !!h.keyId && !same };
   });
   handle('hosts:remove', (_, id) => hosts.remove(id));
   // Gruppen: Rückgabe null oder Fehlertext. Namen sind je Tresor eindeutig.

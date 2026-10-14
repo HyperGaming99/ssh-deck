@@ -374,5 +374,13 @@
  "Tresor öffnen": "Open vault",
  "{n} Mitglieder": "{n} members",
  "Team-Aktion fehlgeschlagen": "Team action failed",
- "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "The server does not know teams yet. Please update the server."
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "The server does not know teams yet. Please update the server.",
+ "Klonen": "Clone",
+ "Kopie": "copy",
+ "In Tresor klonen": "Clone to vault",
+ "In Tresor verschieben": "Move to vault",
+ "Mehr": "More",
+ "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "The key belongs to its vault and was not taken along.",
+ "Host geklont.": "Host cloned.",
+ "Host verschoben.": "Host moved."
 }

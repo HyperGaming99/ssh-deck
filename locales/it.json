@@ -374,5 +374,13 @@
  "Tresor öffnen": "Apri il vault",
  "{n} Mitglieder": "{n} membri",
  "Team-Aktion fehlgeschlagen": "Azione del team non riuscita",
- "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "Il server non conosce ancora i team. Aggiorna il server."
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "Il server non conosce ancora i team. Aggiorna il server.",
+ "Klonen": "Clona",
+ "Kopie": "copia",
+ "In Tresor klonen": "Clona in un vault",
+ "In Tresor verschieben": "Sposta in un vault",
+ "Mehr": "Altro",
+ "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "La chiave appartiene al suo vault e non è stata inclusa.",
+ "Host geklont.": "Host clonato.",
+ "Host verschoben.": "Host spostato."
 }

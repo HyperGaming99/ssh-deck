@@ -374,5 +374,13 @@
  "Tresor öffnen": "Открыть хранилище",
  "{n} Mitglieder": "Участников: {n}",
  "Team-Aktion fehlgeschlagen": "Не удалось выполнить действие с командой",
- "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "Сервер ещё не поддерживает команды. Обновите сервер."
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "Сервер ещё не поддерживает команды. Обновите сервер.",
+ "Klonen": "Клонировать",
+ "Kopie": "копия",
+ "In Tresor klonen": "Клонировать в хранилище",
+ "In Tresor verschieben": "Переместить в хранилище",
+ "Mehr": "Ещё",
+ "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "Ключ принадлежит своему хранилищу и не был перенесён.",
+ "Host geklont.": "Хост клонирован.",
+ "Host verschoben.": "Хост перемещён."
 }

@@ -374,5 +374,13 @@
  "Tresor öffnen": "保管庫を開く",
  "{n} Mitglieder": "{n} 人のメンバー",
  "Team-Aktion fehlgeschlagen": "チームの操作に失敗しました",
- "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "サーバーはまだチームに対応していません。サーバーを更新してください。"
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "サーバーはまだチームに対応していません。サーバーを更新してください。",
+ "Klonen": "複製",
+ "Kopie": "コピー",
+ "In Tresor klonen": "保管庫に複製",
+ "In Tresor verschieben": "保管庫に移動",
+ "Mehr": "その他",
+ "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "鍵はそれぞれの保管庫に属するため、引き継がれませんでした。",
+ "Host geklont.": "ホストを複製しました。",
+ "Host verschoben.": "ホストを移動しました。"
 }

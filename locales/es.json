@@ -374,5 +374,13 @@
  "Tresor öffnen": "Abrir tesoro",
  "{n} Mitglieder": "{n} miembros",
  "Team-Aktion fehlgeschlagen": "La acción del equipo falló",
- "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "El servidor aún no conoce los equipos. Actualiza el servidor."
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "El servidor aún no conoce los equipos. Actualiza el servidor.",
+ "Klonen": "Clonar",
+ "Kopie": "copia",
+ "In Tresor klonen": "Clonar en un tesoro",
+ "In Tresor verschieben": "Mover a un tesoro",
+ "Mehr": "Más",
+ "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "La clave pertenece a su tesoro y no se ha incluido.",
+ "Host geklont.": "Host clonado.",
+ "Host verschoben.": "Host movido."
 }

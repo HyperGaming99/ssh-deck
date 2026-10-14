@@ -374,5 +374,13 @@
  "Tresor öffnen": "Ouvrir le coffre",
  "{n} Mitglieder": "{n} membres",
  "Team-Aktion fehlgeschlagen": "L'action d'équipe a échoué",
- "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "Le serveur ne gère pas encore les équipes. Veuillez mettre le serveur à jour."
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "Le serveur ne gère pas encore les équipes. Veuillez mettre le serveur à jour.",
+ "Klonen": "Cloner",
+ "Kopie": "copie",
+ "In Tresor klonen": "Cloner dans un coffre",
+ "In Tresor verschieben": "Déplacer vers un coffre",
+ "Mehr": "Plus",
+ "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "La clé appartient à son coffre et n'a pas été reprise.",
+ "Host geklont.": "Hôte cloné.",
+ "Host verschoben.": "Hôte déplacé."
 }

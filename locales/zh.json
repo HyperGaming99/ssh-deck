@@ -374,5 +374,13 @@
  "Tresor öffnen": "打开保险库",
  "{n} Mitglieder": "{n} 位成员",
  "Team-Aktion fehlgeschlagen": "团队操作失败",
- "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "服务器尚不支持团队功能,请更新服务器。"
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "服务器尚不支持团队功能,请更新服务器。",
+ "Klonen": "克隆",
+ "Kopie": "副本",
+ "In Tresor klonen": "克隆到保险库",
+ "In Tresor verschieben": "移动到保险库",
+ "Mehr": "更多",
+ "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "密钥属于其保险库,未一并带走。",
+ "Host geklont.": "主机已克隆。",
+ "Host verschoben.": "主机已移动。"
 }

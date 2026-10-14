@@ -374,5 +374,13 @@
  "Tresor öffnen": "Otwórz skarbiec",
  "{n} Mitglieder": "{n} członków",
  "Team-Aktion fehlgeschlagen": "Akcja zespołu nie powiodła się",
- "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "Serwer nie obsługuje jeszcze zespołów. Zaktualizuj serwer."
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "Serwer nie obsługuje jeszcze zespołów. Zaktualizuj serwer.",
+ "Klonen": "Klonuj",
+ "Kopie": "kopia",
+ "In Tresor klonen": "Klonuj do skarbca",
+ "In Tresor verschieben": "Przenieś do skarbca",
+ "Mehr": "Więcej",
+ "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "Klucz należy do swojego skarbca i nie został przeniesiony.",
+ "Host geklont.": "Host sklonowany.",
+ "Host verschoben.": "Host przeniesiony."
 }
