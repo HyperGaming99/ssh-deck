@@ -17,6 +17,7 @@ const knownTools = require('./known');
 const importerTools = require('./importers');
 const { createAuth } = require('./auth');
 const updater = require('./updater');
+const teamTools = require('./teams');
 
 const sessions = new Map(); // sid -> { conn, stream }
 const sftps = new Map(); // sid -> { conn, sftp }
@@ -56,7 +57,7 @@ const backendOpts = (url) => (torCfg().sync && !torTools.isPrivateHost(new URL(u
 
 // ---- Cloud-Sync ------------------------------------------------------------------------------------
 // Gesynct werden Hosts (inkl. Passwörter), Gruppen, Snippets und Forwarding-Regeln; private Schlüssel nie.
-const syncState = { status: 'off', lastSync: null, error: '' }; // off | syncing | ok | error
+const syncState = { status: 'off', lastSync: null, error: '', teamError: '' }; // off | syncing | ok | error
 let settingsFile, syncCfgFile, syncTimer, syncing = false, again = false;
 
 const loadSyncCfg = () => { try { return JSON.parse(fs.readFileSync(syncCfgFile, 'utf8')); } catch { return null; } };
@@ -64,8 +65,46 @@ const saveSyncCfg = (c) => fs.writeFileSync(syncCfgFile, JSON.stringify(c), { mo
 const DEFAULT_SERVER = process.env.DECK_SERVER || 'http://localhost:8787';
 const syncStatus = () => { const c = loadSyncCfg(); return { configured: !!c, email: c?.email, server: c?.server || DEFAULT_SERVER, ...syncState }; };
 const send = (ch, ...a) => mainWin && !mainWin.isDestroyed() && mainWin.webContents.send(ch, ...a);
-const snapshot = () => ({ hosts: hosts.raw(), groups: groups.raw(), snippets: snippets.raw(), forwards: forwards.raw(), known: known.raw() });
-const applySnapshot = (s) => { hosts.setRaw(s.hosts || []); groups.setRaw(s.groups || []); snippets.setRaw(s.snippets || []); forwards.setRaw(s.forwards || []); known.setRaw(s.known || []); };
+// Tresore: "personal" (Einträge ohne vault) und je Team ein eigener. Jeder Tresor wird für sich gesynct.
+const stores = () => ({ hosts, groups, snippets, forwards, keys, known });
+const vaultSnapshot = (v) => teamTools.snapshotVault(v, stores());
+const applyVault = (v, s) => teamTools.applyVault(v, s, stores());
+const snapshot = () => vaultSnapshot('personal'), applySnapshot = (s) => applyVault('personal', s);
+const purgeVault = (v) => teamTools.purgeVault(v, stores());
+const allSig = () => JSON.stringify([hosts.raw(), groups.raw(), snippets.raw(), forwards.raw(), keys.raw()]);
+
+// ---- Teams (geteilte Tresore) ----
+let teamsFile;
+const teamKeys = new Map(); // Teamschlüssel nur im Speicher; werden bei jedem Abgleich aus dem eingepackten Schlüssel des Servers geholt
+const loadTeams = () => { try { return JSON.parse(fs.readFileSync(teamsFile, 'utf8')); } catch { return []; } };
+const teamCtx = () => {
+  const c = loadSyncCfg(); if (!c) return null;
+  const ident = teamTools.identity(Buffer.from(crypt.decrypt(c.key), 'base64'));
+  return { c, ident, api: new teamTools.TeamBackend(new syncTools.Backend({ url: c.server, token: crypt.decrypt(c.token) }, backendOpts(c.server))) };
+};
+async function refreshTeams(ctx) {
+  const rows = await ctx.api.list();
+  const out = rows.map((r) => {
+    try { teamKeys.set(r.id, teamTools.keyOf(ctx.ident, r)); } catch { teamKeys.delete(r.id); }
+    return { id: r.id, name: r.name, role: r.role, keyVersion: r.keyVersion, members: r.members };
+  });
+  for (const t of loadTeams()) if (!out.some((o) => o.id === t.id)) { purgeVault(t.id); teamKeys.delete(t.id); } // nicht mehr Mitglied: lokale Kopie entfernen
+  fs.writeFileSync(teamsFile, JSON.stringify(out), { mode: 0o600 });
+  return out;
+}
+// Jedes Team einzeln abgleichen; Betrachter lesen nur. Fehler eines Teams stoppen die anderen nicht.
+async function syncTeams(ctx) {
+  const errors = [];
+  for (const t of await refreshTeams(ctx)) {
+    const key = teamKeys.get(t.id);
+    if (!key) { errors.push(`${t.name}: Teamschlüssel fehlt`); continue; }
+    try {
+      const cloud = ctx.api.vault(t.id, t.keyVersion);
+      await syncTools.syncOnce({ cloud: t.role === 'viewer' ? { getVault: cloud.getVault, putVault: async () => true } : cloud, key, local: { get: () => vaultSnapshot(t.id), set: (s) => applyVault(t.id, s) } });
+    } catch (e) { errors.push(`${t.name}: ${e.message}`); }
+  }
+  return errors.join(' · ');
+}
 
 async function runSync() {
   const c = loadSyncCfg();
@@ -74,11 +113,12 @@ async function runSync() {
   syncing = true; syncState.status = 'syncing'; syncState.error = '';
   send('sync:status', syncStatus());
   try {
-    const before = JSON.stringify(snapshot());
+    const before = allSig();
     const cloud = new syncTools.Backend({ url: c.server, token: crypt.decrypt(c.token) }, backendOpts(c.server));
     await syncTools.syncOnce({ cloud, key: Buffer.from(crypt.decrypt(c.key), 'base64'), local: { get: snapshot, set: applySnapshot } });
     syncState.status = 'ok'; syncState.lastSync = Date.now();
-    if (JSON.stringify(snapshot()) !== before) send('hosts:changed'); // andere Geräte haben etwas geändert
+    try { const ctx = teamCtx(); await ctx.api.setPubkey(ctx.ident.pub); syncState.teamError = await syncTeams(ctx); } catch (e) { syncState.teamError = e.message === 'fetch failed' ? 'Server nicht erreichbar.' : e.message; }
+    if (allSig() !== before) send('hosts:changed'); // andere Geräte haben etwas geändert
   } catch (e) {
     if (e.status === 401) { // Sitzung ungültig: zurück zum Login
       fs.rmSync(syncCfgFile, { force: true });
@@ -386,6 +426,7 @@ app.whenReady().then(() => {
   snippets = plain(path.join(dir, 'snippets.json'));
   forwards = plain(path.join(dir, 'forwards.json'));
   known = plain(path.join(dir, 'known_hosts.json'));
+  teamsFile = path.join(dir, 'teams.json');
 
   const win = new BrowserWindow({
     width: 1200, height: 740, minWidth: 720, minHeight: 480, show: false, icon: path.join(__dirname, 'assets', 'icon-512.png'),
@@ -425,6 +466,32 @@ app.whenReady().then(() => {
     return { ok: true };
   });
   if (updCfg().auto) { setTimeout(checkUpdate, 8000); setInterval(() => updCfg().auto && checkUpdate(), 6 * 36e5); }
+  // ---- Teams: Rückgabe { ... } oder { error } ----
+  const teamErr = (e) => (e.message === 'fetch failed' ? 'Server nicht erreichbar.' : e.status ? e.message : 'Team-Aktion fehlgeschlagen');
+  const teamKey = async (ctx, id) => { if (!teamKeys.has(id)) await refreshTeams(ctx); const k = teamKeys.get(id); if (!k) throw Object.assign(new Error('Schlüssel fehlt'), { status: 400 }); return k; };
+  const teamDo = (fn, { sync = true } = {}) => async (_, ...a) => {
+    const ctx = teamCtx();
+    if (!ctx) return { error: 'Nicht angemeldet' };
+    try { const r = await fn(ctx, ...a); if (sync) { send('teams:changed'); scheduleSync(); } return r ?? {}; } catch (e) { return { error: teamErr(e) }; }
+  };
+  ipcMain.handle('team:list', async () => {
+    const ctx = teamCtx();
+    if (!ctx) return { teams: loadTeams(), signedOut: true };
+    try { await ctx.api.setPubkey(ctx.ident.pub); return { teams: await refreshTeams(ctx) }; } catch (e) { return { teams: loadTeams(), error: teamErr(e) }; }
+  });
+  ipcMain.handle('team:create', teamDo(async (ctx, name) => { const { id, key } = await teamTools.createTeam(ctx.api, ctx.ident, String(name || '')); teamKeys.set(id, key); await refreshTeams(ctx); return { id }; }));
+  ipcMain.handle('team:members', teamDo(async (ctx, id) => {
+    const r = await ctx.api.get(id);
+    return { role: r.team.role, members: r.members.map((m) => ({ userId: m.userId, email: m.email, role: m.role, fingerprint: teamTools.fingerprint(m.pubkey), me: m.pubkey === ctx.ident.pub })) };
+  }, { sync: false }));
+  ipcMain.handle('team:invite', teamDo(async (ctx, id, email, role) => teamTools.invite(ctx.api, ctx.ident, id, await teamKey(ctx, id), String(email || '').trim(), role)));
+  ipcMain.handle('team:setRole', teamDo((ctx, id, userId, role) => ctx.api.setRole(id, userId, role)));
+  ipcMain.handle('team:remove', teamDo(async (ctx, id, userId) => { teamKeys.set(id, await teamTools.removeMembers(ctx.api, ctx.ident, id, await teamKey(ctx, id), [userId])); await refreshTeams(ctx); }));
+  ipcMain.handle('team:leave', teamDo(async (ctx, id) => {
+    const me = (await ctx.api.get(id)).members.find((m) => m.pubkey === ctx.ident.pub);
+    await ctx.api.leave(id, me.userId); await refreshTeams(ctx); send('hosts:changed');
+  }));
+  ipcMain.handle('team:delete', teamDo(async (ctx, id) => { await ctx.api.remove(id); await refreshTeams(ctx); send('hosts:changed'); }));
   handle('sync:status', () => syncStatus());
   handle('sync:now', () => { runSync(); });
   handle('sync:logout', async () => {
@@ -462,10 +529,22 @@ app.whenReady().then(() => {
   });
   handle('hosts:list', () => hosts.list());
   handle('hosts:get', (_, id) => { const h = hosts.get(id); return h && { ...h, secret: undefined, hasSecret: !!h.secret }; });
-  handle('hosts:save', (_, h) => hosts.save(h));
+  const vOf = (r) => (r && r.vault) || 'personal';
+  const ensureGroup = (name, vault) => { if (name && !groups.list().some((g) => g.name === name && vOf(g) === vault)) groups.save({ name, ...(vault !== 'personal' && { vault }) }); };
+  // Wechselt ein Host den Tresor, entsteht er im neuen Tresor neu (neue id) und der alte bekommt einen Löschmarker; sonst würden zwei Tresore dieselbe id beanspruchen.
+  handle('hosts:save', (_, h) => {
+    const old = h.id && hosts.get(h.id), vault = h.vault || vOf(old);
+    ensureGroup(h.group, vault);
+    if (old && vOf(old) !== vault) {
+      const id = hosts.save({ ...h, id: undefined, secret: h.secret ?? old.secret, vault: vault === 'personal' ? undefined : vault });
+      hosts.remove(h.id);
+      return id;
+    }
+    return hosts.save({ ...h, vault: vault === 'personal' ? undefined : vault });
+  });
   handle('hosts:remove', (_, id) => hosts.remove(id));
-  // Gruppen: Rückgabe null oder Fehlertext
-  const reGroup = (from, to) => hosts.list().filter((h) => h.group === from).forEach((h) => hosts.save({ ...h, group: to }));
+  // Gruppen: Rückgabe null oder Fehlertext. Namen sind je Tresor eindeutig.
+  const reGroup = (from, to, vault) => hosts.list().filter((h) => h.group === from && vOf(h) === vault).forEach((h) => hosts.save({ ...h, group: to }));
   // ---- Host-Import (Vorschau, dann übernehmen). Die geparsten Hosts bleiben im Hauptprozess; die Oberfläche sieht keine Passwörter. ----
   const IMPORT_FILTERS = {
     csv: [{ name: 'CSV', extensions: ['csv', 'txt'] }, { name: 'Alle Dateien', extensions: ['*'] }],
@@ -494,15 +573,15 @@ app.whenReady().then(() => {
       return { hosts: lastImport.map(({ secret, ...h }) => h), skipped: parsed.skipped };
     } catch (e) { return { error: e.message }; }
   });
-  handle('import:commit', () => {
-    const have = new Set(hosts.list().map(dupKey));
+  handle('import:commit', (_, vault = 'personal') => {
+    const have = new Set(hosts.list().filter((h) => vOf(h) === vault).map(dupKey));
     const keyByPath = new Map(keys.list().filter((k) => k.path).map((k) => [k.path, k.id]));
     let added = 0;
     for (const h of lastImport) {
       if (h.dup || have.has(dupKey(h))) continue;
-      if (h.group && !groups.list().some((g) => g.name === h.group)) groups.save({ name: h.group }); // Gruppen werden bei Bedarf angelegt
+      ensureGroup(h.group, vault); // Gruppen werden bei Bedarf angelegt
       const keyId = keyByPath.get(h.keyPath) || ''; // Schlüsseldatei aus ~/.ssh -> Keychain-Eintrag, sonst Pfad behalten
-      hosts.save({ name: h.name, group: h.group, host: h.host, port: h.port, user: h.user, tags: h.tags, keyId, keyPath: keyId ? '' : h.keyPath, secret: h.secret || undefined });
+      hosts.save({ name: h.name, group: h.group, host: h.host, port: h.port, user: h.user, tags: h.tags, keyId, keyPath: keyId ? '' : h.keyPath, secret: h.secret || undefined, ...(vault !== 'personal' && { vault }) });
       have.add(dupKey(h)); added++;
     }
     lastImport = [];
@@ -526,25 +605,25 @@ app.whenReady().then(() => {
   });
   ipcMain.on('hostkey:answer', (_, id, ok) => { hostKeyAsk.get(id)?.(!!ok); hostKeyAsk.delete(id); });
   handle('groups:list', () => groups.list());
-  handle('groups:create', (_, name) => {
+  handle('groups:create', (_, name, vault = 'personal') => {
     name = String(name).trim();
     if (!name) return 'Name fehlt';
-    if (groups.list().some((g) => g.name === name)) return 'Gruppe existiert bereits';
-    groups.save({ name });
+    if (groups.list().some((g) => g.name === name && vOf(g) === vault)) return 'Gruppe existiert bereits';
+    groups.save({ name, ...(vault !== 'personal' && { vault }) });
     return null;
   });
   handle('groups:rename', (_, id, name) => {
     name = String(name).trim();
     const g = groups.list().find((x) => x.id === id);
     if (!g || !name) return 'Ungültig';
-    if (groups.list().some((x) => x.name === name && x.id !== id)) return 'Gruppe existiert bereits';
-    reGroup(g.name, name);
+    if (groups.list().some((x) => x.name === name && x.id !== id && vOf(x) === vOf(g))) return 'Gruppe existiert bereits';
+    reGroup(g.name, name, vOf(g));
     groups.save({ ...g, name });
     return null;
   });
   handle('groups:remove', (_, id) => { // Hosts bleiben erhalten, nur ohne Gruppe
     const g = groups.list().find((x) => x.id === id);
-    if (g) { reGroup(g.name, ''); groups.remove(id); }
+    if (g) { reGroup(g.name, '', vOf(g)); groups.remove(id); }
   });
   handle('snippets:list', () => snippets.list());
   handle('snippets:save', (_, s) => snippets.save(s));
@@ -561,7 +640,7 @@ app.whenReady().then(() => {
   handle('keys:generate', (_, o) => {
     try {
       const g = keyTools.generate(o);
-      keys.add({ name: o.name, source: 'generated', type: g.type, publicKey: g.publicKey, fingerprint: g.fingerprint, privateKey: g.privateKey, passphrase: o.passphrase, encrypted: !!o.passphrase });
+      keys.add({ name: o.name, source: 'generated', type: g.type, publicKey: g.publicKey, fingerprint: g.fingerprint, privateKey: g.privateKey, passphrase: o.passphrase, encrypted: !!o.passphrase, ...(o.vault && o.vault !== 'personal' && { vault: o.vault }) });
       return null;
     } catch (e) { return e.message; }
   });
@@ -572,7 +651,7 @@ app.whenReady().then(() => {
       if (!name) return 'Name fehlt';
       const g = keyTools.importKey(o);
       keys.add({ name, source: 'added', type: g.type, publicKey: g.publicKey, fingerprint: g.fingerprint, privateKey: g.privateKey, passphrase: o.passphrase || undefined,
-        encrypted: g.encrypted || !!o.passphrase, publicOnly: g.publicOnly });
+        encrypted: g.encrypted || !!o.passphrase, publicOnly: g.publicOnly, ...(o.vault && o.vault !== 'personal' && { vault: o.vault }) });
       return null;
     } catch (e) { return e.message; }
   });

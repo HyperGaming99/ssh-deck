@@ -43,6 +43,8 @@ SSH Deck is a desktop app (Electron + React) to connect to your servers. You kee
 
 **Port forwarding** – local, remote and dynamic (SOCKS5), set up with a guided wizard
 
+**Teams** – shared vaults for hosts (with passwords), snippets, forwarding rules and SSH keys. Switch between *Personal* and team vaults in the title bar; owners and admins invite people by email and give them a role (admin, member, viewer). Everything is end-to-end encrypted, removing a member renews the team key, and every member's key fingerprint is shown so invitations can be verified in person. Needs the cloud-sync server (`node server/server.js`) and an account.
+
 **Privacy &amp; sync** – optional cloud sync with end-to-end encryption (the server stores only ciphertext), secrets encrypted with the OS keystore, **Tor routing** for sync and/or servers
 
 **More** – 16 languages (incl. right-to-left), light and dark UI, in-app updater

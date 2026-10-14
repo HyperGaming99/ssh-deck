@@ -64,6 +64,7 @@ class Backend {
     this.token = token;
     this.fetch = opts.fetch || fetch;
   }
+  request(method, p, body) { return this.#req(method, p, body); } // für Team-Funktionen (teams.js)
   async #req(method, p, body) {
     const res = await this.fetch(`${this.url}/api/${p}`, {
       method, body: body && JSON.stringify(body),

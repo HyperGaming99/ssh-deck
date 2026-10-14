@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 const FORMATS = [['ssh', '~/.ssh/config', FolderOpen], ['csv', 'CSV / Termius', FileSpreadsheet], ['putty', 'PuTTY', TerminalSquare], ['mobaxterm', 'MobaXterm', LayoutGrid], ['securecrt', 'SecureCRT', ShieldCheck]];
 
 // Schritt 1: Format wählen (Datei öffnet sich). Schritt 2: Vorschau mit Zahlen, dann importieren.
-export default function ImportDialog({ open, onClose, onDone, toast }) {
+export default function ImportDialog({ open, onClose, onDone, toast, vault = 'personal' }) {
   const t = useT();
   const [data, setData] = useState(null);
   const [fmt, setFmt] = useState('');
@@ -26,7 +26,7 @@ export default function ImportDialog({ open, onClose, onDone, toast }) {
   };
   const commit = async () => {
     setBusy(true);
-    const n = await api.importer.commit();
+    const n = await api.importer.commit(vault);
     setBusy(false);
     toast(t('{n} Hosts importiert.', { n }));
     onDone(); close();

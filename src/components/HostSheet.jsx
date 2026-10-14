@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Eye, EyeOff, FolderOpen, KeyRound, Lock, Plus, Tag, Trash2, Type, User, X } from 'lucide-react';
+import { ChevronDown, Eye, EyeOff, FolderOpen, KeyRound, Lock, Plus, Tag, Trash2, Type, User, Users, X } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,8 @@ export default function HostSheet({ spec, onClose }) {
   const set = (k) => (e) => setV((o) => ({ ...o, [k]: e.target.value }));
   const pick = (k) => (x) => setV((o) => ({ ...o, [k]: x === '__none' ? '' : x }));
   const editing = !!spec.values.id;
+  const cur = v.vault || 'personal', vaults = spec.vaults || [];
+  const pickVault = (x) => setV((o) => ({ ...o, vault: x, group: '', keyId: '' })); // Gruppen und Schlüssel gehören zu einem Tresor
 
   const submit = async (e) => {
     e.preventDefault();
@@ -79,12 +81,20 @@ export default function HostSheet({ spec, onClose }) {
 
             <Card title={t('Allgemein')}>
               <Field icon={Type}><Input className={inputCls} placeholder={t('Name')} autoComplete="off" value={v.name ?? ''} onChange={set('name')} /></Field>
+              {vaults.length > 1 && (
+                <Field icon={Users}>
+                  <Select value={cur} onValueChange={pickVault}>
+                    <SelectTrigger className={triggerCls}><SelectValue placeholder={t('Tresor')} /></SelectTrigger>
+                    <SelectContent>{vaults.map((x) => <SelectItem key={x.id} value={x.id}>{x.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                </Field>
+              )}
               <Field icon={FolderOpen}>
                 <Select value={v.group || '__none'} onValueChange={pick('group')}>
                   <SelectTrigger className={triggerCls}><SelectValue placeholder={t('Gruppe')} /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none">{t('Keine Gruppe')}</SelectItem>
-                    {spec.groups.map((g) => <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>)}
+                    {spec.groups.filter((g) => (g.vault || 'personal') === cur).map((g) => <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </Field>
@@ -114,7 +124,7 @@ export default function HostSheet({ spec, onClose }) {
                       <SelectTrigger className={triggerCls}><SelectValue placeholder={t('Schlüssel (Keychain)')} /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="__none">{t('Kein Schlüssel (Passwort)')}</SelectItem>
-                        {spec.keys.filter((k) => !k.publicOnly).map((k) => <SelectItem key={k.id} value={k.id}>{`${k.name} · ${k.type}`}</SelectItem>)}
+                        {spec.keys.filter((k) => !k.publicOnly && (k.vault || 'personal') === cur).map((k) => <SelectItem key={k.id} value={k.id}>{`${k.name} · ${k.type}`}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </Field>

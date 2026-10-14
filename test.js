@@ -508,3 +508,100 @@ const mock = {
   srv.close(); fs.rmSync(work, { recursive: true, force: true });
   console.log('updater ok');
 })().catch((e) => { console.error(e); process.exit(1); });
+
+// Teams: Schlüsselaustausch, geteilter Tresor, Rollen, Entfernen mit neuem Schlüssel (echter Server, drei Nutzer)
+(async () => {
+  const teams = require('./teams');
+  const { srv, url } = await listen({});
+  const mk = async (email) => {
+    const k = sync.deriveKeys(email, 'pw'), b = new sync.Backend({ url });
+    const token = (await b.register(email, k.auth)).token, be = new sync.Backend({ url, token });
+    return { email, api: new teams.TeamBackend(be), ident: teams.identity(k.enc) };
+  };
+  const [A, B, C] = [await mk('a@t.de'), await mk('b@t.de'), await mk('c@t.de')];
+  await Promise.all([B, C].map((u) => u.api.setPubkey(u.ident.pub)));
+  assert.equal(teams.identity(sync.deriveKeys('a@t.de', 'pw').enc).pub, A.ident.pub, 'Schlüsselpaar ist aus dem Passwort ableitbar (jedes Gerät gleich)');
+
+  const { id, key } = await teams.createTeam(A.api, A.ident, 'Ops');
+  await assert.rejects(teams.invite(A.api, A.ident, id, key, 'nobody@t.de', 'member'), /nicht gefunden/);
+  const inv = await teams.invite(A.api, A.ident, id, key, 'b@t.de', 'member');
+  assert.equal(inv.fingerprint, teams.fingerprint(B.ident.pub), 'Fingerabdruck zum Vergleichen');
+  await teams.invite(A.api, A.ident, id, key, 'c@t.de', 'viewer');
+  await assert.rejects(teams.invite(A.api, A.ident, id, key, 'b@t.de', 'member'), /bereits/);
+  await assert.rejects(teams.invite(B.api, B.ident, id, key, 'a@t.de', 'member'), (e) => e.status === 403, 'Mitglied darf nicht einladen');
+
+  // jeder Eingeladene bekommt den Teamschlüssel und kann den Tresor lesen/schreiben
+  const rowOf = async (u) => (await u.api.list()).find((t) => t.id === id);
+  const kB = teams.keyOf(B.ident, await rowOf(B)), kC = teams.keyOf(C.ident, await rowOf(C));
+  assert(kB.equals(key) && kC.equals(key), 'Schlüssel kommt bei Mitgliedern an');
+  const run = async (u, k, data) => { // wie runSync: lokal = { hosts: [...] }
+    let local = { hosts: data };
+    const row = await rowOf(u);
+    await sync.syncOnce({ cloud: u.api.vault(id, row.keyVersion), key: k, local: { get: () => local, set: (m) => { local = m; } } });
+    return local.hosts;
+  };
+  await run(A, key, [{ id: 'h1', name: 'web', updatedAt: 1 }]);
+  assert.deepEqual((await run(B, kB, [{ id: 'h2', name: 'db', updatedAt: 2 }])).map((h) => h.id).sort(), ['h1', 'h2'], 'Mitglied sieht und ergänzt');
+  assert.equal((await run(C, kC, [])).length, 2, 'Betrachter liest');
+  await assert.rejects(run(C, kC, [{ id: 'h3', name: 'x', updatedAt: 3 }]), (e) => e.status === 403, 'Betrachter darf nicht schreiben');
+  const stranger = await mk('d@t.de');
+  await assert.rejects(stranger.api.get(id), (e) => e.status === 404, 'Fremde sehen das Team nicht');
+
+  // B entfernen: Schlüssel wechselt, B ist draußen, A und C arbeiten weiter
+  await assert.rejects(teams.removeMembers(B.api, B.ident, id, kB, [A.ident ? 1 : 0]), (e) => e.status === 403, 'Mitglied darf nicht entfernen');
+  const members = (await A.api.get(id)).members, bId = members.find((m) => m.email === 'b@t.de').userId;
+  const key2 = await teams.removeMembers(A.api, A.ident, id, key, [bId]);
+  assert(!key2.equals(key));
+  await assert.rejects(B.api.get(id), (e) => e.status === 404, 'B ist draußen');
+  assert.equal((await B.api.list()).length, 0);
+  assert(teams.keyOf(C.ident, await rowOf(C)).equals(key2), 'C bekommt den neuen Schlüssel');
+  assert.equal((await run(C, key2, [])).length, 2, 'Daten sind unter dem neuen Schlüssel lesbar');
+  const blob2 = (await C.api.vault(id, 2).getVault()).blob;
+  assert.throws(() => sync.open(key, blob2), 'alter Schlüssel passt nicht mehr');
+
+  // Rollen ändern, austreten, löschen
+  const cId = members.find((m) => m.email === 'c@t.de').userId;
+  await A.api.setRole(id, cId, 'member');
+  await assert.rejects(C.api.setRole(id, cId, 'admin'), (e) => e.status === 403, 'Niemand befördert sich selbst');
+  await C.api.leave(id, cId);
+  assert.equal((await C.api.list()).length, 0);
+  await assert.rejects(A.api.leave(id, members.find((m) => m.email === 'a@t.de').userId), /Besitzer/);
+  await assert.rejects(C.api.remove(id), (e) => e.status === 404);
+  await A.api.remove(id);
+  assert.equal((await A.api.list()).length, 0);
+  srv.close();
+  console.log('teams ok');
+})().catch((e) => { console.error(e); process.exit(1); });
+
+// Tresore lokal: Team-Einträge bleiben getrennt vom persönlichen Tresor (Speicher, Löschmarker, Anwenden, Entfernen)
+(() => {
+  const teams = require('./teams');
+  const { plain, hosts: mkHosts, keys: mkKeys } = require('./store');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'deck-vault-'));
+  const crypt = { encrypt: (x) => 'enc:' + x, decrypt: (x) => String(x).replace(/^enc:/, '') };
+  const st = { hosts: mkHosts(path.join(dir, 'h.json'), crypt), groups: plain(path.join(dir, 'g.json')), snippets: plain(path.join(dir, 's.json')), forwards: plain(path.join(dir, 'f.json')), known: plain(path.join(dir, 'k.json')), keys: mkKeys(path.join(dir, 'keys.json'), crypt) };
+  const mine = st.hosts.save({ name: 'privat', host: 'a', user: 'u', secret: 'pw1' });
+  const shared = st.hosts.save({ name: 'team-host', host: 'b', user: 'u', secret: 'pw2', vault: 'T1' });
+  st.keys.add({ name: 'team-key', privateKey: 'PRIV', vault: 'T1' }); st.keys.add({ name: 'mein-key', privateKey: 'PRIV2' });
+  assert.equal(st.hosts.list().find((h) => h.id === shared).vault, 'T1', 'Host merkt sich den Tresor');
+  assert.deepEqual(teams.snapshotVault('personal', st).hosts.map((h) => h.id), [mine], 'persönlicher Tresor enthält keine Team-Hosts');
+  assert.deepEqual(teams.snapshotVault('T1', st).hosts.map((h) => h.id), [shared]);
+  assert.equal(teams.snapshotVault('T1', st).hosts[0].secret, 'pw2', 'Passwort im Team-Tresor (der wird verschlüsselt übertragen)');
+  assert(!('keys' in teams.snapshotVault('personal', st)) && teams.snapshotVault('T1', st).keys.length === 1, 'SSH-Schlüssel nur im Team-Tresor');
+  assert.equal(teams.snapshotVault('T1', st).keys[0].privateKey, 'PRIV');
+
+  // Löschen im Team hinterlässt einen Marker, der im Team-Tresor bleibt
+  st.hosts.remove(shared);
+  const tomb = teams.snapshotVault('T1', st).hosts.find((h) => h.id === shared);
+  assert(tomb.deleted && tomb.vault === 'T1', 'Löschmarker behält den Tresor');
+  assert.equal(teams.snapshotVault('personal', st).hosts.length, 1);
+
+  // Anwenden eines Team-Stands berührt den persönlichen Tresor nicht
+  teams.applyVault('T1', { hosts: [{ id: 'x1', name: 'neu', host: 'c', vault: 'T1', updatedAt: 5, secret: 'pw3' }], groups: [], snippets: [], forwards: [], keys: [] }, st);
+  assert(st.hosts.list().some((h) => h.id === 'x1') && st.hosts.list().some((h) => h.id === mine), 'beide Tresore vorhanden');
+  assert.equal(st.hosts.get('x1').secret, 'pw3', 'Passwort lokal wieder lesbar');
+  teams.purgeVault('T1', st);
+  assert.deepEqual(st.hosts.list().map((h) => h.id), [mine], 'Team verlassen: nur Team-Einträge verschwinden');
+  assert.equal(st.keys.list().length, 1);
+  console.log('vaults ok');
+})();
