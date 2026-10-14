@@ -382,5 +382,8 @@
  "Mehr": "더보기",
  "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "키는 해당 보관함에 속해 있어 함께 옮겨지지 않았습니다.",
  "Host geklont.": "호스트를 복제했습니다.",
- "Host verschoben.": "호스트를 이동했습니다."
+ "Host verschoben.": "호스트를 이동했습니다.",
+ "Der private Schlüssel ist danach für alle Mitglieder des Teams sichtbar. Fortfahren?": "개인 키가 팀의 모든 구성원에게 보이게 됩니다. 계속할까요?",
+ "Schlüssel geklont.": "키를 복제했습니다.",
+ "Schlüssel verschoben.": "키를 이동했습니다."
 }

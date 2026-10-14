@@ -382,5 +382,8 @@
  "Mehr": "Plus",
  "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "La clé appartient à son coffre et n'a pas été reprise.",
  "Host geklont.": "Hôte cloné.",
- "Host verschoben.": "Hôte déplacé."
+ "Host verschoben.": "Hôte déplacé.",
+ "Der private Schlüssel ist danach für alle Mitglieder des Teams sichtbar. Fortfahren?": "La clé privée sera alors visible par tous les membres de l'équipe. Continuer ?",
+ "Schlüssel geklont.": "Clé clonée.",
+ "Schlüssel verschoben.": "Clé déplacée."
 }

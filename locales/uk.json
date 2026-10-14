@@ -382,5 +382,8 @@
  "Mehr": "Більше",
  "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "Ключ належить своєму сховищу й не був перенесений.",
  "Host geklont.": "Хост клоновано.",
- "Host verschoben.": "Хост переміщено."
+ "Host verschoben.": "Хост переміщено.",
+ "Der private Schlüssel ist danach für alle Mitglieder des Teams sichtbar. Fortfahren?": "Закритий ключ стане видимим для всіх учасників команди. Продовжити?",
+ "Schlüssel geklont.": "Ключ клоновано.",
+ "Schlüssel verschoben.": "Ключ переміщено."
 }

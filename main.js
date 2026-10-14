@@ -135,7 +135,7 @@ async function runSync() {
 const scheduleSync = () => { if (!loadSyncCfg()) return; clearTimeout(syncTimer); syncTimer = setTimeout(runSync, 3000); };
 
 // Änderungen über diese Kanäle lösen einen Sync aus
-const MUTATING = new Set(['hosts:save', 'hosts:copy', 'hosts:remove', 'groups:create', 'groups:rename', 'groups:remove', 'snippets:save', 'snippets:remove', 'fwd:save', 'fwd:remove', 'known:remove', 'known:import', 'import:commit']);
+const MUTATING = new Set(['hosts:save', 'hosts:copy', 'hosts:remove', 'keys:copy', 'keys:generate', 'keys:import', 'keys:remove', 'keys:rename', 'keys:setPassphrase', 'groups:create', 'groups:rename', 'groups:remove', 'snippets:save', 'snippets:remove', 'fwd:save', 'fwd:remove', 'known:remove', 'known:import', 'import:commit']);
 const handle = (ch, fn) => ipcMain.handle(ch, MUTATING.has(ch) ? async (...a) => { const r = await fn(...a); scheduleSync(); return r; } : fn);
 
 
@@ -679,6 +679,18 @@ app.whenReady().then(() => {
   });
   handle('keys:setPassphrase', (_, id, p) => keys.setPassphrase(id, p));
   handle('keys:remove', (_, id) => keys.remove(id));
+  // Schlüssel klonen/verschieben in einen anderen Tresor (z. B. ins Team: dann sehen alle Mitglieder auch den privaten Teil). Schlüssel aus ~/.ssh lassen sich nur klonen.
+  handle('keys:copy', (_, id, vault = 'personal', move = false) => {
+    const k = keys.get(id);
+    if (!k) return { error: 'Schlüssel oder Host nicht gefunden' };
+    let privateKey = k.privateKey;
+    if (!privateKey && k.path) { try { privateKey = fs.readFileSync(k.path, 'utf8'); } catch { /* Datei fehlt: nur öffentlicher Teil */ } }
+    if (move && k.path) return { error: 'Update fehlgeschlagen' };
+    const { id: _id, updatedAt: _u, hasPassphrase: _h, path: _p, ...rest } = k;
+    keys.add({ ...rest, privateKey, publicOnly: privateKey ? undefined : k.publicOnly, vault: vault === 'personal' ? undefined : vault });
+    if (move) keys.remove(id);
+    return {};
+  });
   handle('keys:exportPrivate', async (_, id) => {
     const k = keys.get(id);
     const { filePath } = await dialog.showSaveDialog(win, { defaultPath: k.name });

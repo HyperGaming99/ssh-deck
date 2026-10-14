@@ -382,5 +382,8 @@
  "Mehr": "Więcej",
  "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "Klucz należy do swojego skarbca i nie został przeniesiony.",
  "Host geklont.": "Host sklonowany.",
- "Host verschoben.": "Host przeniesiony."
+ "Host verschoben.": "Host przeniesiony.",
+ "Der private Schlüssel ist danach für alle Mitglieder des Teams sichtbar. Fortfahren?": "Klucz prywatny będzie widoczny dla wszystkich członków zespołu. Kontynuować?",
+ "Schlüssel geklont.": "Klucz sklonowany.",
+ "Schlüssel verschoben.": "Klucz przeniesiony."
 }

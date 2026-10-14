@@ -382,5 +382,8 @@
  "Mehr": "More",
  "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "The key belongs to its vault and was not taken along.",
  "Host geklont.": "Host cloned.",
- "Host verschoben.": "Host moved."
+ "Host verschoben.": "Host moved.",
+ "Der private Schlüssel ist danach für alle Mitglieder des Teams sichtbar. Fortfahren?": "The private key will then be visible to all team members. Continue?",
+ "Schlüssel geklont.": "Key cloned.",
+ "Schlüssel verschoben.": "Key moved."
 }

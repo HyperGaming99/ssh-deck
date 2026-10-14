@@ -382,5 +382,8 @@
  "Mehr": "Mais",
  "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "A chave pertence ao seu cofre e não foi incluída.",
  "Host geklont.": "Host clonado.",
- "Host verschoben.": "Host movido."
+ "Host verschoben.": "Host movido.",
+ "Der private Schlüssel ist danach für alle Mitglieder des Teams sichtbar. Fortfahren?": "A chave privada ficará visível para todos os membros da equipe. Continuar?",
+ "Schlüssel geklont.": "Chave clonada.",
+ "Schlüssel verschoben.": "Chave movida."
 }

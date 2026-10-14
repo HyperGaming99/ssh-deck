@@ -382,5 +382,8 @@
  "Mehr": "その他",
  "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "鍵はそれぞれの保管庫に属するため、引き継がれませんでした。",
  "Host geklont.": "ホストを複製しました。",
- "Host verschoben.": "ホストを移動しました。"
+ "Host verschoben.": "ホストを移動しました。",
+ "Der private Schlüssel ist danach für alle Mitglieder des Teams sichtbar. Fortfahren?": "秘密鍵がチームの全メンバーに見えるようになります。続行しますか?",
+ "Schlüssel geklont.": "鍵を複製しました。",
+ "Schlüssel verschoben.": "鍵を移動しました。"
 }

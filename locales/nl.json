@@ -382,5 +382,8 @@
  "Mehr": "Meer",
  "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "De sleutel hoort bij zijn kluis en is niet meegenomen.",
  "Host geklont.": "Host gekloond.",
- "Host verschoben.": "Host verplaatst."
+ "Host verschoben.": "Host verplaatst.",
+ "Der private Schlüssel ist danach für alle Mitglieder des Teams sichtbar. Fortfahren?": "De privésleutel is daarna zichtbaar voor alle teamleden. Doorgaan?",
+ "Schlüssel geklont.": "Sleutel gekloond.",
+ "Schlüssel verschoben.": "Sleutel verplaatst."
 }

@@ -382,5 +382,8 @@
  "Mehr": "और",
  "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "कुंजी अपने वॉल्ट की है और साथ नहीं ली गई।",
  "Host geklont.": "होस्ट क्लोन हो गया।",
- "Host verschoben.": "होस्ट ले जाया गया।"
+ "Host verschoben.": "होस्ट ले जाया गया।",
+ "Der private Schlüssel ist danach für alle Mitglieder des Teams sichtbar. Fortfahren?": "निजी कुंजी टीम के सभी सदस्यों को दिखाई देगी। जारी रखें?",
+ "Schlüssel geklont.": "कुंजी क्लोन हो गई।",
+ "Schlüssel verschoben.": "कुंजी ले जाई गई।"
 }

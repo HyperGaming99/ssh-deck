@@ -61,6 +61,7 @@ contextBridge.exposeInMainWorld('api', {
     rename: (id, name) => ipcRenderer.invoke('keys:rename', id, name),
     readFile: () => ipcRenderer.invoke('keys:readFile'),
     remove: (id) => ipcRenderer.invoke('keys:remove', id),
+    copy: (id, vault, move) => ipcRenderer.invoke('keys:copy', id, vault, move),
     exportPrivate: (id) => ipcRenderer.invoke('keys:exportPrivate', id),
     toHost: (keyId, hostId) => ipcRenderer.invoke('keys:toHost', keyId, hostId),
   },

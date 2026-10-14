@@ -253,7 +253,7 @@ function CensorButton({ on, toggle }) {
 
 function KeychainView({ dark, openForm, toast }) {
   const t = useT();
-  const { vault, writable } = useVault();
+  const { vault, writable, vaults } = useVault();
   const [items, setItems] = useState([]);
   const [q, setQ] = useState('');
   const [importOpen, setImportOpen] = useState(false);
@@ -278,6 +278,32 @@ function KeychainView({ dark, openForm, toast }) {
     ],
     onSubmit: async (v) => { const err = await api.keys.generate({ ...v, vault }); err ? toast(err) : load(); },
   });
+  // In einen anderen Tresor klonen/verschieben; im Team ist auch der private Teil für alle Mitglieder sichtbar
+  const copyKey = async (k, target, move) => {
+    if (target !== 'personal' && !confirm(t('Der private Schlüssel ist danach für alle Mitglieder des Teams sichtbar. Fortfahren?'))) return;
+    const r = await api.keys.copy(k.id, target, move);
+    if (r.error) return toast(r.error);
+    toast(move ? t('Schlüssel verschoben.') : t('Schlüssel geklont.'));
+    load();
+  };
+  const keyMenu = (k) => {
+    const others = vaults.filter((x) => x.id !== vault);
+    if (!others.length) return null;
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="size-8" aria-label={t('Mehr')} onClick={(e) => e.stopPropagation()}><Ellipsis className="size-3.5" /></Button></DropdownMenuTrigger>
+        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuLabel className="text-xs text-muted-foreground">{t('In Tresor klonen')}</DropdownMenuLabel>
+          {others.map((x) => <DropdownMenuItem key={`c${x.id}`} onSelect={() => copyKey(k, x.id, false)}>{x.id === 'personal' ? <User className="size-4" /> : <Users className="size-4" />}{x.name}</DropdownMenuItem>)}
+          {writable && !k.path && <>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs text-muted-foreground">{t('In Tresor verschieben')}</DropdownMenuLabel>
+            {others.map((x) => <DropdownMenuItem key={`m${x.id}`} onSelect={() => copyKey(k, x.id, true)}>{x.id === 'personal' ? <User className="size-4" /> : <Users className="size-4" />}{x.name}</DropdownMenuItem>)}
+          </>}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
   const rescan = async () => { const n = await api.keys.rescan(); toast(n ? t('{n} neue(r) Schlüssel aus ~/.ssh importiert.', { n }) : t('Keine neuen Schlüssel in ~/.ssh.')); load(); };
   const toHost = async (k) => openForm({
     title: t('Auf Host exportieren'), description: t('Trägt den öffentlichen Schlüssel „{name}“ in ~/.ssh/authorized_keys ein.', { name: k.name }), submitLabel: t('Exportieren'),
@@ -328,6 +354,7 @@ function KeychainView({ dark, openForm, toast }) {
             sub={`${k.type} · ${short(k.fingerprint)}`}
             onClick={() => k.publicKey && copy(k)}
             actions={<>
+              {keyMenu(k)}
               {writable && k.encrypted && <IconButton label={t('Passphrase setzen')} onClick={() => passphrase(k)}><Lock className="size-3.5" /></IconButton>}
               {k.publicKey && <IconButton label={t('Öffentlichen Schlüssel kopieren')} onClick={() => copy(k)}><Copy className="size-3.5" /></IconButton>}
               {k.publicKey && <IconButton label={t('Auf Host exportieren')} onClick={() => toHost(k)}><Send className="size-3.5" /></IconButton>}

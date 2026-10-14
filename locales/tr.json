@@ -382,5 +382,8 @@
  "Mehr": "Daha fazla",
  "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "Anahtar kendi kasasına ait olduğu için taşınmadı.",
  "Host geklont.": "Ana makine kopyalandı.",
- "Host verschoben.": "Ana makine taşındı."
+ "Host verschoben.": "Ana makine taşındı.",
+ "Der private Schlüssel ist danach für alle Mitglieder des Teams sichtbar. Fortfahren?": "Özel anahtar tüm ekip üyeleri tarafından görülebilir olacak. Devam edilsin mi?",
+ "Schlüssel geklont.": "Anahtar kopyalandı.",
+ "Schlüssel verschoben.": "Anahtar taşındı."
 }

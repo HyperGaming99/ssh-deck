@@ -382,5 +382,8 @@
  "Mehr": "المزيد",
  "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "المفتاح ينتمي إلى مخزنه ولم يُنقل معه.",
  "Host geklont.": "تم استنساخ المضيف.",
- "Host verschoben.": "تم نقل المضيف."
+ "Host verschoben.": "تم نقل المضيف.",
+ "Der private Schlüssel ist danach für alle Mitglieder des Teams sichtbar. Fortfahren?": "سيصبح المفتاح الخاص مرئيًا لجميع أعضاء الفريق. هل تريد المتابعة؟",
+ "Schlüssel geklont.": "تم استنساخ المفتاح.",
+ "Schlüssel verschoben.": "تم نقل المفتاح."
 }

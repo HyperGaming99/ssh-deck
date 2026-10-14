@@ -382,5 +382,8 @@
  "Mehr": "更多",
  "Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.": "密钥属于其保险库,未一并带走。",
  "Host geklont.": "主机已克隆。",
- "Host verschoben.": "主机已移动。"
+ "Host verschoben.": "主机已移动。",
+ "Der private Schlüssel ist danach für alle Mitglieder des Teams sichtbar. Fortfahren?": "私钥将对团队所有成员可见。要继续吗?",
+ "Schlüssel geklont.": "密钥已克隆。",
+ "Schlüssel verschoben.": "密钥已移动。"
 }
