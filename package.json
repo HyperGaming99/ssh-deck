@@ -1,15 +1,18 @@
 {
   "name": "ssh-deck",
   "desktopName": "ssh-deck.desktop",
-  "updates": { "repo": "HyperGaming99/ssh-deck" },
-  "version": "0.1.1",
+  "updates": {
+    "repo": "HyperGaming99/ssh-deck"
+  },
+  "version": "0.1.2",
   "description": "Minimaler SSH-Client im Stil von Termius",
   "main": "main.js",
   "scripts": {
     "start": "node start.js",
     "test": "node test.js",
     "build": "vite build",
-    "server": "node server/server.js"
+    "server": "node server/server.js",
+    "dist": "electron-builder --publish never"
   },
   "dependencies": {
     "@fontsource/fira-code": "^5.3.0",
@@ -36,6 +39,63 @@
     "@vitejs/plugin-react": "^6.1.2",
     "electron": "^33.0.0",
     "tailwindcss": "^4.3.3",
-    "vite": "^8.3.4"
+    "vite": "^8.3.4",
+    "electron-builder": "^25.1.8"
+  },
+  "author": {
+    "name": "HyperGaming99",
+    "email": "130169800+HyperGaming99@users.noreply.github.com"
+  },
+  "homepage": "https://github.com/HyperGaming99/ssh-deck",
+  "license": "UNLICENSED",
+  "build": {
+    "appId": "com.hypergaming.sshdeck",
+    "productName": "SSH Deck",
+    "copyright": "HyperGaming99",
+    "directories": {
+      "output": "release",
+      "buildResources": "assets"
+    },
+    "npmRebuild": false,
+    "asar": true,
+    "files": [
+      "*.js",
+      "!test.js",
+      "!start.js",
+      "!vite.config.js",
+      "dist/**/*",
+      "assets/icon-512.png",
+      "package.json"
+    ],
+    "artifactName": "ssh-deck-${version}-${env.SHORT_SHA}-${os}-${arch}.${ext}",
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Network",
+      "icon": "icon.png",
+      "maintainer": "HyperGaming99 <130169800+HyperGaming99@users.noreply.github.com>",
+      "synopsis": "SSH client with SFTP, keychain and themes"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.developer-tools",
+      "icon": "icon.png",
+      "identity": null
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }
