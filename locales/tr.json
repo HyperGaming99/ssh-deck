@@ -373,5 +373,6 @@
  "Tresor": "Kasa",
  "Tresor öffnen": "Kasayı aç",
  "{n} Mitglieder": "{n} üye",
- "Team-Aktion fehlgeschlagen": "Ekip işlemi başarısız oldu"
+ "Team-Aktion fehlgeschlagen": "Ekip işlemi başarısız oldu",
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "Sunucu henüz ekipleri tanımıyor. Lütfen sunucuyu güncelleyin."
 }

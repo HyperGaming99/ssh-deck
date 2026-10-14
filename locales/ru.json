@@ -373,5 +373,6 @@
  "Tresor": "Хранилище",
  "Tresor öffnen": "Открыть хранилище",
  "{n} Mitglieder": "Участников: {n}",
- "Team-Aktion fehlgeschlagen": "Не удалось выполнить действие с командой"
+ "Team-Aktion fehlgeschlagen": "Не удалось выполнить действие с командой",
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "Сервер ещё не поддерживает команды. Обновите сервер."
 }

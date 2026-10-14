@@ -373,5 +373,6 @@
  "Tresor": "保险库",
  "Tresor öffnen": "打开保险库",
  "{n} Mitglieder": "{n} 位成员",
- "Team-Aktion fehlgeschlagen": "团队操作失败"
+ "Team-Aktion fehlgeschlagen": "团队操作失败",
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "服务器尚不支持团队功能,请更新服务器。"
 }

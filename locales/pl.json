@@ -373,5 +373,6 @@
  "Tresor": "Skarbiec",
  "Tresor öffnen": "Otwórz skarbiec",
  "{n} Mitglieder": "{n} członków",
- "Team-Aktion fehlgeschlagen": "Akcja zespołu nie powiodła się"
+ "Team-Aktion fehlgeschlagen": "Akcja zespołu nie powiodła się",
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "Serwer nie obsługuje jeszcze zespołów. Zaktualizuj serwer."
 }

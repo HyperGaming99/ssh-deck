@@ -373,5 +373,6 @@
  "Tresor": "Kluis",
  "Tresor öffnen": "Kluis openen",
  "{n} Mitglieder": "{n} leden",
- "Team-Aktion fehlgeschlagen": "Teamactie mislukt"
+ "Team-Aktion fehlgeschlagen": "Teamactie mislukt",
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "De server kent nog geen teams. Werk de server bij."
 }

@@ -467,7 +467,7 @@ app.whenReady().then(() => {
   });
   if (updCfg().auto) { setTimeout(checkUpdate, 8000); setInterval(() => updCfg().auto && checkUpdate(), 6 * 36e5); }
   // ---- Teams: Rückgabe { ... } oder { error } ----
-  const teamErr = (e) => (e.message === 'fetch failed' ? 'Server nicht erreichbar.' : e.status ? e.message : 'Team-Aktion fehlgeschlagen');
+  const teamErr = (e) => (e.message === 'fetch failed' ? 'Server nicht erreichbar.' : e.status === 404 && e.message === 'Nicht gefunden' ? 'Der Server kennt noch keine Teams. Bitte den Server aktualisieren.' : e.status ? e.message : 'Team-Aktion fehlgeschlagen');
   const teamKey = async (ctx, id) => { if (!teamKeys.has(id)) await refreshTeams(ctx); const k = teamKeys.get(id); if (!k) throw Object.assign(new Error('Schlüssel fehlt'), { status: 400 }); return k; };
   const teamDo = (fn, { sync = true } = {}) => async (_, ...a) => {
     const ctx = teamCtx();

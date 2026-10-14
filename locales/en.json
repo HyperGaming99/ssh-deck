@@ -373,5 +373,6 @@
  "Tresor": "Vault",
  "Tresor öffnen": "Open vault",
  "{n} Mitglieder": "{n} members",
- "Team-Aktion fehlgeschlagen": "Team action failed"
+ "Team-Aktion fehlgeschlagen": "Team action failed",
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "The server does not know teams yet. Please update the server."
 }

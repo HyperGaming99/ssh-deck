@@ -373,5 +373,6 @@
  "Tresor": "Coffre",
  "Tresor öffnen": "Ouvrir le coffre",
  "{n} Mitglieder": "{n} membres",
- "Team-Aktion fehlgeschlagen": "L'action d'équipe a échoué"
+ "Team-Aktion fehlgeschlagen": "L'action d'équipe a échoué",
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "Le serveur ne gère pas encore les équipes. Veuillez mettre le serveur à jour."
 }

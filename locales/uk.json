@@ -373,5 +373,6 @@
  "Tresor": "Сховище",
  "Tresor öffnen": "Відкрити сховище",
  "{n} Mitglieder": "Учасників: {n}",
- "Team-Aktion fehlgeschlagen": "Не вдалося виконати дію з командою"
+ "Team-Aktion fehlgeschlagen": "Не вдалося виконати дію з командою",
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "Сервер ще не підтримує команди. Оновіть сервер."
 }

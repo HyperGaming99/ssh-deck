@@ -373,5 +373,6 @@
  "Tresor": "Tesoro",
  "Tresor öffnen": "Abrir tesoro",
  "{n} Mitglieder": "{n} miembros",
- "Team-Aktion fehlgeschlagen": "La acción del equipo falló"
+ "Team-Aktion fehlgeschlagen": "La acción del equipo falló",
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "El servidor aún no conoce los equipos. Actualiza el servidor."
 }

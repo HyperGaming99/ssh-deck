@@ -373,5 +373,6 @@
  "Tresor": "Cofre",
  "Tresor öffnen": "Abrir cofre",
  "{n} Mitglieder": "{n} membros",
- "Team-Aktion fehlgeschlagen": "A ação da equipe falhou"
+ "Team-Aktion fehlgeschlagen": "A ação da equipe falhou",
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "O servidor ainda não conhece equipes. Atualize o servidor."
 }

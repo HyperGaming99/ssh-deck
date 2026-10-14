@@ -373,5 +373,6 @@
  "Tresor": "वॉल्ट",
  "Tresor öffnen": "वॉल्ट खोलें",
  "{n} Mitglieder": "{n} सदस्य",
- "Team-Aktion fehlgeschlagen": "टीम कार्रवाई विफल रही"
+ "Team-Aktion fehlgeschlagen": "टीम कार्रवाई विफल रही",
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "सर्वर अभी टीम को नहीं जानता। कृपया सर्वर अपडेट करें।"
 }

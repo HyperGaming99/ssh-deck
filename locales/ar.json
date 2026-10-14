@@ -373,5 +373,6 @@
  "Tresor": "المخزن",
  "Tresor öffnen": "فتح المخزن",
  "{n} Mitglieder": "{n} أعضاء",
- "Team-Aktion fehlgeschlagen": "فشل إجراء الفريق"
+ "Team-Aktion fehlgeschlagen": "فشل إجراء الفريق",
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "الخادم لا يدعم الفرق بعد. يرجى تحديث الخادم."
 }

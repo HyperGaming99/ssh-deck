@@ -373,5 +373,6 @@
  "Tresor": "保管庫",
  "Tresor öffnen": "保管庫を開く",
  "{n} Mitglieder": "{n} 人のメンバー",
- "Team-Aktion fehlgeschlagen": "チームの操作に失敗しました"
+ "Team-Aktion fehlgeschlagen": "チームの操作に失敗しました",
+ "Der Server kennt noch keine Teams. Bitte den Server aktualisieren.": "サーバーはまだチームに対応していません。サーバーを更新してください。"
 }
