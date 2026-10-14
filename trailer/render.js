@@ -27,7 +27,7 @@ app.whenReady().then(async () => {
     webPreferences: { offscreen: true, backgroundThrottling: false, contextIsolation: true } });
   win.webContents.setFrameRate(60);
   const ex = (js) => win.webContents.executeJavaScript(js, true);
-  await win.loadFile(path.join(__dirname, STAGE + '.html'), { query: { bpm: String(BPM) } });
+  await win.loadFile(path.join(__dirname, STAGE + '.html'), { query: { bpm: String(BPM), ...(argv.includes('--clean') ? { clean: '1' } : {}) } });
   win.webContents.on('console-message', (_e, _l, msg) => console.log('[Seite]', msg));
   try { await ex('window.ready'); } catch (e) { throw new Error(e && e.message ? e.message : JSON.stringify(e) + ' (Bild nicht ladbar?)'); }
   const duration = await ex('window.DURATION');
@@ -44,7 +44,7 @@ app.whenReady().then(async () => {
     fs.mkdirSync(path.join(OUT, 'preview'), { recursive: true });
     for (const t of previewAt) {
       const img = await frame(t);
-      fs.writeFileSync(path.join(OUT, 'preview', `${STAGE}_t${String(t).replace('.', '_')}.png`), img.toPNG());
+      fs.writeFileSync(path.join(OUT, 'preview', `${STAGE}${argv.includes('--clean') ? '_clean' : ''}_t${String(t).replace('.', '_')}.png`), img.toPNG());
       console.log('Vorschau', t, img.getSize().width + 'x' + img.getSize().height);
     }
     return app.quit();

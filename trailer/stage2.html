@@ -97,7 +97,9 @@ const easeOutBack = (t) => { const c = 1.6; return 1 + (c + 1) * Math.pow(t - 1,
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, parent) => { const e = document.createElement(tag); if (cls) e.className = cls; if (parent) parent.appendChild(e); return e; };
 
-const BPM = +(new URLSearchParams(location.search).get('bpm')) || 100;
+const QS = new URLSearchParams(location.search), CLEAN = QS.get('clean') === '1'; // clean: feste Kamera, ohne Untertitel (für Standbilder im README)
+const BPM = +QS.get('bpm') || 100;
+if (CLEAN) document.head.insertAdjacentHTML('beforeend', '<style>#shade,#caps,#tname,#vignette,#grain{display:none!important}</style>');
 const TL = buildTimeline2(BPM), T = TL.T;
 window.DURATION = TL.duration;
 
@@ -184,6 +186,7 @@ function termHtml(t, blink) {
 
 // ---------- Kamera ----------
 function cam(t) {
+  if (CLEAN) return { x: 960, y: 540, z: .96 };
   const K = TL.cam;
   if (t <= K[0].t) return K[0];
   for (let i = 0; i < K.length - 1; i++) {
@@ -244,7 +247,7 @@ window.renderAt = async (t) => {
   // Kamera + sanfter Takt-Puls; zu Beginn/Ende kippt das Fenster leicht im Raum
   const beatPhase = (t / TL.beat) % 1, z = c.z * (1 + .003 * Math.exp(-7 * beatPhase));
   $('world').style.transform = `translate(960px, 540px) scale(${z}) translate(${-c.x}px, ${-c.y}px)`;
-  const OA = TL.outroAt, tin = 1 - easeOut(seg(t, T(.8), T(2.1))), tout = easeInOut(seg(t, OA - T(.4), OA + T(.4)));
+  const OA = TL.outroAt, tin = CLEAN ? 0 : 1 - easeOut(seg(t, T(.8), T(2.1))), tout = CLEAN ? 0 : easeInOut(seg(t, OA - T(.4), OA + T(.4)));
   $('stage3d').style.transform = `rotateY(${-13 * tin + 9 * tout}deg) rotateX(${7 * tin - 5 * tout}deg)`;
   const sc = $('screen'); sc.style.opacity = easeOut(seg(t, T(.8), T(1.5))) * (1 - .85 * easeInOut(seg(t, OA - T(.2), OA + T(.6))));
   sc.style.boxShadow = `0 0 0 2px rgba(255,255,255,.1), 0 50px 140px rgba(0,0,0,.65), 0 0 200px ${css(pal.a1).replace('rgb', 'rgba').replace(')', ',.28)')}`;
