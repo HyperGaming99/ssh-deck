@@ -1,0 +1,138 @@
+# dev-Push  -> Test, Version automatisch erhöhen, Installer für Linux/Windows/macOS bauen, Vorab-Release (Pre-release) veröffentlichen
+# main-Push -> dasselbe als stabiles Release (kommt nur per Pull Request aus dev)
+name: Build & Release
+on:
+  push:
+    branches: [dev, main]
+  workflow_dispatch:
+concurrency:
+  group: build-${{ github.ref_name }}
+  cancel-in-progress: false
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}   # Version im Paket (package.json)
+      build_version: ${{ steps.v.outputs.build_version }} # Version der Installer (dev: mit -dev.<Lauf>)
+      tag: ${{ steps.v.outputs.tag }}
+      prerelease: ${{ steps.v.outputs.prerelease }}
+      short_sha: ${{ steps.v.outputs.short_sha }} # letzter Commit des Pushs: steht im Dateinamen
+      ref: ${{ steps.v.outputs.ref }}              # Stand, der gebaut wird (nach dem Versions-Commit)
+      skip: ${{ steps.v.outputs.skip }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - id: v
+        shell: bash
+        run: |
+          set -euo pipefail
+          short=$(git rev-parse --short=7 HEAD)
+          pkg=$(node -p "require('./package.json').version")
+          stable=$(git tag --list 'v[0-9]*' | grep -v -- '-' | sort -V | tail -1 | sed 's/^v//' || true)
+          stable=${stable:-0.0.0}
+          newer() { [ "$(printf '%s\n%s\n' "$1" "$2" | sort -V | tail -1)" = "$1" ] && [ "$1" != "$2" ]; }
+          skip=false
+          if [ "${GITHUB_REF_NAME}" = "dev" ]; then
+            # automatische Versionierung: ist die Version nicht neuer als das letzte stabile Release, wird die Patch-Nummer erhöht
+            if ! newer "$pkg" "$stable"; then
+              IFS=. read -r a b c <<< "$stable"; pkg="$a.$b.$((c+1))"
+              npm version "$pkg" --no-git-tag-version --allow-same-version >/dev/null
+              git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git commit -qam "chore: bump version to $pkg [skip ci]"
+              git push origin HEAD:dev
+            fi
+            build="$pkg-dev.${GITHUB_RUN_NUMBER}"; tag="v$build"; pre=true
+          else
+            build="$pkg"; tag="v$pkg"; pre=false
+            if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then skip=true; fi   # Version schon veröffentlicht
+          fi
+          { echo "version=$pkg"; echo "build_version=$build"; echo "tag=$tag"; echo "prerelease=$pre"; echo "short_sha=$short"; echo "ref=$(git rev-parse HEAD)"; echo "skip=$skip"; } >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: prepare
+    if: needs.prepare.outputs.skip != 'true'
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { os: ubuntu-latest, name: linux, args: "--linux AppImage deb" }
+          - { os: windows-latest, name: windows, args: "--win nsis --x64" }
+          - { os: macos-latest, name: macos, args: "--mac dmg zip --x64 --arm64" }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run: { shell: bash }
+    env:
+      SHORT_SHA: ${{ needs.prepare.outputs.short_sha }}
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "${{ needs.prepare.outputs.ref }}" }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm test
+        if: matrix.name == 'linux'
+      - run: npm run build
+      - run: npx electron-builder --publish never ${{ matrix.args }} -c.extraMetadata.version=${{ needs.prepare.outputs.build_version }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.name }}
+          path: |
+            release/*.AppImage
+            release/*.deb
+            release/*.exe
+            release/*.dmg
+            release/*.zip
+          if-no-files-found: error
+
+  release:
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.prepare.outputs.tag }}
+      VERSION: ${{ needs.prepare.outputs.build_version }}
+      SHORT: ${{ needs.prepare.outputs.short_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "${{ needs.prepare.outputs.ref }}", fetch-depth: 0 }
+      - uses: actions/download-artifact@v4
+        with: { path: files, pattern: installers-*, merge-multiple: true }
+      - name: Release notes
+        shell: bash
+        run: |
+          set -euo pipefail
+          prev=$(git tag --list 'v[0-9]*' --sort=-v:refname | grep -vx "$TAG" | head -1 || true)
+          range=${prev:+$prev..}HEAD
+          last_sha=$(git rev-parse --short=7 "$SHORT" 2>/dev/null || echo "$SHORT")
+          {
+            echo "## SSH Deck $VERSION"
+            echo
+            echo "- **Branch:** \`${GITHUB_REF_NAME}\`"
+            echo "- **Last commit:** \`$last_sha\` $(git log -1 --pretty='%s — %an' "$last_sha")"
+            echo "- **Build:** #${GITHUB_RUN_NUMBER}, $(date -u +'%Y-%m-%d %H:%M') UTC"
+            echo
+            echo "### Changes since ${prev:-the beginning}"
+            git log $range --no-merges --pretty='- %s (`%h`, %an)' | grep -v 'chore: bump version' || true
+            echo
+            echo "### Downloads"
+            for f in files/*; do echo "- \`$(basename "$f")\`"; done
+          } > notes.md
+      - name: Publish release
+        shell: bash
+        run: |
+          set -euo pipefail
+          flags="--target ${{ needs.prepare.outputs.ref }} --title \"SSH Deck $VERSION\" --notes-file notes.md"
+          if [ "${{ needs.prepare.outputs.prerelease }}" = "true" ]; then flags="$flags --prerelease"; else flags="$flags --latest"; fi
+          eval gh release create "$TAG" $flags files/*
+      - name: Keep only the 10 newest dev builds
+        if: needs.prepare.outputs.prerelease == 'true'
+        shell: bash
+        run: |
+          gh release list --limit 100 --json tagName,isPrerelease,createdAt -q 'map(select(.isPrerelease)) | sort_by(.createdAt) | reverse | .[10:] | .[].tagName' \
+            | while read -r t; do gh release delete "$t" --cleanup-tag --yes; done
