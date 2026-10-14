@@ -31,7 +31,8 @@ const run = (cmd, args, cwd) => new Promise((resolve, reject) => {
   p.on('error', reject).on('close', (c) => (c === 0 ? resolve() : reject(new Error(`${cmd} ${c}`))));
 });
 const SKIP = /(^|[\\/])(node_modules|\.git|dist)([\\/]|$)/; // lokale Dinge bleiben unangetastet
-const sig = (d) => ['package.json', 'package-lock.json'].map((f) => (fs.existsSync(path.join(d, f)) ? fs.readFileSync(path.join(d, f), 'utf8') : '')).join('\0');
+// nur die Abhängigkeiten zählen (eine neue Versionsnummer allein braucht kein npm install)
+const sig = (d) => { try { const p = JSON.parse(fs.readFileSync(path.join(d, 'package.json'), 'utf8')); return JSON.stringify([p.dependencies, p.devDependencies, p.optionalDependencies]); } catch { return ''; } };
 const hash = (s) => crypto.createHash('sha256').update(s).digest('hex');
 
 // Installiert das Paket in dir und gibt die neue Version zurück. Fehler: NET | PKG | FAIL

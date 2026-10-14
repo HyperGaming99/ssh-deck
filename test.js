@@ -494,6 +494,7 @@ const mock = {
   assert.equal(fs.readFileSync(path.join(app1, 'main.js'), 'utf8'), '// neu', 'Dateien überlagert');
   assert(fs.existsSync(path.join(app1, 'src', 'new.txt')) && fs.existsSync(path.join(app1, 'node_modules', 'keep')), 'neue Dateien da, node_modules unberührt');
   assert(calls.some((c) => /run build/.test(c)), 'Build läuft');
+  assert(!calls.some((c) => /install/.test(c)), 'nur neue Versionsnummer: kein npm install');
 
   const app2 = mkApp(); // anderes Projekt -> abgelehnt, nichts verändert
   await assert.rejects(updater.install({ tarball: base.replace('http', 'https') + '/foreign.tgz', dir: app2, fetch: f, exec: okExec }), (e) => e.code === 'PKG');
