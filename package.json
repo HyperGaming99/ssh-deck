@@ -2,7 +2,7 @@
   "name": "ssh-deck",
   "desktopName": "ssh-deck.desktop",
   "updates": { "repo": "HyperGaming99/ssh-deck" },
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Minimaler SSH-Client im Stil von Termius",
   "main": "main.js",
   "scripts": {
