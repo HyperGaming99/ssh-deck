@@ -419,5 +419,9 @@
  "Schlüssel in der Cloud gespeichert.": "Klucz zapisany w chmurze.",
  "Schlüssel, die du hier einschaltest, liegen verschlüsselt in der Cloud und sind auf allen deinen Geräten da. Der Server sieht nur Chiffretext. Zusätzlich schützt ein Geheimschlüssel, den nur du hast: Selbst wenn jemand die Server-Daten stiehlt und dein Passwort errät, bleiben die Schlüssel sicher.": "Klucze włączone tutaj są przechowywane w chmurze w postaci zaszyfrowanej i dostępne na wszystkich Twoich urządzeniach. Serwer widzi tylko szyfrogram. Dodatkowo chroni Cię klucz tajny, który masz tylko Ty: nawet jeśli ktoś ukradnie dane z serwera i odgadnie hasło, klucze pozostaną bezpieczne.",
  "Speichere ihn jetzt an einem sicheren Ort (Passwort-Manager oder Ausdruck). Du brauchst ihn zusammen mit deinem Passwort, um den Schlüsselbund auf einem neuen Gerät zu öffnen. Geht er verloren und du hast kein Gerät mehr, sind die Cloud-Schlüssel nicht wiederherstellbar.": "Zapisz go teraz w bezpiecznym miejscu (menedżer haseł lub wydruk). Razem z hasłem jest potrzebny do otwarcia pęku kluczy na nowym urządzeniu. Jeśli go zgubisz i nie będziesz mieć żadnego urządzenia, klucze z chmury nie będą do odzyskania.",
- "{n} Schlüssel in der Cloud": "{n} kluczy w chmurze"
+ "{n} Schlüssel in der Cloud": "{n} kluczy w chmurze",
+ "Update-Kanal": "Kanał aktualizacji",
+ "Stabil": "Stabilny",
+ "Dev (Vorabversionen)": "Dev (wersje wstępne)",
+ "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Wersje dev pojawiają się przy każdym pushu i mogą zawierać błędy."
 }

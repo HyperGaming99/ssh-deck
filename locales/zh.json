@@ -419,5 +419,9 @@
  "Schlüssel in der Cloud gespeichert.": "密钥已保存到云端。",
  "Schlüssel, die du hier einschaltest, liegen verschlüsselt in der Cloud und sind auf allen deinen Geräten da. Der Server sieht nur Chiffretext. Zusätzlich schützt ein Geheimschlüssel, den nur du hast: Selbst wenn jemand die Server-Daten stiehlt und dein Passwort errät, bleiben die Schlüssel sicher.": "你在此开启的密钥会加密后存放在云端,并出现在你的所有设备上。服务器只能看到密文。另有只有你持有的密钥提供额外保护:即使有人窃取服务器数据并猜出你的密码,密钥依然安全。",
  "Speichere ihn jetzt an einem sicheren Ort (Passwort-Manager oder Ausdruck). Du brauchst ihn zusammen mit deinem Passwort, um den Schlüsselbund auf einem neuen Gerät zu öffnen. Geht er verloren und du hast kein Gerät mehr, sind die Cloud-Schlüssel nicht wiederherstellbar.": "请立即保存在安全的地方(密码管理器或打印件)。在新设备上打开钥匙串时,需要它和你的密码。若丢失且已没有任何设备,云端密钥将无法恢复。",
- "{n} Schlüssel in der Cloud": "云端有 {n} 个密钥"
+ "{n} Schlüssel in der Cloud": "云端有 {n} 个密钥",
+ "Update-Kanal": "更新通道",
+ "Stabil": "稳定版",
+ "Dev (Vorabversionen)": "Dev(预发布版)",
+ "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Dev 版本会在每次推送时发布,可能包含错误。"
 }

@@ -8,22 +8,43 @@ const crypto = require('crypto');
 const { spawn } = require('child_process');
 
 const err = (code) => Object.assign(new Error(code), { code });
-const parts = (v) => String(v).replace(/^v/i, '').split(/[.+-]/).slice(0, 3).map((n) => parseInt(n, 10) || 0);
-const isNewer = (a, b) => { const x = parts(a), y = parts(b); for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] > y[i]; return false; };
+// Versionsvergleich nach SemVer: 1.2.3 > 1.2.3-dev.7 > 1.2.3-dev.2; Vorab-Kennungen werden Stück für Stück verglichen
+const split = (v) => {
+  const m = String(v).replace(/^v/i, '').match(/^(\d+)\.(\d+)(?:\.(\d+))?(?:-([\w.]+))?/);
+  return m ? { core: [+m[1], +m[2], +(m[3] || 0)], pre: m[4] ? m[4].split('.') : null } : { core: [0, 0, 0], pre: null };
+};
+function cmp(a, b) {
+  const x = split(a), y = split(b);
+  for (let i = 0; i < 3; i++) if (x.core[i] !== y.core[i]) return x.core[i] > y.core[i] ? 1 : -1;
+  if (!x.pre || !y.pre) return x.pre === y.pre ? 0 : x.pre ? -1 : 1; // Version ohne Vorab-Kennung ist neuer
+  for (let i = 0; i < Math.max(x.pre.length, y.pre.length); i++) {
+    const p = x.pre[i], q = y.pre[i];
+    if (p === undefined || q === undefined) return p === undefined ? -1 : 1;
+    const np = /^\d+$/.test(p), nq = /^\d+$/.test(q);
+    if (np && nq) { if (+p !== +q) return +p > +q ? 1 : -1; } else if (np !== nq) return np ? -1 : 1; else if (p !== q) return p > q ? 1 : -1;
+  }
+  return 0;
+}
+const isNewer = (a, b) => cmp(a, b) > 0;
 
 // { version, tarball, notes, page } der neuesten Veröffentlichung; Fehler: NOTFOUND | NET
-async function latest({ repo, url, fetch = globalThis.fetch }) {
-  const api = url || (repo && /^[\w.-]+\/[\w.-]+$/.test(repo) ? `https://api.github.com/repos/${repo}/releases/latest` : '');
+async function latest({ repo, url, channel = 'stable', fetch = globalThis.fetch }) {
+  const ok = repo && /^[\w.-]+\/[\w.-]+$/.test(repo);
+  const dev = channel === 'dev' && !url && ok; // Dev-Kanal: auch Vorabversionen (Dev-Builds) beachten
+  const api = url || (ok ? `https://api.github.com/repos/${repo}/releases${dev ? '?per_page=30' : '/latest'}` : '');
   if (!api) throw err('NOTFOUND');
   let r;
   try { r = await fetch(api, { headers: { accept: 'application/vnd.github+json', 'user-agent': 'ssh-deck' } }); } catch { throw err('NET'); }
   if (r.status === 404) throw err('NOTFOUND');
   if (!r.ok) throw err('NET');
-  const j = await r.json();
-  const version = String(j.tag_name || j.version || '').replace(/^v/i, '');
+  let j = await r.json();
+  const ver = (x) => String(x.tag_name || x.version || '').replace(/^v/i, '');
+  if (dev) j = (Array.isArray(j) ? j : []).filter((x) => !x.draft && /^\d+\.\d+/.test(ver(x))).sort((a, b) => cmp(ver(b), ver(a)))[0];
+  if (!j) throw err('NOTFOUND');
+  const version = ver(j);
   if (!/^\d+\.\d+/.test(version)) throw err('NOTFOUND');
   const asset = (j.assets || []).find((a) => /\.(tar\.gz|tgz)$/i.test(a.name));
-  return { version, tarball: (asset && asset.browser_download_url) || j.tarball_url || j.tarball || '', notes: j.body || '', page: j.html_url || '' };
+  return { version, prerelease: !!j.prerelease, tarball: (asset && asset.browser_download_url) || j.tarball_url || j.tarball || '', notes: j.body || '', page: j.html_url || '' };
 }
 
 const run = (cmd, args, cwd) => new Promise((resolve, reject) => {
@@ -67,4 +88,4 @@ async function install({ tarball, dir, fetch = globalThis.fetch, exec = run, onS
     return pkg.version;
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }
-module.exports = { latest, install, isNewer };
+module.exports = { latest, install, isNewer, cmp };

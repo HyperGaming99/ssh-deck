@@ -88,7 +88,7 @@ On Linux you can add SSH Deck with its logo to your application menu: `bash asse
 
 ## Updates
 
-*Settings → Updates* checks the newest stable release. For a source install it downloads, checks, installs and restarts the app (with an automatic rollback if something fails); for an installed package it opens the release page. Builds from the `dev` branch are published as **pre-releases** and have to be downloaded by hand.
+*Settings → Updates* checks the newest stable release. For a source install it downloads, checks, installs and restarts the app (with an automatic rollback if something fails); for an installed package it opens the release page. Under *Update channel* you can switch to **Dev**: then pre-releases built from the `dev` branch (a new one with every push) are offered too. The default is **Stable**.
 
 ## Development
 

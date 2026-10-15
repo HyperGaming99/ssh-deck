@@ -419,5 +419,9 @@
  "Schlüssel in der Cloud gespeichert.": "Clé enregistrée dans le cloud.",
  "Schlüssel, die du hier einschaltest, liegen verschlüsselt in der Cloud und sind auf allen deinen Geräten da. Der Server sieht nur Chiffretext. Zusätzlich schützt ein Geheimschlüssel, den nur du hast: Selbst wenn jemand die Server-Daten stiehlt und dein Passwort errät, bleiben die Schlüssel sicher.": "Les clés que vous activez ici sont stockées chiffrées dans le cloud et disponibles sur tous vos appareils. Le serveur ne voit que du texte chiffré. Une clé secrète que vous seul avez ajoute une protection : même si quelqu'un vole les données du serveur et devine votre mot de passe, les clés restent en sécurité.",
  "Speichere ihn jetzt an einem sicheren Ort (Passwort-Manager oder Ausdruck). Du brauchst ihn zusammen mit deinem Passwort, um den Schlüsselbund auf einem neuen Gerät zu öffnen. Geht er verloren und du hast kein Gerät mehr, sind die Cloud-Schlüssel nicht wiederherstellbar.": "Enregistrez-la maintenant en lieu sûr (gestionnaire de mots de passe ou impression). Vous en aurez besoin avec votre mot de passe pour ouvrir le trousseau sur un nouvel appareil. Si elle est perdue et que vous n'avez plus d'appareil, les clés du cloud sont irrécupérables.",
- "{n} Schlüssel in der Cloud": "{n} clés dans le cloud"
+ "{n} Schlüssel in der Cloud": "{n} clés dans le cloud",
+ "Update-Kanal": "Canal de mise à jour",
+ "Stabil": "Stable",
+ "Dev (Vorabversionen)": "Dev (préversions)",
+ "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Les versions dev apparaissent à chaque push et peuvent contenir des bogues."
 }

@@ -419,5 +419,9 @@
  "Schlüssel in der Cloud gespeichert.": "تم حفظ المفتاح في السحابة.",
  "Schlüssel, die du hier einschaltest, liegen verschlüsselt in der Cloud und sind auf allen deinen Geräten da. Der Server sieht nur Chiffretext. Zusätzlich schützt ein Geheimschlüssel, den nur du hast: Selbst wenn jemand die Server-Daten stiehlt und dein Passwort errät, bleiben die Schlüssel sicher.": "المفاتيح التي تشغّلها هنا تُخزَّن مشفرة في السحابة وتتوفر على كل أجهزتك. يرى الخادم نصًا مشفرًا فقط. ويضيف مفتاح سري لا يملكه غيرك حماية: حتى لو سرق أحدهم بيانات الخادم وخمّن كلمة مرورك تبقى المفاتيح آمنة.",
  "Speichere ihn jetzt an einem sicheren Ort (Passwort-Manager oder Ausdruck). Du brauchst ihn zusammen mit deinem Passwort, um den Schlüsselbund auf einem neuen Gerät zu öffnen. Geht er verloren und du hast kein Gerät mehr, sind die Cloud-Schlüssel nicht wiederherstellbar.": "احفظه الآن في مكان آمن (مدير كلمات المرور أو نسخة مطبوعة). تحتاجه مع كلمة المرور لفتح سلسلة المفاتيح على جهاز جديد. إذا فُقد ولم يعد لديك أي جهاز فلا يمكن استرداد مفاتيح السحابة.",
- "{n} Schlüssel in der Cloud": "{n} مفاتيح في السحابة"
+ "{n} Schlüssel in der Cloud": "{n} مفاتيح في السحابة",
+ "Update-Kanal": "قناة التحديث",
+ "Stabil": "مستقر",
+ "Dev (Vorabversionen)": "Dev (إصدارات تجريبية)",
+ "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "تظهر إصدارات Dev مع كل دفع وقد تحتوي على أخطاء."
 }

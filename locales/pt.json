@@ -419,5 +419,9 @@
  "Schlüssel in der Cloud gespeichert.": "Chave salva na nuvem.",
  "Schlüssel, die du hier einschaltest, liegen verschlüsselt in der Cloud und sind auf allen deinen Geräten da. Der Server sieht nur Chiffretext. Zusätzlich schützt ein Geheimschlüssel, den nur du hast: Selbst wenn jemand die Server-Daten stiehlt und dein Passwort errät, bleiben die Schlüssel sicher.": "As chaves que você ativa aqui ficam criptografadas na nuvem e disponíveis em todos os seus dispositivos. O servidor só vê texto cifrado. Uma chave secreta que só você tem protege ainda mais: mesmo que alguém roube os dados do servidor e adivinhe sua senha, as chaves continuam seguras.",
  "Speichere ihn jetzt an einem sicheren Ort (Passwort-Manager oder Ausdruck). Du brauchst ihn zusammen mit deinem Passwort, um den Schlüsselbund auf einem neuen Gerät zu öffnen. Geht er verloren und du hast kein Gerät mehr, sind die Cloud-Schlüssel nicht wiederherstellbar.": "Salve-a agora em um lugar seguro (gerenciador de senhas ou impressão). Você precisa dela junto com a senha para abrir o chaveiro em um novo dispositivo. Se ela se perder e você não tiver mais nenhum dispositivo, as chaves da nuvem não podem ser recuperadas.",
- "{n} Schlüssel in der Cloud": "{n} chaves na nuvem"
+ "{n} Schlüssel in der Cloud": "{n} chaves na nuvem",
+ "Update-Kanal": "Canal de atualização",
+ "Stabil": "Estável",
+ "Dev (Vorabversionen)": "Dev (pré-lançamentos)",
+ "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "As versões dev aparecem a cada push e podem conter erros."
 }

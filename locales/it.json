@@ -419,5 +419,9 @@
  "Schlüssel in der Cloud gespeichert.": "Chiave salvata nel cloud.",
  "Schlüssel, die du hier einschaltest, liegen verschlüsselt in der Cloud und sind auf allen deinen Geräten da. Der Server sieht nur Chiffretext. Zusätzlich schützt ein Geheimschlüssel, den nur du hast: Selbst wenn jemand die Server-Daten stiehlt und dein Passwort errät, bleiben die Schlüssel sicher.": "Le chiavi che attivi qui sono salvate cifrate nel cloud e disponibili su tutti i tuoi dispositivi. Il server vede solo testo cifrato. Una chiave segreta che hai solo tu aggiunge protezione: anche se qualcuno ruba i dati del server e indovina la tua password, le chiavi restano al sicuro.",
  "Speichere ihn jetzt an einem sicheren Ort (Passwort-Manager oder Ausdruck). Du brauchst ihn zusammen mit deinem Passwort, um den Schlüsselbund auf einem neuen Gerät zu öffnen. Geht er verloren und du hast kein Gerät mehr, sind die Cloud-Schlüssel nicht wiederherstellbar.": "Salvala ora in un posto sicuro (gestore di password o stampa). Ti serve insieme alla password per aprire il portachiavi su un nuovo dispositivo. Se la perdi e non hai più dispositivi, le chiavi nel cloud non sono recuperabili.",
- "{n} Schlüssel in der Cloud": "{n} chiavi nel cloud"
+ "{n} Schlüssel in der Cloud": "{n} chiavi nel cloud",
+ "Update-Kanal": "Canale di aggiornamento",
+ "Stabil": "Stabile",
+ "Dev (Vorabversionen)": "Dev (pre-release)",
+ "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Le versioni dev compaiono a ogni push e possono contenere errori."
 }

@@ -452,13 +452,20 @@ const updErr = (e) => {
   return 'Update fehlgeschlagen';
 };
 const updFetch = (url, init) => (torCfg().sync && !torTools.isPrivateHost(new URL(url).hostname) ? torFetch : fetch)(url, init);
-const updCfg = () => { const u = readSettings().updates || {}; return { auto: u.auto !== false, repo: u.repo || (require('./package.json').updates || {}).repo || '', url: process.env.SSH_DECK_UPDATE_URL }; };
+const updCfg = () => { const u = readSettings().updates || {}; return { auto: u.auto !== false, channel: u.channel === 'dev' ? 'dev' : 'stable', repo: u.repo || (require('./package.json').updates || {}).repo || '', url: process.env.SSH_DECK_UPDATE_URL }; };
 let updInfo = null, updBusy = false;
+// Installierte Version: nach einem Update steht hier die genaue Version (auch Dev-Build "0.1.4-dev.5"), denn package.json trägt nur die Basis "0.1.4"
+const installedFile = () => path.join(app.getPath('userData'), 'installed-update.json');
+const curVersion = () => {
+  const base = require('./package.json').version;
+  try { const i = JSON.parse(fs.readFileSync(installedFile(), 'utf8')); if (i.base === base) return i.version; } catch { /* nie per Update installiert */ }
+  return base;
+};
 async function checkUpdate() {
-  const cur = require('./package.json').version, c = updCfg();
+  const cur = curVersion(), c = updCfg();
   try {
-    const l = await updater.latest({ repo: c.repo, url: c.url, fetch: updFetch });
-    updInfo = { current: cur, latest: l.version, available: updater.isNewer(l.version, cur), notes: l.notes, page: l.page, tarball: l.tarball, canInstall: !app.isPackaged };
+    const l = await updater.latest({ repo: c.repo, url: c.url, channel: c.channel, fetch: updFetch });
+    updInfo = { current: cur, latest: l.version, channel: c.channel, prerelease: l.prerelease, available: updater.isNewer(l.version, cur), notes: l.notes, page: l.page, tarball: l.tarball, canInstall: !app.isPackaged };
   } catch (e) { return { current: cur, error: updErr(e) }; }
   if (updInfo.available) send('update:available', { latest: updInfo.latest, canInstall: updInfo.canInstall });
   return updInfo;
@@ -515,7 +522,10 @@ app.whenReady().then(() => {
     if (app.isPackaged) return { error: 'Update fehlgeschlagen' }; // installierte Pakete aktualisiert die Release-Seite
     if (!updInfo || !updInfo.available || updBusy) return { error: 'Update fehlgeschlagen' };
     updBusy = true;
-    try { await updater.install({ tarball: updInfo.tarball, dir: __dirname, fetch: updFetch, onStep: (step) => send('update:step', step) }); }
+    try {
+      const base = await updater.install({ tarball: updInfo.tarball, dir: __dirname, fetch: updFetch, onStep: (step) => send('update:step', step) });
+      fs.writeFileSync(installedFile(), JSON.stringify({ version: updInfo.latest, base })); // merkt sich z. B. den Dev-Build
+    }
     catch (e) { updBusy = false; return { error: updErr(e) }; }
     setTimeout(() => { app.relaunch(); app.exit(0); }, 600);
     return { ok: true };

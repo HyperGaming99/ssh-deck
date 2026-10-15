@@ -685,3 +685,37 @@ const mock = {
   srv.close();
   console.log('keychain-cloud ok');
 })().catch((e) => { console.error(e); process.exit(1); });
+
+// Update-Kanäle: SemVer-Vergleich mit Dev-Builds, Dev-Kanal wählt das höchste Release inkl. Vorabversionen (lokaler Server)
+(async () => {
+  const http = require('http');
+  const updater = require('./updater');
+  const lt = (a, b) => assert(updater.cmp(a, b) < 0 && updater.cmp(b, a) > 0, `${a} < ${b}`);
+  lt('0.1.3-dev.2', '0.1.3-dev.10'); lt('0.1.3-dev.9', '0.1.3'); lt('0.1.3', '0.1.4-dev.1'); lt('0.1.2', '0.1.3-dev.1');
+  assert.equal(updater.cmp('0.1.3', 'v0.1.3'), 0);
+  assert(updater.isNewer('0.1.4-dev.1', '0.1.3') && !updater.isNewer('0.1.4-dev.1', '0.1.4'), 'Dev-Build ist älter als das spätere stabile Release');
+
+  const list = [
+    { tag_name: 'v0.1.3', prerelease: false, tarball_url: 'https://x/0.1.3', html_url: 'https://github.com/o/r/releases/tag/v0.1.3' },
+    { tag_name: 'v0.1.4-dev.2', prerelease: true, tarball_url: 'https://x/dev2', html_url: 'https://github.com/o/r/releases/tag/v0.1.4-dev.2' },
+    { tag_name: 'v0.1.4-dev.10', prerelease: true, tarball_url: 'https://x/dev10', html_url: 'https://github.com/o/r/releases/tag/v0.1.4-dev.10' },
+    { tag_name: 'v0.1.9', prerelease: false, draft: true, tarball_url: 'https://x/draft' },
+  ];
+  const srv = http.createServer((req, res) => {
+    res.setHeader('content-type', 'application/json');
+    if (req.url.startsWith('/repos/o/r/releases/latest')) return res.end(JSON.stringify(list[0]));
+    if (req.url.startsWith('/repos/o/r/releases')) return res.end(JSON.stringify(list));
+    res.statusCode = 404; res.end('{}');
+  }).listen(0, '127.0.0.1');
+  await new Promise((r) => srv.once('listening', r));
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  const f = (u, i) => fetch(u.replace('https://api.github.com', base), i); // GitHub-Adresse auf den Testserver umleiten
+  const stable = await updater.latest({ repo: 'o/r', fetch: f });
+  assert.equal(stable.version, '0.1.3', 'Stabil: nur das neueste stabile Release');
+  const dev = await updater.latest({ repo: 'o/r', channel: 'dev', fetch: f });
+  assert.equal(dev.version, '0.1.4-dev.10', 'Dev: höchster Build (10 > 2), Entwürfe zählen nicht');
+  assert(dev.prerelease && dev.tarball.endsWith('/dev10'));
+  assert(updater.isNewer(dev.version, '0.1.4-dev.2') && !updater.isNewer(dev.version, '0.1.4-dev.10'), 'Dev-Update nur bei höherer Build-Nummer');
+  srv.close();
+  console.log('channels ok');
+})().catch((e) => { console.error(e); process.exit(1); });

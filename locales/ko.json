@@ -419,5 +419,9 @@
  "Schlüssel in der Cloud gespeichert.": "키를 클라우드에 저장했습니다.",
  "Schlüssel, die du hier einschaltest, liegen verschlüsselt in der Cloud und sind auf allen deinen Geräten da. Der Server sieht nur Chiffretext. Zusätzlich schützt ein Geheimschlüssel, den nur du hast: Selbst wenn jemand die Server-Daten stiehlt und dein Passwort errät, bleiben die Schlüssel sicher.": "여기서 켠 키는 암호화되어 클라우드에 저장되며 모든 기기에서 사용할 수 있습니다. 서버에는 암호문만 보입니다. 나만 가진 비밀 키가 추가로 보호합니다. 누군가 서버 데이터를 훔치고 비밀번호를 알아내도 키는 안전합니다.",
  "Speichere ihn jetzt an einem sicheren Ort (Passwort-Manager oder Ausdruck). Du brauchst ihn zusammen mit deinem Passwort, um den Schlüsselbund auf einem neuen Gerät zu öffnen. Geht er verloren und du hast kein Gerät mehr, sind die Cloud-Schlüssel nicht wiederherstellbar.": "지금 안전한 곳(비밀번호 관리자 또는 인쇄물)에 보관하세요. 새 기기에서 키체인을 열려면 비밀번호와 함께 필요합니다. 분실했고 기기도 남아 있지 않으면 클라우드 키는 복구할 수 없습니다.",
- "{n} Schlüssel in der Cloud": "클라우드의 키 {n}개"
+ "{n} Schlüssel in der Cloud": "클라우드의 키 {n}개",
+ "Update-Kanal": "업데이트 채널",
+ "Stabil": "안정",
+ "Dev (Vorabversionen)": "Dev (사전 릴리스)",
+ "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Dev 버전은 push할 때마다 나오며 오류가 있을 수 있습니다."
 }

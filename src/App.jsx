@@ -512,13 +512,13 @@ const SETTINGS_TABS = [
 // Update-Einstellungen: Version, Prüfen, automatisch prüfen, Quelle, Installieren
 function UpdatesSettings() {
   const t = useT();
-  const [s, setS] = useState({ auto: true, repo: '' });
+  const [s, setS] = useState({ auto: true, repo: '', channel: 'stable' });
   const [res, setRes] = useState(null);
   const [busy, setBusy] = useState(false);
   const [installing, setInstalling] = useState(false);
   const [err, setErr] = useState('');
   const check = useCallback(async () => { setBusy(true); setErr(''); const r = await api.update.check(); setBusy(false); setRes(r); if (r.error) setErr(r.error); }, []);
-  useEffect(() => { api.settings.get().then((x) => setS({ auto: x.updates?.auto !== false, repo: x.updates?.repo || '' })).then(check); }, [check]);
+  useEffect(() => { api.settings.get().then((x) => setS({ auto: x.updates?.auto !== false, repo: x.updates?.repo || '', channel: x.updates?.channel === 'dev' ? 'dev' : 'stable' })).then(check); }, [check]);
   const save = (p) => { const n = { ...s, ...p }; setS(n); api.settings.set({ updates: n }); };
   const install = async () => { setInstalling(true); setErr(''); const r = await api.update.install(); if (r.error) { setInstalling(false); setErr(r.error); } };
   const row = 'flex items-center justify-between gap-4 rounded-xl border bg-card p-4';
@@ -542,6 +542,16 @@ function UpdatesSettings() {
       <div className={row}>
         <p className="text-sm font-medium">{t('Automatisch nach Updates suchen')}</p>
         <Switch checked={s.auto} onCheckedChange={(v) => save({ auto: v })} />
+      </div>
+      <div className={cn(row, 'flex-col items-stretch')}>
+        <p className="text-sm font-medium">{t('Update-Kanal')}</p>
+        <div className="grid grid-cols-2 rounded-lg bg-muted p-1 text-sm">
+          {[['stable', t('Stabil')], ['dev', t('Dev (Vorabversionen)')]].map(([v, l]) => (
+            <button key={v} type="button" onClick={() => { save({ channel: v }); setTimeout(check, 50); }}
+              className={cn('rounded-md px-3 py-1.5', s.channel === v ? 'bg-background font-medium shadow-sm' : 'text-muted-foreground')}>{l}</button>
+          ))}
+        </div>
+        {s.channel === 'dev' && <p className="text-xs text-muted-foreground">{t('Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.')}</p>}
       </div>
       <div className={cn(row, 'flex-col items-stretch')}>
         <p className="text-sm font-medium">{t('Update-Quelle (GitHub: Besitzer/Repository)')}</p>
