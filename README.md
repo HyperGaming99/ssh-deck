@@ -86,6 +86,10 @@ npm test
 
 On Linux you can add SSH Deck with its logo to your application menu: `bash assets/install-linux.sh`.
 
+## Sync server
+
+`node server/server.js` (Node.js 22+) runs the account and sync server (`PORT`, `DB_PATH`, `ALLOW_REGISTRATION`, …). For Kubernetes see [`server/k8s`](server/k8s): `bash deploy.sh` creates the namespace `ssh-deck`, a Deployment with a persistent hostPath volume and a NodePort service (30787). Put a TLS-terminating proxy in front of it before exposing it to the internet.
+
 ## Updates
 
 *Settings → Updates* checks the newest stable release. For a source install it downloads, checks, installs and restarts the app (with an automatic rollback if something fails); for an installed package it opens the release page. Under *Update channel* you can switch to **Dev**: then pre-releases built from the `dev` branch (a new one with every push) are offered too. The default is **Stable**.

@@ -1,0 +1,50 @@
+# SSH-Deck-Sync-Server im eigenen Namespace "ssh-deck". Der Code kommt per ConfigMap (siehe deploy.sh), das Image ist das offizielle node:22-alpine.
+# Daten: hostPath auf dem Worker (der Cluster hat noch keine StorageClass), deshalb ist das Pod an den Worker gebunden.
+apiVersion: v1
+kind: Namespace
+metadata: { name: ssh-deck }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: ssh-deck-server, namespace: ssh-deck }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }   # eine SQLite-Datei: nie zwei Pods gleichzeitig
+  selector: { matchLabels: { app: ssh-deck-server } }
+  template:
+    metadata: { labels: { app: ssh-deck-server } }
+    spec:
+      nodeSelector: { kubernetes.io/hostname: worker }
+      initContainers:
+        - name: data-owner
+          image: node:22-alpine
+          command: ["sh", "-c", "chown -R 1000:1000 /data && chmod 700 /data"]
+          volumeMounts: [{ name: data, mountPath: /data }]
+      containers:
+        - name: server
+          image: node:22-alpine
+          command: ["node", "/app/server.js"]
+          env:
+            - { name: PORT, value: "8787" }
+            - { name: HOST, value: "0.0.0.0" }
+            - { name: DB_PATH, value: /data/deck.db }
+            - { name: ALLOW_REGISTRATION, value: "1" }   # nach der Anmeldung der eigenen Konten auf "0" stellen
+          ports: [{ containerPort: 8787 }]
+          readinessProbe: { tcpSocket: { port: 8787 }, periodSeconds: 10 }
+          livenessProbe: { tcpSocket: { port: 8787 }, initialDelaySeconds: 10, periodSeconds: 20 }
+          resources: { requests: { cpu: 50m, memory: 96Mi }, limits: { memory: 512Mi } }
+          securityContext: { runAsUser: 1000, runAsGroup: 1000, runAsNonRoot: true, allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: ["ALL"] } }
+          volumeMounts:
+            - { name: code, mountPath: /app, readOnly: true }
+            - { name: data, mountPath: /data }
+      volumes:
+        - { name: code, configMap: { name: ssh-deck-server-code } }
+        - { name: data, hostPath: { path: /var/lib/ssh-deck, type: DirectoryOrCreate } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: ssh-deck-server, namespace: ssh-deck }
+spec:
+  type: NodePort
+  selector: { app: ssh-deck-server }
+  ports: [{ port: 8787, targetPort: 8787, nodePort: 30787 }]   # erreichbar unter http://<Knoten-IP>:30787
