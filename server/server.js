@@ -19,6 +19,7 @@ function openDb(file) {
       verified integer not null default 0, code_hash text, code_expires integer, code_tries integer not null default 0);
     create table if not exists sessions (token_hash text primary key, user_id integer not null, expires integer not null);
     create table if not exists vault (user_id integer primary key, blob text not null, rev integer not null, updated integer not null);
+    create table if not exists keyvault (user_id integer primary key, header text not null, blob text, rev integer not null default 0, updated integer not null);
     create table if not exists teams (id text primary key, name text not null, key_version integer not null default 1, blob text, rev integer not null default 0, updated integer not null, created integer not null);
     create table if not exists team_members (team_id text not null, user_id integer not null, role text not null, wrapped_key text not null, wrapped_by integer not null, key_version integer not null, joined integer not null, primary key (team_id, user_id));`);
   try { db.exec('alter table users add column pubkey text'); } catch { /* Spalte gibt es schon */ }
@@ -117,6 +118,25 @@ function createServer({ db, verify = false, sendMail = async () => {}, allowRegi
       const rev = (cur ? cur.rev : 0) + 1;
       db.prepare('insert or replace into vault values (?, ?, ?, ?)').run(id, b.blob, rev, now());
       return { rev };
+    },
+    // ---- Cloud-Schlüsselbund: SSH-Schlüssel mit eigenem Tresorschlüssel; der Server speichert nur Kopf (eingepackter Schlüssel, KDF-Parameter) und Chiffretext ----
+    'GET /api/keyvault': async (req) => {
+      const v = db.prepare('select header, blob, rev from keyvault where user_id = ?').get(userOf(req).id);
+      return { vault: v ? { header: v.header, blob: v.blob, rev: v.rev || null } : null };
+    },
+    'PUT /api/keyvault': async (req, b) => {
+      const { id } = userOf(req);
+      if (typeof b.header !== 'string' || b.header.length > 4096) throw fail(400, 'Schlüssel fehlt');
+      if (b.blob !== undefined && b.blob !== null && (typeof b.blob !== 'string' || b.blob.length > 8e6)) throw fail(400, 'blob fehlt');
+      const cur = db.prepare('select rev from keyvault where user_id = ?').get(id);
+      if ((cur ? cur.rev || null : null) !== (b.prev ?? null)) throw fail(409, 'Konflikt');
+      const rev = (cur ? cur.rev : 0) + 1;
+      db.prepare('insert or replace into keyvault values (?, ?, ?, ?, ?)').run(id, b.header, b.blob ?? null, rev, now());
+      return { rev };
+    },
+    'DELETE /api/keyvault': async (req) => {
+      db.prepare('delete from keyvault where user_id = ?').run(userOf(req).id);
+      return {};
     },
     // ---- Teams: der Server speichert nur Chiffretext und eingepackte Schlüssel ----
     'PUT /api/me/pubkey': async (req, b) => {

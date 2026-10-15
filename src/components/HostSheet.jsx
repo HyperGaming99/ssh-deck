@@ -33,11 +33,13 @@ export default function HostSheet({ spec, onClose }) {
   const [showPw, setShowPw] = useState(false);
   const [more, setMore] = useState(false);
   const [keyOpen, setKeyOpen] = useState(false);
+  const [own, setOwn] = useState({ keyId: '', user: '' }); // mein eigener Zugang zu einem Team-Host (nur für mich)
   const action = useRef('save');
   useEffect(() => {
     if (!spec) return;
     setV({ ...spec.values, tags: (spec.values.tags || []).join(', ') });
-    setShowPw(false); setMore(false); setKeyOpen(!!spec.values.keyId);
+    setShowPw(false); setMore(false); setKeyOpen(!!spec.values.keyId); setOwn({ keyId: '', user: '' });
+    if (spec.values.id && spec.values.vault && spec.values.vault !== 'personal') api.override.get(spec.values.id).then(setOwn);
   }, [spec]);
   if (!spec) return null;
 
@@ -52,6 +54,7 @@ export default function HostSheet({ spec, onClose }) {
     const o = { ...v, id: spec.values.id, name: (v.name || '').trim() || v.host, tags: (v.tags || '').split(',').map((s) => s.trim()).filter(Boolean) };
     if (!o.secret) delete o.secret; // leer = bestehendes Passwort behalten
     const id = await spec.onSave(o);
+    if (cur !== 'personal' && (id || o.id)) await api.override.set(id || o.id, own);
     if (action.current === 'connect') spec.onConnect({ id, name: o.name });
     onClose();
   };
@@ -100,6 +103,21 @@ export default function HostSheet({ spec, onClose }) {
               </Field>
               <Field icon={Tag}><Input className={inputCls} placeholder={t('Tags (mit Komma getrennt)')} autoComplete="off" value={v.tags ?? ''} onChange={set('tags')} /></Field>
             </Card>
+
+            {cur !== 'personal' && editing && (
+              <Card title={t('Mein Zugang (nur für mich)')}>
+                <Field icon={User}><Input className={inputCls} placeholder={t('Eigener Benutzer (optional)')} autoComplete="off" value={own.user} onChange={(e) => setOwn((o) => ({ ...o, user: e.target.value }))} /></Field>
+                <Field icon={KeyRound}>
+                  <Select value={own.keyId || '__none'} onValueChange={(x) => setOwn((o) => ({ ...o, keyId: x === '__none' ? '' : x }))}>
+                    <SelectTrigger className={triggerCls}><SelectValue placeholder={t('Eigener Schlüssel')} /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none">{t('Schlüssel des Hosts verwenden')}</SelectItem>
+                      {spec.keys.filter((k) => !k.publicOnly).map((k) => <SelectItem key={k.id} value={k.id}>{`${k.name} · ${k.type}`}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </Card>
+            )}
 
             <Card>
               <div className="flex items-center justify-between gap-3">

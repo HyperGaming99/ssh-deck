@@ -630,3 +630,58 @@ const mock = {
   assert(hosts.list().length === 3 && hosts.get(m.id).tags[0] === 'x');
   console.log('copy ok');
 })();
+
+// Cloud-Schlüsselbund: Passwort + Geheimschlüssel, zwei Geräte, Löschen, falsche Eingaben, Server sieht nur Chiffretext (echter Server)
+(async () => {
+  const kc = require('./keyvault');
+  const { keys: mkKeys } = require('./store');
+  const { srv, url } = await listen({});
+  const crypt = { encrypt: (x) => 'enc:' + x, decrypt: (x) => String(x).replace(/^enc:/, '') };
+  const k = sync.deriveKeys('kc@t.de', 'pw-kc');
+  const api = new sync.Backend({ url, token: (await new sync.Backend({ url }).register('kc@t.de', k.auth)).token });
+  const dev = () => mkKeys(path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'deck-kc-')), 'k.json'), crypt);
+  const A = dev(), B = dev();
+
+  // Gerät A: einschalten
+  const made = await kc.create('pw-kc');
+  await api.request('PUT', 'keyvault', { header: made.header, blob: null, prev: null });
+  assert(/^SD1-[0-9A-Z]{6}(-[0-9A-Z]{5}){4}$/.test(made.secretKey), 'Geheimschlüssel hat das lesbare Format');
+  const id1 = A.add({ name: 'prod', privateKey: 'GEHEIM-PRIVAT', publicKey: 'ssh-ed25519 AAA', cloud: true });
+  A.add({ name: 'lokal', privateKey: 'NUR-HIER' }); // ohne Cloud-Flag
+  const cloudOf = (st) => ({ get: () => kc.snapshot(st.raw(), []), set: (m) => st.setRaw(kc.apply(st.raw(), m)) });
+  const run = async (st, vk, tomb = []) => {
+    let header;
+    const cloud = {
+      getVault: async () => { const r = (await api.request('GET', 'keyvault')).vault; header = r.header; return { blob: r.blob || sync.seal(vk, { keys: [] }), rev: r.rev }; },
+      putVault: async (blob, prev) => { try { await api.request('PUT', 'keyvault', { header, blob, prev }); return true; } catch (e) { if (e.status === 409) return false; throw e; } },
+    };
+    await sync.syncOnce({ cloud, key: vk, local: { get: () => kc.snapshot(st.raw(), tomb), set: (m) => st.setRaw(kc.apply(st.raw(), m)) } });
+  };
+  await run(A, made.vk);
+  const stored = (await api.request('GET', 'keyvault')).vault;
+  assert(!stored.blob.includes('GEHEIM') && !Buffer.from(stored.blob, 'base64').toString('latin1').includes('GEHEIM-PRIVAT'), 'Server speichert nur Chiffretext');
+  assert(!stored.header.includes(made.secretKey) && !JSON.stringify(JSON.parse(stored.header)).includes('pw-kc'), 'Geheimschlüssel und Passwort stehen nicht beim Server');
+
+  // Gerät B: nur mit Passwort UND Geheimschlüssel
+  await assert.rejects(kc.unlock('pw-kc', kc.newSecretKey().text, stored.header), (e) => e.code === 'WRONG', 'falscher Geheimschlüssel');
+  await assert.rejects(kc.unlock('falsch', made.secretKey, stored.header), (e) => e.code === 'WRONG', 'falsches Passwort');
+  const vkB = await kc.unlock('pw-kc', made.secretKey.toLowerCase(), stored.header); // Groß-/Kleinschreibung egal
+  await run(B, vkB);
+  assert.equal(B.get(id1).privateKey, 'GEHEIM-PRIVAT', 'Schlüssel kommt auf Gerät B an');
+  assert.equal(B.list().length, 1, 'nicht eingeschaltete Schlüssel bleiben lokal');
+  assert(B.list()[0].cloud, 'auf B als Cloud-Schlüssel markiert');
+
+  // Löschen auf B verschwindet auch auf A; ein lokaler Schlüssel ohne Cloud-Flag wird nie gelöscht
+  B.remove(id1); await run(B, vkB); await run(A, made.vk);
+  assert.deepEqual(A.list().map((x) => x.name), ['lokal'], 'Löschmarker wirkt, lokaler Schlüssel bleibt');
+  // Bewusst aus der Cloud nehmen: Gerät A behält ihn, Gerät B verliert ihn
+  const id2 = A.add({ name: 'zweiter', privateKey: 'P2', cloud: true }); await run(A, made.vk); await run(B, vkB);
+  assert.equal(B.list().length, 1);
+  A.setCloud(id2, false); await run(A, made.vk, [{ id: id2, at: Date.now() + 5 }]); await run(B, vkB);
+  assert(A.list().some((x) => x.id === id2) && !B.list().some((x) => x.id === id2 && !x.deleted), 'aus der Cloud entfernt: lokal bleibt er, andere Geräte verlieren ihn');
+  assert.throws(() => kc.parseSecretKey('zu kurz'), (e) => e.code === 'SK');
+  await api.request('DELETE', 'keyvault', {});
+  assert.equal((await api.request('GET', 'keyvault')).vault, null, 'Ausschalten löscht die Cloud-Kopie');
+  srv.close();
+  console.log('keychain-cloud ok');
+})().catch((e) => { console.error(e); process.exit(1); });

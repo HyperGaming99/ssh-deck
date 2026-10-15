@@ -20,7 +20,7 @@ const plain = (file) => {
       return rec.id;
     },
     // Löschmarker behält den Tresor (vault), damit er im richtigen Tresor weitersynct
-    remove: (id) => wr(file, all().map((x) => (x.id === id ? { id, deleted: true, ...(x.vault && { vault: x.vault }), updatedAt: Date.now() } : x))),
+    remove: (id) => wr(file, all().map((x) => (x.id === id ? { id, deleted: true, ...(x.vault && { vault: x.vault }), ...(x.cloud && { cloud: true }), updatedAt: Date.now() } : x))),
   };
 };
 
@@ -55,6 +55,8 @@ const keys = (file, crypt) => {
     add: (k) => base.save({ ...k, privateKey: sec(k.privateKey), passphrase: sec(k.passphrase) }),
     setPassphrase: (id, p) => { const k = find(id); if (k) base.save({ ...k, passphrase: sec(p) }); },
     rename: (id, name) => { const k = find(id); if (k) base.save({ ...k, name }); },
+    // Cloud-Schlüsselbund: Schlüssel ein-/ausschalten; privateKey (Klartext) nur, wenn er noch nicht gespeichert ist (Schlüssel aus ~/.ssh)
+    setCloud: (id, on, privateKey) => { const k = find(id); if (k) base.save({ ...k, cloud: !!on, ...(privateKey && { privateKey: sec(privateKey) }) }); },
     // für Team-Tresore: Schlüssel samt privatem Teil im Klartext raus (der Tresor wird mit dem Teamschlüssel verschlüsselt), lokal wieder verschlüsseln
     raw: () => base.raw().map((r) => ({ ...r, privateKey: r.privateKey ? crypt.decrypt(r.privateKey) : undefined, passphrase: r.passphrase ? crypt.decrypt(r.passphrase) : undefined })),
     setRaw: (arr) => base.setRaw(arr.map((r) => ({ ...r, privateKey: sec(r.privateKey), passphrase: sec(r.passphrase) }))),

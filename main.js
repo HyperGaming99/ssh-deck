@@ -18,12 +18,13 @@ const importerTools = require('./importers');
 const { createAuth } = require('./auth');
 const updater = require('./updater');
 const teamTools = require('./teams');
+const kcTools = require('./keyvault');
 
 const sessions = new Map(); // sid -> { conn, stream }
 const sftps = new Map(); // sid -> { conn, sftp }
 const edits = new Map(); // sid -> [{ watcher, dir }] geöffnete Remote-Dateien
 const running = new Map(); // forward-id -> { conn, server }
-let hosts, snippets, forwards, keys, groups, known;
+let hosts, snippets, forwards, keys, groups, known, overrides;
 let mainWin;
 const crypt = {
   encrypt: (s) => safeStorage.encryptString(s).toString('base64'),
@@ -57,7 +58,7 @@ const backendOpts = (url) => (torCfg().sync && !torTools.isPrivateHost(new URL(u
 
 // ---- Cloud-Sync ------------------------------------------------------------------------------------
 // Gesynct werden Hosts (inkl. Passwörter), Gruppen, Snippets und Forwarding-Regeln; private Schlüssel nie.
-const syncState = { status: 'off', lastSync: null, error: '', teamError: '' }; // off | syncing | ok | error
+const syncState = { status: 'off', lastSync: null, error: '', teamError: '', keychainError: '' }; // off | syncing | ok | error
 let settingsFile, syncCfgFile, syncTimer, syncing = false, again = false;
 
 const loadSyncCfg = () => { try { return JSON.parse(fs.readFileSync(syncCfgFile, 'utf8')); } catch { return null; } };
@@ -66,7 +67,7 @@ const DEFAULT_SERVER = process.env.DECK_SERVER || 'http://localhost:8787';
 const syncStatus = () => { const c = loadSyncCfg(); return { configured: !!c, email: c?.email, server: c?.server || DEFAULT_SERVER, ...syncState }; };
 const send = (ch, ...a) => mainWin && !mainWin.isDestroyed() && mainWin.webContents.send(ch, ...a);
 // Tresore: "personal" (Einträge ohne vault) und je Team ein eigener. Jeder Tresor wird für sich gesynct.
-const stores = () => ({ hosts, groups, snippets, forwards, keys, known });
+const stores = () => ({ hosts, groups, snippets, forwards, keys, known, overrides });
 const vaultSnapshot = (v) => teamTools.snapshotVault(v, stores());
 const applyVault = (v, s) => teamTools.applyVault(v, s, stores());
 const snapshot = () => vaultSnapshot('personal'), applySnapshot = (s) => applyVault('personal', s);
@@ -74,7 +75,7 @@ const purgeVault = (v) => teamTools.purgeVault(v, stores());
 const allSig = () => JSON.stringify([hosts.raw(), groups.raw(), snippets.raw(), forwards.raw(), keys.raw()]);
 
 // ---- Teams (geteilte Tresore) ----
-let teamsFile;
+let teamsFile, kcFile;
 const teamKeys = new Map(); // Teamschlüssel nur im Speicher; werden bei jedem Abgleich aus dem eingepackten Schlüssel des Servers geholt
 const loadTeams = () => { try { return JSON.parse(fs.readFileSync(teamsFile, 'utf8')); } catch { return []; } };
 const teamCtx = () => {
@@ -91,6 +92,44 @@ async function refreshTeams(ctx) {
   for (const t of loadTeams()) if (!out.some((o) => o.id === t.id)) { purgeVault(t.id); teamKeys.delete(t.id); } // nicht mehr Mitglied: lokale Kopie entfernen
   fs.writeFileSync(teamsFile, JSON.stringify(out), { mode: 0o600 });
   return out;
+}
+
+// ---- Cloud-Schlüsselbund (siehe keyvault.js): Tresorschlüssel und Geheimschlüssel liegen nur lokal, mit safeStorage verschlüsselt ----
+const kcLoad = () => { try { return JSON.parse(fs.readFileSync(kcFile, 'utf8')); } catch { return {}; } };
+const kcSave = (o) => fs.writeFileSync(kcFile, JSON.stringify(o), { mode: 0o600 });
+const kcCtx = () => {
+  const c = loadSyncCfg(); if (!c) return null;
+  return { c, enc: Buffer.from(crypt.decrypt(c.key), 'base64'), api: new syncTools.Backend({ url: c.server, token: crypt.decrypt(c.token) }, backendOpts(c.server)) };
+};
+const kcErr = (e) => {
+  if (e.code === 'SK') return 'Geheimschlüssel ungültig';
+  if (e.code === 'WRONG') return 'Passwort oder Geheimschlüssel falsch';
+  if (e.message === 'fetch failed') return 'Server nicht erreichbar.';
+  if (e.status === 404 && e.message === 'Nicht gefunden') return 'Der Server kennt noch keinen Cloud-Schlüsselbund. Bitte den Server aktualisieren.';
+  return e.status ? e.message : 'Aktion fehlgeschlagen';
+};
+const clearCloudFlags = () => keys.raw().filter((k) => k.cloud && !k.deleted).forEach((k) => keys.setCloud(k.id, false));
+async function syncKeychain(ctx) {
+  const cfg = kcLoad(); if (!cfg.vk) return '';
+  const vk = Buffer.from(crypt.decrypt(cfg.vk), 'base64');
+  let header, gone = false;
+  const cloud = {
+    getVault: async () => {
+      const r = (await ctx.api.request('GET', 'keyvault')).vault;
+      if (!r) { gone = true; throw new Error(); }
+      header = r.header;
+      return { blob: r.blob || syncTools.seal(vk, { keys: [] }), rev: r.rev }; // noch leer: leerer Tresor
+    },
+    putVault: async (blob, prev) => { try { await ctx.api.request('PUT', 'keyvault', { header, blob, prev }); return true; } catch (e) { if (e.status === 409) return false; throw e; } },
+  };
+  try {
+    await syncTools.syncOnce({ cloud, key: vk, local: { get: () => kcTools.snapshot(keys.raw(), kcLoad().tomb || []), set: (m) => keys.setRaw(kcTools.apply(keys.raw(), m)) } });
+    if ((cfg.tomb || []).length) kcSave({ ...kcLoad(), tomb: [] }); // Löschmarker sind oben
+    return '';
+  } catch (e) {
+    if (gone) { clearCloudFlags(); kcSave({}); return 'Der Cloud-Schlüsselbund wurde auf einem anderen Gerät ausgeschaltet.'; }
+    return e.message === 'fetch failed' ? 'Server nicht erreichbar.' : e.message === 'Unsupported state or unable to authenticate data' ? 'Passwort oder Geheimschlüssel falsch' : e.message;
+  }
 }
 // Jedes Team einzeln abgleichen; Betrachter lesen nur. Fehler eines Teams stoppen die anderen nicht.
 async function syncTeams(ctx) {
@@ -118,6 +157,7 @@ async function runSync() {
     await syncTools.syncOnce({ cloud, key: Buffer.from(crypt.decrypt(c.key), 'base64'), local: { get: snapshot, set: applySnapshot } });
     syncState.status = 'ok'; syncState.lastSync = Date.now();
     try { const ctx = teamCtx(); await ctx.api.setPubkey(ctx.ident.pub); syncState.teamError = await syncTeams(ctx); } catch (e) { syncState.teamError = e.message === 'fetch failed' ? 'Server nicht erreichbar.' : e.message; }
+    try { syncState.keychainError = await syncKeychain(kcCtx()); } catch (e) { syncState.keychainError = e.message; }
     if (allSig() !== before) send('hosts:changed'); // andere Geräte haben etwas geändert
   } catch (e) {
     if (e.status === 401) { // Sitzung ungültig: zurück zum Login
@@ -135,7 +175,7 @@ async function runSync() {
 const scheduleSync = () => { if (!loadSyncCfg()) return; clearTimeout(syncTimer); syncTimer = setTimeout(runSync, 3000); };
 
 // Änderungen über diese Kanäle lösen einen Sync aus
-const MUTATING = new Set(['hosts:save', 'hosts:copy', 'hosts:remove', 'keys:copy', 'keys:generate', 'keys:import', 'keys:remove', 'keys:rename', 'keys:setPassphrase', 'groups:create', 'groups:rename', 'groups:remove', 'snippets:save', 'snippets:remove', 'fwd:save', 'fwd:remove', 'known:remove', 'known:import', 'import:commit']);
+const MUTATING = new Set(['hosts:save', 'hosts:copy', 'hosts:remove', 'override:set', 'keys:copy', 'keys:generate', 'keys:import', 'keys:remove', 'keys:rename', 'keys:setPassphrase', 'groups:create', 'groups:rename', 'groups:remove', 'snippets:save', 'snippets:remove', 'fwd:save', 'fwd:remove', 'known:remove', 'known:import', 'import:commit']);
 const handle = (ch, fn) => ipcMain.handle(ch, MUTATING.has(ch) ? async (...a) => { const r = await fn(...a); scheduleSync(); return r; } : fn);
 
 
@@ -193,6 +233,12 @@ function withAuth(conn, h, ask, log = () => {}, inlineHostKey = false) {
   auth.persist = () => {
     const { secret, keyId, passphrase } = auth.save;
     if (!h.id || !(secret || keyId || passphrase)) return false;
+    if (isTeamHost(h)) { // Team-Host: Schlüsselwahl nur für mich merken; Passwörter nie in den geteilten Eintrag schreiben
+      if (keyId) overrides.save({ ...ownAccess(h.id), id: h.id, keyId });
+      if (passphrase && (keyId || h.keyId)) keys.setPassphrase(keyId || h.keyId, passphrase);
+      scheduleSync();
+      return !!keyId;
+    }
     const cur = hosts.get(h.id);
     if (secret || keyId) hosts.save({ ...cur, ...(secret && { secret }), ...(keyId && { keyId }) });
     if (passphrase && (keyId || h.keyId)) keys.setPassphrase(keyId || h.keyId, passphrase);
@@ -268,13 +314,20 @@ function detectOs(win, conn, h) {
 
 // Ergänzt einen fehlenden Benutzernamen per Rückfrage; ask(kind) -> Antwort | null (abgebrochen). "Speichern" schreibt ihn in den Host.
 // Alles Weitere (Passwort, Schlüssel, Codes) verhandelt withAuth mit dem Server. Rückgabe { h, saved } oder null.
+const isTeamHost = (h) => !!h.vault && h.vault !== 'personal';
+const ownAccess = (id) => overrides.list().find((o) => o.id === id) || {};
 async function completeCreds(h, ask) {
   h = { ...h };
+  if (isTeamHost(h)) { const o = ownAccess(h.id); h = { ...h, ...(o.user && { user: o.user }), ...(o.keyId && { keyId: o.keyId }) }; } // Team-Host: mein eigener Zugang hat Vorrang
   if (h.user) return { h, saved: false };
   const a = await ask('user');
   if (!a) return null;
   h.user = a.user.trim();
-  if (a.save && h.id) { hosts.save({ ...hosts.get(h.id), user: h.user }); scheduleSync(); send('hosts:changed'); }
+  if (a.save && h.id) {
+    if (isTeamHost(h)) overrides.save({ ...ownAccess(h.id), id: h.id, user: h.user }); // nicht in den geteilten Host schreiben
+    else hosts.save({ ...hosts.get(h.id), user: h.user });
+    scheduleSync(); send('hosts:changed');
+  }
   return { h, saved: !!(a.save && h.id) };
 }
 // Rückfrage über einen Dialog (für SFTP und Forwarding, die keinen eigenen Verbindungsbildschirm haben)
@@ -426,7 +479,9 @@ app.whenReady().then(() => {
   snippets = plain(path.join(dir, 'snippets.json'));
   forwards = plain(path.join(dir, 'forwards.json'));
   known = plain(path.join(dir, 'known_hosts.json'));
+  overrides = plain(path.join(dir, 'overrides.json')); // persönlicher Zugang zu Team-Hosts (eigener Schlüssel / Benutzer), nur für mich
   teamsFile = path.join(dir, 'teams.json');
+  kcFile = path.join(dir, 'keychain-cloud.json');
 
   const win = new BrowserWindow({
     width: 1200, height: 740, minWidth: 720, minHeight: 480, show: false, icon: path.join(__dirname, 'assets', 'icon-512.png'),
@@ -492,6 +547,44 @@ app.whenReady().then(() => {
     await ctx.api.leave(id, me.userId); await refreshTeams(ctx); send('hosts:changed');
   }));
   ipcMain.handle('team:delete', teamDo(async (ctx, id) => { await ctx.api.remove(id); await refreshTeams(ctx); send('hosts:changed'); }));
+  // ---- Cloud-Schlüsselbund: Rückgabe { ... } oder { error } ----
+  const kcDo = (fn) => async (_, ...a) => { const ctx = kcCtx(); if (!ctx) return { error: 'Nicht angemeldet' }; try { return (await fn(ctx, ...a)) ?? {}; } catch (e) { return { error: kcErr(e) }; } };
+  const kcPassword = (ctx, password) => { if (!syncTools.deriveKeys(ctx.c.email, String(password || '')).enc.equals(ctx.enc)) throw Object.assign(new Error('Passwort falsch'), { status: 400 }); };
+  const kcStore = (vk, sk) => kcSave({ vk: crypt.encrypt(vk.toString('base64')), sk: crypt.encrypt(sk), tomb: [] });
+  ipcMain.handle('kc:status', async () => {
+    const ctx = kcCtx(), cfg = kcLoad();
+    if (!ctx) return { signedIn: false };
+    let remote = false; try { remote = !!(await ctx.api.request('GET', 'keyvault')).vault; } catch { /* Server alt oder offline */ }
+    return { signedIn: true, enabled: !!cfg.vk, remote, keys: keys.raw().filter((k) => k.cloud && !k.deleted).length };
+  });
+  ipcMain.handle('kc:enable', kcDo(async (ctx, password) => {
+    kcPassword(ctx, password);
+    if ((await ctx.api.request('GET', 'keyvault')).vault) throw Object.assign(new Error('Es gibt schon einen Cloud-Schlüsselbund. Bitte auf diesem Gerät entsperren.'), { status: 409 });
+    const { secretKey, vk, header } = await kcTools.create(String(password));
+    await ctx.api.request('PUT', 'keyvault', { header, blob: null, prev: null });
+    kcStore(vk, secretKey);
+    return { secretKey };
+  }));
+  ipcMain.handle('kc:unlock', kcDo(async (ctx, password, secretKey) => {
+    kcPassword(ctx, password);
+    const v = (await ctx.api.request('GET', 'keyvault')).vault;
+    if (!v) throw Object.assign(new Error('Kein Cloud-Schlüsselbund vorhanden.'), { status: 404 });
+    const vk = await kcTools.unlock(String(password), secretKey, v.header);
+    kcStore(vk, String(secretKey).trim());
+    scheduleSync();
+  }));
+  ipcMain.handle('kc:secret', () => { const c = kcLoad(); return c.sk ? { secretKey: crypt.decrypt(c.sk) } : { error: 'Aktion fehlgeschlagen' }; });
+  ipcMain.handle('kc:setKey', (_, id, on) => {
+    const cfg = kcLoad(); if (!cfg.vk) return { error: 'Aktion fehlgeschlagen' };
+    const k = keys.get(id); if (!k) return { error: 'Aktion fehlgeschlagen' };
+    let content; if (on && !k.privateKey && k.path) { try { content = fs.readFileSync(k.path, 'utf8'); } catch { /* nur öffentlicher Teil */ } } // Schlüssel aus ~/.ssh: Inhalt übernehmen
+    keys.setCloud(id, on, content);
+    const tomb = (cfg.tomb || []).filter((t) => t.id !== id);
+    kcSave({ ...cfg, tomb: on ? tomb : [...tomb, { id, at: Date.now() }] });
+    scheduleSync();
+    return {};
+  });
+  ipcMain.handle('kc:disable', kcDo(async (ctx) => { await ctx.api.request('DELETE', 'keyvault', {}); clearCloudFlags(); kcSave({}); }));
   handle('sync:status', () => syncStatus());
   handle('sync:now', () => { runSync(); });
   handle('sync:logout', async () => {
@@ -552,6 +645,8 @@ app.whenReady().then(() => {
     if (move) hosts.remove(id);
     return { id: nid, keyDropped: !!h.keyId && !same };
   });
+  handle('override:get', (_, id) => { const o = ownAccess(id); return { keyId: o.keyId || '', user: o.user || '' }; });
+  handle('override:set', (_, id, o) => { overrides.save({ id, keyId: o?.keyId || '', user: String(o?.user || '').trim() }); });
   handle('hosts:remove', (_, id) => hosts.remove(id));
   // Gruppen: Rückgabe null oder Fehlertext. Namen sind je Tresor eindeutig.
   const reGroup = (from, to, vault) => hosts.list().filter((h) => h.group === from && vOf(h) === vault).forEach((h) => hosts.save({ ...h, group: to }));

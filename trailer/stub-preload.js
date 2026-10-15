@@ -63,6 +63,8 @@ contextBridge.exposeInMainWorld('api', {
   onHostKey: (ask) => cb.hostKey.push(ask),
   answerHostKey() {},
   tor: { test: () => ok({ state: 'ok', ip: '198.51.100.23' }) },
+  kc: { status: () => ok({ signedIn: true, enabled: false, remote: false, keys: 0 }), enable: () => ok({ secretKey: 'SD1-ABCDEF-12345-GHJKM-NPQRS-TVWXY' }), unlock: () => ok({}), secret: () => ok({ secretKey: 'SD1-ABCDEF-12345-GHJKM-NPQRS-TVWXY' }), setKey: () => ok({}), disable: () => ok({}) },
+  override: { get: () => ok({ keyId: '', user: '' }), set: () => ok() },
   team: { list: () => ok({ teams: demo.teams }), create: () => ok({}),
     members: () => ok({ role: 'owner', members: [{ userId: 1, email: 'alex@example.com', role: 'owner', fingerprint: '598c f244 12c8 20c9 68aa', me: true }, { userId: 2, email: 'sam@example.com', role: 'member', fingerprint: '91ab 03de 77f0 4c21 b8e5' }, { userId: 3, email: 'robin@example.com', role: 'viewer', fingerprint: '4d20 e9a1 3b67 f8c0 15d2' }] }), invite: () => ok({}), setRole: () => ok({}), remove: () => ok({}), leave: () => ok({}), delete: () => ok({}), onChanged: (f) => cb.teams.push(f) },
   update: { check: () => ok({ current: '0.1.0', latest: '0.1.0', available: false, canInstall: true }), install: () => ok({ ok: true }), openPage() {}, onAvailable() {}, onStep() {} },

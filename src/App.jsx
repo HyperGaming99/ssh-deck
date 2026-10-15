@@ -12,6 +12,7 @@ import HostIcon from '@/components/HostIcon';
 import FormDialog from '@/components/FormDialog';
 import CredDialog from '@/components/CredDialog';
 import Logo from '@/components/Logo';
+import KeychainCloud from '@/components/KeychainCloud';
 import TeamsSettings from '@/components/TeamsSettings';
 import TermPanel from '@/components/TermPanel';
 import { FONTS, chromeVars, resolveTheme } from '@/lib/termThemes';
@@ -254,6 +255,8 @@ function CensorButton({ on, toggle }) {
 function KeychainView({ dark, openForm, toast }) {
   const t = useT();
   const { vault, writable, vaults } = useVault();
+  const [kc, setKc] = useState(null); // Cloud-Schlüsselbund-Status
+  useEffect(() => { if (vault === 'personal') api.kc.status().then(setKc).catch(() => {}); }, [vault]);
   const [items, setItems] = useState([]);
   const [q, setQ] = useState('');
   const [importOpen, setImportOpen] = useState(false);
@@ -286,16 +289,25 @@ function KeychainView({ dark, openForm, toast }) {
     toast(move ? t('Schlüssel verschoben.') : t('Schlüssel geklont.'));
     load();
   };
+  const toggleCloud = async (k) => {
+    const r = await api.kc.setKey(k.id, !k.cloud);
+    if (r.error) return toast(r.error);
+    toast(k.cloud ? t('Schlüssel aus der Cloud entfernt.') : t('Schlüssel in der Cloud gespeichert.'));
+    load();
+  };
   const keyMenu = (k) => {
     const others = vaults.filter((x) => x.id !== vault);
-    if (!others.length) return null;
+    const cloudOk = vault === 'personal' && kc?.enabled && writable;
+    if (!others.length && !cloudOk) return null;
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="size-8" aria-label={t('Mehr')} onClick={(e) => e.stopPropagation()}><Ellipsis className="size-3.5" /></Button></DropdownMenuTrigger>
         <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-          <DropdownMenuLabel className="text-xs text-muted-foreground">{t('In Tresor klonen')}</DropdownMenuLabel>
+          {cloudOk && <DropdownMenuItem onSelect={() => toggleCloud(k)}><Cloud className="size-4" />{k.cloud ? t('Aus der Cloud entfernen') : t('In der Cloud speichern')}</DropdownMenuItem>}
+          {cloudOk && others.length > 0 && <DropdownMenuSeparator />}
+          {others.length > 0 && <DropdownMenuLabel className="text-xs text-muted-foreground">{t('In Tresor klonen')}</DropdownMenuLabel>}
           {others.map((x) => <DropdownMenuItem key={`c${x.id}`} onSelect={() => copyKey(k, x.id, false)}>{x.id === 'personal' ? <User className="size-4" /> : <Users className="size-4" />}{x.name}</DropdownMenuItem>)}
-          {writable && !k.path && <>
+          {others.length > 0 && writable && !k.path && <>
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-xs text-muted-foreground">{t('In Tresor verschieben')}</DropdownMenuLabel>
             {others.map((x) => <DropdownMenuItem key={`m${x.id}`} onSelect={() => copyKey(k, x.id, true)}>{x.id === 'personal' ? <User className="size-4" /> : <Users className="size-4" />}{x.name}</DropdownMenuItem>)}
@@ -350,7 +362,7 @@ function KeychainView({ dark, openForm, toast }) {
       <div className={layout === 'grid' ? 'grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-3' : 'space-y-2'}>
         {list.map((k) => (
           <Item key={k.id} dark={dark} compact icon={<KeyRound className="size-5" />}
-            title={<span className="flex items-center gap-2">{k.name}<Badge variant="secondary">{k.source === 'generated' ? t('generiert') : t('importiert')}</Badge>{k.publicOnly && <Badge variant="outline">{t('nur öffentlich')}</Badge>}{k.encrypted && <Lock className="size-3 text-muted-foreground" />}</span>}
+            title={<span className="flex items-center gap-2">{k.name}<Badge variant="secondary">{k.source === 'generated' ? t('generiert') : t('importiert')}</Badge>{k.cloud && <Badge variant="outline"><Cloud className="me-1 size-3" />Cloud</Badge>}{k.publicOnly && <Badge variant="outline">{t('nur öffentlich')}</Badge>}{k.encrypted && <Lock className="size-3 text-muted-foreground" />}</span>}
             sub={`${k.type} · ${short(k.fingerprint)}`}
             onClick={() => k.publicKey && copy(k)}
             actions={<>
@@ -491,6 +503,7 @@ const SETTINGS_TABS = [
   ['appearance', T('Darstellung'), Palette],
   ['language', T('Sprache'), Languages],
   ['privacy', T('Datenschutz'), ShieldCheck],
+  ['keychain', T('Cloud-Schlüsselbund'), KeyRound],
   ['teams', T('Teams'), Users],
   ['updates', T('Updates'), Download],
   ['files', T('Dateien öffnen'), FileText],
@@ -645,6 +658,7 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
           </div>
         )}
         {tab === 'privacy' && <TorSettings />}
+        {tab === 'keychain' && <KeychainCloud st={st} toast={toast} goAccount={() => setTab('account')} />}
         {tab === 'teams' && <TeamsSettings st={st} teams={teams} refresh={refreshTeams} vault={vault} setVault={setVault} toast={toast} goAccount={() => setTab('account')} />}
         {tab === 'updates' && <UpdatesSettings />}
         {tab === 'files' && (

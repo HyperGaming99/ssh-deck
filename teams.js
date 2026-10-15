@@ -38,11 +38,11 @@ const without = (list, v) => list.filter((r) => !inVault(r, v));
 const SHARED = ['hosts', 'groups', 'snippets', 'forwards'];
 function snapshotVault(v, st) {
   const o = Object.fromEntries(SHARED.map((c) => [c, only(st[c].raw(), v)]));
-  return v === 'personal' ? { ...o, known: st.known.raw() } : { ...o, keys: only(st.keys.raw(), v) };
+  return v === 'personal' ? { ...o, known: st.known.raw(), ...(st.overrides && { overrides: st.overrides.raw() }) } : { ...o, keys: only(st.keys.raw(), v) };
 }
 function applyVault(v, snap, st) {
   for (const c of SHARED) st[c].setRaw([...without(st[c].raw(), v), ...(snap[c] || [])]);
-  if (v === 'personal') st.known.setRaw(snap.known || []); else st.keys.setRaw([...without(st.keys.raw(), v), ...(snap.keys || [])]);
+  if (v === 'personal') { st.known.setRaw(snap.known || []); if (st.overrides) st.overrides.setRaw(snap.overrides || []); } else st.keys.setRaw([...without(st.keys.raw(), v), ...(snap.keys || [])]);
 }
 const purgeVault = (v, st) => { for (const c of [...SHARED, 'keys']) st[c].setRaw(without(st[c].raw(), v)); };
 
