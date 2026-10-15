@@ -423,5 +423,7 @@
  "Update-Kanal": "Канал оновлень",
  "Stabil": "Стабільний",
  "Dev (Vorabversionen)": "Dev (попередні версії)",
- "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Dev-версії з'являються після кожного push і можуть містити помилки."
+ "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Dev-версії з'являються після кожного push і можуть містити помилки.",
+ "Etwas ist schiefgelaufen.": "Щось пішло не так.",
+ "Neu laden": "Перезавантажити"
 }

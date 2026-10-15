@@ -423,5 +423,7 @@
  "Update-Kanal": "更新通道",
  "Stabil": "稳定版",
  "Dev (Vorabversionen)": "Dev(预发布版)",
- "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Dev 版本会在每次推送时发布,可能包含错误。"
+ "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Dev 版本会在每次推送时发布,可能包含错误。",
+ "Etwas ist schiefgelaufen.": "出了点问题。",
+ "Neu laden": "重新加载"
 }

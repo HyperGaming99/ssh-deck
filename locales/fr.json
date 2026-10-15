@@ -423,5 +423,7 @@
  "Update-Kanal": "Canal de mise à jour",
  "Stabil": "Stable",
  "Dev (Vorabversionen)": "Dev (préversions)",
- "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Les versions dev apparaissent à chaque push et peuvent contenir des bogues."
+ "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Les versions dev apparaissent à chaque push et peuvent contenir des bogues.",
+ "Etwas ist schiefgelaufen.": "Une erreur s'est produite.",
+ "Neu laden": "Recharger"
 }

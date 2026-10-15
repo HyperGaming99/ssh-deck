@@ -423,5 +423,7 @@
  "Update-Kanal": "قناة التحديث",
  "Stabil": "مستقر",
  "Dev (Vorabversionen)": "Dev (إصدارات تجريبية)",
- "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "تظهر إصدارات Dev مع كل دفع وقد تحتوي على أخطاء."
+ "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "تظهر إصدارات Dev مع كل دفع وقد تحتوي على أخطاء.",
+ "Etwas ist schiefgelaufen.": "حدث خطأ ما.",
+ "Neu laden": "إعادة التحميل"
 }

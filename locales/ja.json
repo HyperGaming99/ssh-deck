@@ -423,5 +423,7 @@
  "Update-Kanal": "アップデートチャンネル",
  "Stabil": "安定版",
  "Dev (Vorabversionen)": "Dev(プレリリース)",
- "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Dev版は push のたびに公開され、不具合を含む可能性があります。"
+ "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Dev版は push のたびに公開され、不具合を含む可能性があります。",
+ "Etwas ist schiefgelaufen.": "問題が発生しました。",
+ "Neu laden": "再読み込み"
 }

@@ -423,5 +423,7 @@
  "Update-Kanal": "Updatekanaal",
  "Stabil": "Stabiel",
  "Dev (Vorabversionen)": "Dev (voorversies)",
- "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Dev-versies verschijnen bij elke push en kunnen fouten bevatten."
+ "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Dev-versies verschijnen bij elke push en kunnen fouten bevatten.",
+ "Etwas ist schiefgelaufen.": "Er is iets misgegaan.",
+ "Neu laden": "Opnieuw laden"
 }

@@ -26,7 +26,7 @@ const hosts = [
 ];
 const keys = [
   { id: 'k1', name: 'deploy_ed25519', source: 'generated', type: 'ssh-ed25519', fingerprint: fp('k1'), publicKey: 'ssh-ed25519 AAAA…', encrypted: false },
-  { id: 'k2', name: 'homelab_ed25519', source: 'imported', type: 'ssh-ed25519', fingerprint: fp('k2'), publicKey: 'ssh-ed25519 AAAA…', encrypted: false },
+  { id: 'k2', name: 'homelab_ed25519', cloud: true, source: 'imported', type: 'ssh-ed25519', fingerprint: fp('k2'), publicKey: 'ssh-ed25519 AAAA…', encrypted: false },
   { id: 'k3', name: 'work_rsa', source: 'imported', type: 'ssh-rsa', fingerprint: fp('k3'), publicKey: 'ssh-rsa AAAA…', encrypted: true },
   { id: 'k4', name: 'ci_ed25519', source: 'generated', type: 'ssh-ed25519', fingerprint: fp('k4'), publicKey: 'ssh-ed25519 AAAA…', encrypted: false },
 ];
@@ -50,7 +50,7 @@ const localFiles = [E('src', true, 0, H), E('dist', true, 0, 2 * H), E('docs', t
   E('notes.md', false, 2411, 3 * H), E('report.pdf', false, 912004, 2 * D), E('package.json', false, 1894, H)];
 let settings = { editor: 'auto', dark: true, tor: { sync: true, servers: true, host: '127.0.0.1', port: 9050 } };
 const cb = { data: [], hostKey: [], status: [], teams: [] };
-const demo = { manual: false, teams: [] }; // true: Verbindungsstatus von außen steuern (Aufnahme des Verbindungsbildschirms)
+const demo = { manual: false, teams: [], kcOn: false }; // true: Verbindungsstatus von außen steuern (Aufnahme des Verbindungsbildschirms)
 const ok = (v) => Promise.resolve(v);
 
 contextBridge.exposeInMainWorld('api', {
@@ -63,7 +63,7 @@ contextBridge.exposeInMainWorld('api', {
   onHostKey: (ask) => cb.hostKey.push(ask),
   answerHostKey() {},
   tor: { test: () => ok({ state: 'ok', ip: '198.51.100.23' }) },
-  kc: { status: () => ok({ signedIn: true, enabled: false, remote: false, keys: 0 }), enable: () => ok({ secretKey: 'SD1-ABCDEF-12345-GHJKM-NPQRS-TVWXY' }), unlock: () => ok({}), secret: () => ok({ secretKey: 'SD1-ABCDEF-12345-GHJKM-NPQRS-TVWXY' }), setKey: () => ok({}), disable: () => ok({}) },
+  kc: { status: () => ok({ signedIn: true, enabled: demo.kcOn, remote: demo.kcOn, keys: demo.kcOn ? 1 : 0 }), enable: () => ok({ secretKey: 'SD1-ABCDEF-12345-GHJKM-NPQRS-TVWXY' }), unlock: () => ok({}), secret: () => ok({ secretKey: 'SD1-ABCDEF-12345-GHJKM-NPQRS-TVWXY' }), setKey: () => ok({}), disable: () => ok({}) },
   override: { get: () => ok({ keyId: '', user: '' }), set: () => ok() },
   team: { list: () => ok({ teams: demo.teams }), create: () => ok({}),
     members: () => ok({ role: 'owner', members: [{ userId: 1, email: 'alex@example.com', role: 'owner', fingerprint: '598c f244 12c8 20c9 68aa', me: true }, { userId: 2, email: 'sam@example.com', role: 'member', fingerprint: '91ab 03de 77f0 4c21 b8e5' }, { userId: 3, email: 'robin@example.com', role: 'viewer', fingerprint: '4d20 e9a1 3b67 f8c0 15d2' }] }), invite: () => ok({}), setRole: () => ok({}), remove: () => ok({}), leave: () => ok({}), delete: () => ok({}), onChanged: (f) => cb.teams.push(f) },
@@ -85,5 +85,5 @@ contextBridge.exposeInMainWorld('api', {
   onStatus: (f) => cb.status.push(f), onCredAsk() {}, answerCred() {},
   onClosed() {},
   // Nur für die Aufnahme: Terminalausgabe und Rückfragen von außen auslösen
-  __demo: { setTeams: (t) => { demo.teams = t; cb.teams.forEach((f) => f()); }, setManual: (v) => { demo.manual = v; }, status: (sid, s) => cb.status.forEach((f) => f(sid, s)), emit: (sid, d) => cb.data.forEach((f) => f(sid, d)), askHostKey: (info) => cb.hostKey.forEach((f) => f(info)) },
+  __demo: { setKcOn: (v) => { demo.kcOn = v; }, setTeams: (t) => { demo.teams = t; cb.teams.forEach((f) => f()); }, setManual: (v) => { demo.manual = v; }, status: (sid, s) => cb.status.forEach((f) => f(sid, s)), emit: (sid, d) => cb.data.forEach((f) => f(sid, d)), askHostKey: (info) => cb.hostKey.forEach((f) => f(info)) },
 });

@@ -423,5 +423,7 @@
  "Update-Kanal": "Canale di aggiornamento",
  "Stabil": "Stabile",
  "Dev (Vorabversionen)": "Dev (pre-release)",
- "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Le versioni dev compaiono a ogni push e possono contenere errori."
+ "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Le versioni dev compaiono a ogni push e possono contenere errori.",
+ "Etwas ist schiefgelaufen.": "Qualcosa è andato storto.",
+ "Neu laden": "Ricarica"
 }

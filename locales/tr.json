@@ -423,5 +423,7 @@
  "Update-Kanal": "Güncelleme kanalı",
  "Stabil": "Kararlı",
  "Dev (Vorabversionen)": "Dev (ön sürümler)",
- "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Dev sürümleri her push'ta çıkar ve hata içerebilir."
+ "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Dev sürümleri her push'ta çıkar ve hata içerebilir.",
+ "Etwas ist schiefgelaufen.": "Bir şeyler ters gitti.",
+ "Neu laden": "Yeniden yükle"
 }
