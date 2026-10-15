@@ -19,7 +19,8 @@ const plain = (file) => {
       wr(file, a.some((x) => x.id === rec.id) ? a.map((x) => (x.id === rec.id ? rec : x)) : [...a, rec]);
       return rec.id;
     },
-    remove: (id) => wr(file, all().map((x) => (x.id === id ? { id, deleted: true, updatedAt: Date.now() } : x))),
+    // Löschmarker behält den Tresor (vault), damit er im richtigen Tresor weitersynct
+    remove: (id) => wr(file, all().map((x) => (x.id === id ? { id, deleted: true, ...(x.vault && { vault: x.vault }), ...(x.cloud && { cloud: true }), updatedAt: Date.now() } : x))),
   };
 };
 
@@ -32,7 +33,7 @@ const hosts = (file, crypt) => {
     save: (h) => {
       const old = base.list().find((x) => x.id === h.id);
       const secret = h.secret === undefined ? (old ? old.secret : '') : (h.secret ? crypt.encrypt(h.secret) : '');
-      return base.save({ id: h.id, name: h.name, group: h.group || '', host: h.host, port: +h.port || 22, user: h.user, keyPath: h.keyPath || '', keyId: h.keyId || '', icon: h.icon || '', tags: Array.isArray(h.tags) ? h.tags.map(String) : (old ? old.tags || [] : []), autoIcon: old ? old.autoIcon || '' : '', secret });
+      return base.save({ id: h.id, name: h.name, group: h.group || '', host: h.host, port: +h.port || 22, user: h.user, keyPath: h.keyPath || '', keyId: h.keyId || '', icon: h.icon || '', tags: Array.isArray(h.tags) ? h.tags.map(String) : (old ? old.tags || [] : []), autoIcon: old ? old.autoIcon || '' : '', secret, ...((h.vault || old?.vault) && { vault: h.vault || old.vault }) });
     },
     // vom Server erkanntes Betriebssystem-Icon (icon = manuelle Wahl hat Vorrang)
     setAutoIcon: (id, slug) => { const h = base.list().find((x) => x.id === id); if (h) base.save({ ...h, autoIcon: slug }); },
@@ -54,6 +55,11 @@ const keys = (file, crypt) => {
     add: (k) => base.save({ ...k, privateKey: sec(k.privateKey), passphrase: sec(k.passphrase) }),
     setPassphrase: (id, p) => { const k = find(id); if (k) base.save({ ...k, passphrase: sec(p) }); },
     rename: (id, name) => { const k = find(id); if (k) base.save({ ...k, name }); },
+    // Cloud-Schlüsselbund: Schlüssel ein-/ausschalten; privateKey (Klartext) nur, wenn er noch nicht gespeichert ist (Schlüssel aus ~/.ssh)
+    setCloud: (id, on, privateKey) => { const k = find(id); if (k) base.save({ ...k, cloud: !!on, ...(privateKey && { privateKey: sec(privateKey) }) }); },
+    // für Team-Tresore: Schlüssel samt privatem Teil im Klartext raus (der Tresor wird mit dem Teamschlüssel verschlüsselt), lokal wieder verschlüsseln
+    raw: () => base.raw().map((r) => ({ ...r, privateKey: r.privateKey ? crypt.decrypt(r.privateKey) : undefined, passphrase: r.passphrase ? crypt.decrypt(r.passphrase) : undefined })),
+    setRaw: (arr) => base.setRaw(arr.map((r) => ({ ...r, privateKey: sec(r.privateKey), passphrase: sec(r.passphrase) }))),
     remove: base.remove,
   };
 };

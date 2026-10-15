@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Eye, EyeOff, FolderOpen, KeyRound, Lock, Plus, Tag, Trash2, Type, User, X } from 'lucide-react';
+import { ChevronDown, Eye, EyeOff, FolderOpen, KeyRound, Lock, Plus, Tag, Trash2, Type, User, Users, X } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -33,23 +33,28 @@ export default function HostSheet({ spec, onClose }) {
   const [showPw, setShowPw] = useState(false);
   const [more, setMore] = useState(false);
   const [keyOpen, setKeyOpen] = useState(false);
+  const [own, setOwn] = useState({ keyId: '', user: '' }); // mein eigener Zugang zu einem Team-Host (nur für mich)
   const action = useRef('save');
   useEffect(() => {
     if (!spec) return;
     setV({ ...spec.values, tags: (spec.values.tags || []).join(', ') });
-    setShowPw(false); setMore(false); setKeyOpen(!!spec.values.keyId);
+    setShowPw(false); setMore(false); setKeyOpen(!!spec.values.keyId); setOwn({ keyId: '', user: '' });
+    if (spec.values.id && spec.values.vault && spec.values.vault !== 'personal') api.override.get(spec.values.id).then(setOwn);
   }, [spec]);
   if (!spec) return null;
 
   const set = (k) => (e) => setV((o) => ({ ...o, [k]: e.target.value }));
   const pick = (k) => (x) => setV((o) => ({ ...o, [k]: x === '__none' ? '' : x }));
   const editing = !!spec.values.id;
+  const cur = v.vault || 'personal', vaults = spec.vaults || [];
+  const pickVault = (x) => setV((o) => ({ ...o, vault: x, group: '', keyId: '' })); // Gruppen und Schlüssel gehören zu einem Tresor
 
   const submit = async (e) => {
     e.preventDefault();
     const o = { ...v, id: spec.values.id, name: (v.name || '').trim() || v.host, tags: (v.tags || '').split(',').map((s) => s.trim()).filter(Boolean) };
     if (!o.secret) delete o.secret; // leer = bestehendes Passwort behalten
     const id = await spec.onSave(o);
+    if (cur !== 'personal' && (id || o.id)) await api.override.set(id || o.id, own);
     if (action.current === 'connect') spec.onConnect({ id, name: o.name });
     onClose();
   };
@@ -79,17 +84,40 @@ export default function HostSheet({ spec, onClose }) {
 
             <Card title={t('Allgemein')}>
               <Field icon={Type}><Input className={inputCls} placeholder={t('Name')} autoComplete="off" value={v.name ?? ''} onChange={set('name')} /></Field>
+              {vaults.length > 1 && (
+                <Field icon={Users}>
+                  <Select value={cur} onValueChange={pickVault}>
+                    <SelectTrigger className={triggerCls}><SelectValue placeholder={t('Tresor')} /></SelectTrigger>
+                    <SelectContent>{vaults.map((x) => <SelectItem key={x.id} value={x.id}>{x.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                </Field>
+              )}
               <Field icon={FolderOpen}>
                 <Select value={v.group || '__none'} onValueChange={pick('group')}>
                   <SelectTrigger className={triggerCls}><SelectValue placeholder={t('Gruppe')} /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none">{t('Keine Gruppe')}</SelectItem>
-                    {spec.groups.map((g) => <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>)}
+                    {spec.groups.filter((g) => (g.vault || 'personal') === cur).map((g) => <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </Field>
               <Field icon={Tag}><Input className={inputCls} placeholder={t('Tags (mit Komma getrennt)')} autoComplete="off" value={v.tags ?? ''} onChange={set('tags')} /></Field>
             </Card>
+
+            {cur !== 'personal' && editing && (
+              <Card title={t('Mein Zugang (nur für mich)')}>
+                <Field icon={User}><Input className={inputCls} placeholder={t('Eigener Benutzer (optional)')} autoComplete="off" value={own.user} onChange={(e) => setOwn((o) => ({ ...o, user: e.target.value }))} /></Field>
+                <Field icon={KeyRound}>
+                  <Select value={own.keyId || '__none'} onValueChange={(x) => setOwn((o) => ({ ...o, keyId: x === '__none' ? '' : x }))}>
+                    <SelectTrigger className={triggerCls}><SelectValue placeholder={t('Eigener Schlüssel')} /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none">{t('Schlüssel des Hosts verwenden')}</SelectItem>
+                      {spec.keys.filter((k) => !k.publicOnly).map((k) => <SelectItem key={k.id} value={k.id}>{`${k.name} · ${k.type}`}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </Card>
+            )}
 
             <Card>
               <div className="flex items-center justify-between gap-3">
@@ -114,7 +142,7 @@ export default function HostSheet({ spec, onClose }) {
                       <SelectTrigger className={triggerCls}><SelectValue placeholder={t('Schlüssel (Keychain)')} /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="__none">{t('Kein Schlüssel (Passwort)')}</SelectItem>
-                        {spec.keys.filter((k) => !k.publicOnly).map((k) => <SelectItem key={k.id} value={k.id}>{`${k.name} · ${k.type}`}</SelectItem>)}
+                        {spec.keys.filter((k) => !k.publicOnly && (k.vault || 'personal') === cur).map((k) => <SelectItem key={k.id} value={k.id}>{`${k.name} · ${k.type}`}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </Field>

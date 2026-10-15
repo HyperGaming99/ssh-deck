@@ -15,7 +15,7 @@ const unwrap = async (promise) => {
 const sftpCall = (name) => (sid, ...a) => unwrap(ipcRenderer.invoke(`sftp:${name}`, sid, ...a));
 
 contextBridge.exposeInMainWorld('api', {
-  hosts: { ...coll('hosts'), get: (id) => ipcRenderer.invoke('hosts:get', id) },
+  hosts: { ...coll('hosts'), get: (id) => ipcRenderer.invoke('hosts:get', id), copy: (id, vault, move, name) => ipcRenderer.invoke('hosts:copy', id, vault, move, name) },
   win: {
     minimize: () => ipcRenderer.send('win:minimize'),
     toggleMax: () => ipcRenderer.send('win:toggleMax'),
@@ -23,7 +23,7 @@ contextBridge.exposeInMainWorld('api', {
   },
   groups: {
     list: () => ipcRenderer.invoke('groups:list'),
-    create: (n) => ipcRenderer.invoke('groups:create', n),
+    create: (n, vault) => ipcRenderer.invoke('groups:create', n, vault),
     rename: (id, n) => ipcRenderer.invoke('groups:rename', id, n),
     remove: (id) => ipcRenderer.invoke('groups:remove', id),
   },
@@ -41,8 +41,15 @@ contextBridge.exposeInMainWorld('api', {
   },
   onHostKey: (ask, cancel) => { ipcRenderer.on('hostkey:ask', (_, info) => ask(info)); ipcRenderer.on('hostkey:cancel', (_, id) => cancel(id)); },
   answerHostKey: (id, ok) => ipcRenderer.send('hostkey:answer', id, ok),
-  importer: { pick: (format) => ipcRenderer.invoke('import:pick', format), commit: () => ipcRenderer.invoke('import:commit') },
+  importer: { pick: (format) => ipcRenderer.invoke('import:pick', format), commit: (vault) => ipcRenderer.invoke('import:commit', vault) },
   tor: { test: () => ipcRenderer.invoke('tor:test') },
+  override: { get: (id) => ipcRenderer.invoke('override:get', id), set: (id, o) => ipcRenderer.invoke('override:set', id, o) },
+  kc: { status: () => ipcRenderer.invoke('kc:status'), enable: (pw) => ipcRenderer.invoke('kc:enable', pw), unlock: (pw, sk) => ipcRenderer.invoke('kc:unlock', pw, sk),
+    secret: () => ipcRenderer.invoke('kc:secret'), setKey: (id, on) => ipcRenderer.invoke('kc:setKey', id, on), disable: () => ipcRenderer.invoke('kc:disable') },
+  team: { list: () => ipcRenderer.invoke('team:list'), create: (n) => ipcRenderer.invoke('team:create', n), members: (id) => ipcRenderer.invoke('team:members', id),
+    invite: (id, email, role) => ipcRenderer.invoke('team:invite', id, email, role), setRole: (id, u, role) => ipcRenderer.invoke('team:setRole', id, u, role),
+    remove: (id, u) => ipcRenderer.invoke('team:remove', id, u), leave: (id) => ipcRenderer.invoke('team:leave', id), delete: (id) => ipcRenderer.invoke('team:delete', id),
+    onChanged: (cb) => ipcRenderer.on('teams:changed', () => cb()) },
   update: { check: () => ipcRenderer.invoke('update:check'), install: () => ipcRenderer.invoke('update:install'), openPage: () => ipcRenderer.invoke('update:openPage'),
     onAvailable: (cb) => ipcRenderer.on('update:available', (_, u) => cb(u)), onStep: (cb) => ipcRenderer.on('update:step', (_, s) => cb(s)) },
   settings: { get: () => ipcRenderer.invoke('settings:get'), set: (patch) => ipcRenderer.invoke('settings:set', patch) },
@@ -57,6 +64,7 @@ contextBridge.exposeInMainWorld('api', {
     rename: (id, name) => ipcRenderer.invoke('keys:rename', id, name),
     readFile: () => ipcRenderer.invoke('keys:readFile'),
     remove: (id) => ipcRenderer.invoke('keys:remove', id),
+    copy: (id, vault, move) => ipcRenderer.invoke('keys:copy', id, vault, move),
     exportPrivate: (id) => ipcRenderer.invoke('keys:exportPrivate', id),
     toHost: (keyId, hostId) => ipcRenderer.invoke('keys:toHost', keyId, hostId),
   },

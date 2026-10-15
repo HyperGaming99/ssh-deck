@@ -49,8 +49,8 @@ const remoteFiles = [E('releases', true, 0, 2 * D), E('shared', true, 0, 9 * D),
 const localFiles = [E('src', true, 0, H), E('dist', true, 0, 2 * H), E('docs', true, 0, 7 * D), E('build.zip', false, 18874368, 30 * 60000), E('logo.svg', false, 5201, 9 * D),
   E('notes.md', false, 2411, 3 * H), E('report.pdf', false, 912004, 2 * D), E('package.json', false, 1894, H)];
 let settings = { editor: 'auto', dark: true, tor: { sync: true, servers: true, host: '127.0.0.1', port: 9050 } };
-const cb = { data: [], hostKey: [], status: [] };
-const demo = { manual: false }; // true: Verbindungsstatus von außen steuern (Aufnahme des Verbindungsbildschirms)
+const cb = { data: [], hostKey: [], status: [], teams: [] };
+const demo = { manual: false, teams: [] }; // true: Verbindungsstatus von außen steuern (Aufnahme des Verbindungsbildschirms)
 const ok = (v) => Promise.resolve(v);
 
 contextBridge.exposeInMainWorld('api', {
@@ -63,6 +63,10 @@ contextBridge.exposeInMainWorld('api', {
   onHostKey: (ask) => cb.hostKey.push(ask),
   answerHostKey() {},
   tor: { test: () => ok({ state: 'ok', ip: '198.51.100.23' }) },
+  kc: { status: () => ok({ signedIn: true, enabled: false, remote: false, keys: 0 }), enable: () => ok({ secretKey: 'SD1-ABCDEF-12345-GHJKM-NPQRS-TVWXY' }), unlock: () => ok({}), secret: () => ok({ secretKey: 'SD1-ABCDEF-12345-GHJKM-NPQRS-TVWXY' }), setKey: () => ok({}), disable: () => ok({}) },
+  override: { get: () => ok({ keyId: '', user: '' }), set: () => ok() },
+  team: { list: () => ok({ teams: demo.teams }), create: () => ok({}),
+    members: () => ok({ role: 'owner', members: [{ userId: 1, email: 'alex@example.com', role: 'owner', fingerprint: '598c f244 12c8 20c9 68aa', me: true }, { userId: 2, email: 'sam@example.com', role: 'member', fingerprint: '91ab 03de 77f0 4c21 b8e5' }, { userId: 3, email: 'robin@example.com', role: 'viewer', fingerprint: '4d20 e9a1 3b67 f8c0 15d2' }] }), invite: () => ok({}), setRole: () => ok({}), remove: () => ok({}), leave: () => ok({}), delete: () => ok({}), onChanged: (f) => cb.teams.push(f) },
   update: { check: () => ok({ current: '0.1.0', latest: '0.1.0', available: false, canInstall: true }), install: () => ok({ ok: true }), openPage() {}, onAvailable() {}, onStep() {} },
   settings: { get: () => ok(settings), set: (p) => { settings = { ...settings, ...p }; return ok(); } },
   onHostsChanged() {},
@@ -81,5 +85,5 @@ contextBridge.exposeInMainWorld('api', {
   onStatus: (f) => cb.status.push(f), onCredAsk() {}, answerCred() {},
   onClosed() {},
   // Nur für die Aufnahme: Terminalausgabe und Rückfragen von außen auslösen
-  __demo: { setManual: (v) => { demo.manual = v; }, status: (sid, s) => cb.status.forEach((f) => f(sid, s)), emit: (sid, d) => cb.data.forEach((f) => f(sid, d)), askHostKey: (info) => cb.hostKey.forEach((f) => f(info)) },
+  __demo: { setTeams: (t) => { demo.teams = t; cb.teams.forEach((f) => f()); }, setManual: (v) => { demo.manual = v; }, status: (sid, s) => cb.status.forEach((f) => f(sid, s)), emit: (sid, d) => cb.data.forEach((f) => f(sid, d)), askHostKey: (info) => cb.hostKey.forEach((f) => f(info)) },
 });

@@ -10,7 +10,7 @@ const EMPTY = { name: '', privateKey: '', publicKey: '', passphrase: '' };
 const area = 'min-h-28 w-full resize-y rounded-xl border bg-background px-3 py-2.5 font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 // Eigenen Schlüssel einbinden: privat einfügen oder Datei wählen, öffentlicher Teil optional (wird sonst abgeleitet)
-export default function KeyImportSheet({ open, onClose, onDone, toast }) {
+export default function KeyImportSheet({ open, onClose, onDone, toast, vault = 'personal' }) {
   const t = useT();
   const [v, setV] = useState(EMPTY);
   const [busy, setBusy] = useState(false);
@@ -26,7 +26,7 @@ export default function KeyImportSheet({ open, onClose, onDone, toast }) {
   const submit = async (e) => {
     e.preventDefault();
     setBusy(true);
-    const err = await api.keys.import(v);
+    const err = await api.keys.import({ ...v, vault });
     setBusy(false);
     if (err) return toast(err);
     toast(t('Schlüssel importiert.'));

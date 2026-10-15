@@ -43,6 +43,8 @@ SSH Deck is a desktop app (Electron + React) to connect to your servers. You kee
 
 **Port forwarding** – local, remote and dynamic (SOCKS5), set up with a guided wizard
 
+**Teams** – shared vaults for hosts (with passwords), snippets, forwarding rules and SSH keys. Switch between *Personal* and team vaults in the title bar; owners and admins invite people by email and give them a role (admin, member, viewer). Everything is end-to-end encrypted, removing a member renews the team key, and every member's key fingerprint is shown so invitations can be verified in person. Needs the cloud-sync server (`node server/server.js`) and an account.
+
 **Privacy &amp; sync** – optional cloud sync with end-to-end encryption (the server stores only ciphertext), secrets encrypted with the OS keystore, **Tor routing** for sync and/or servers
 
 **More** – 16 languages (incl. right-to-left), light and dark UI, in-app updater
@@ -86,7 +88,7 @@ On Linux you can add SSH Deck with its logo to your application menu: `bash asse
 
 ## Updates
 
-*Settings → Updates* checks the newest stable release. For a source install it downloads, checks, installs and restarts the app (with an automatic rollback if something fails); for an installed package it opens the release page. Builds from the `dev` branch are published as **pre-releases** and have to be downloaded by hand.
+*Settings → Updates* checks the newest stable release. For a source install it downloads, checks, installs and restarts the app (with an automatic rollback if something fails); for an installed package it opens the release page. Under *Update channel* you can switch to **Dev**: then pre-releases built from the `dev` branch (a new one with every push) are offered too. The default is **Stable**.
 
 ## Development
 

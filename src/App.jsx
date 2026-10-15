@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronLeft, Eye, EyeOff, LayoutGrid, List, CloudOff, Fingerprint, Languages, ShieldCheck, Check, FileText, Palette, Settings as SettingsIcon, User, Folder, FolderPlus, Menu, Minus, Square, ArrowLeftRight, Code2, Copy, Download, FileUp, FolderOpen, KeyRound, Lock, Moon, Pencil, Plus, RefreshCw, Search, Send, Server, Sun, PanelRight, Terminal as TermIcon, Trash2, X } from 'lucide-react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronDown, ChevronLeft, Eye, EyeOff, LayoutGrid, List, CloudOff, Fingerprint, Languages, ShieldCheck, Check, FileText, Palette, Settings as SettingsIcon, User, Folder, FolderPlus, Menu, Minus, Square, ArrowLeftRight, Code2, Copy, Download, Ellipsis, FileUp, FolderOpen, KeyRound, Lock, Moon, Pencil, Plus, RefreshCw, Search, Send, Server, Sun, PanelRight, Terminal as TermIcon, Trash2, Users, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,8 @@ import HostIcon from '@/components/HostIcon';
 import FormDialog from '@/components/FormDialog';
 import CredDialog from '@/components/CredDialog';
 import Logo from '@/components/Logo';
+import KeychainCloud from '@/components/KeychainCloud';
+import TeamsSettings from '@/components/TeamsSettings';
 import TermPanel from '@/components/TermPanel';
 import { FONTS, chromeVars, resolveTheme } from '@/lib/termThemes';
 import ConnectScreen from '@/components/ConnectScreen';
@@ -22,7 +24,7 @@ import HostKeyDialog from '@/components/HostKeyDialog';
 import ImportDialog from '@/components/ImportDialog';
 import KeyImportSheet from '@/components/KeyImportSheet';
 import { maskFingerprint, maskHost } from '@/lib/censor.mjs';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import Terminal, { writers } from '@/components/Terminal';
 import SftpTab from '@/components/SftpTab';
 import LoginScreen from '@/components/LoginScreen';
@@ -40,6 +42,10 @@ const SECTIONS = [
   ['settings', T('Einstellungen'), SettingsIcon], // steht in der Navigation unten
 ];
 
+// Tresor: "personal" oder die id eines Teams. Alle Listen zeigen nur den gewählten Tresor, neue Einträge landen darin.
+const VaultCtx = createContext({ vault: 'personal', name: '', role: 'owner', writable: true, vaults: [] });
+const useVault = () => useContext(VaultCtx);
+const inV = (r, vault) => (r.vault || 'personal') === vault;
 const matches = (q, ...vals) => vals.join(' ').toLowerCase().includes(q.toLowerCase());
 
 function IconButton({ label, onClick, children }) {
@@ -90,7 +96,7 @@ function Toolbar({ q, setQ, label, onNew }) {
         <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input className="pl-9" placeholder={t('Suchen …')} value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
-      <Button onClick={onNew}><Plus className="size-4" />{label}</Button>
+      {onNew && <Button onClick={onNew}><Plus className="size-4" />{label}</Button>}
     </div>
   );
 }
@@ -99,18 +105,20 @@ const Empty = ({ children }) => <p className="mt-16 text-center text-sm text-mut
 
 function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) {
   const t = useT();
+  const { vault, writable, vaults } = useVault();
   const [hosts, setHosts] = useState([]);
   const [groups, setGroups] = useState([]);
   const [q, setQ] = useState('');
   const [current, setCurrent] = useState(null); // Gruppenname oder null (oberste Ebene)
   const [importOpen, setImportOpen] = useState(false);
-  const load = useCallback(() => { api.hosts.list().then(setHosts); api.groups.list().then(setGroups); }, []);
+  const load = useCallback(() => { api.hosts.list().then((l) => setHosts(l.filter((h) => inV(h, vault)))); api.groups.list().then((l) => setGroups(l.filter((g) => inV(g, vault)))); }, [vault]);
   useEffect(() => { load(); }, [load, rev]);
+  useEffect(() => setCurrent(null), [vault]);
 
-  const edit = async (h = { port: 22, group: current ?? '' }) => {
+  const edit = async (h = { port: 22, group: current ?? '', vault }) => {
     const values = h.id ? { ...h, ...(await api.hosts.get(h.id)) } : h;
     openHost({
-      values, groups, keys: await api.keys.list(),
+      values, groups: await api.groups.list(), keys: await api.keys.list(), vaults,
       onSave: async (o) => { const id = await api.hosts.save(o); load(); return id; },
       onConnect: connect,
       onDelete: async (id) => { await api.hosts.remove(id); load(); },
@@ -118,7 +126,7 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
   };
   const newGroup = () => openForm({
     title: t('Neue Gruppe'), fields: [{ name: 'name', label: t('Name'), required: true }],
-    onSubmit: async (v) => { const err = await api.groups.create(v.name); err ? toast(err) : load(); },
+    onSubmit: async (v) => { const err = await api.groups.create(v.name, vault); err ? toast(err) : load(); },
   });
   const renameGroup = (g) => openForm({
     title: t('Gruppe umbenennen'), values: g, fields: [{ name: 'name', label: t('Name'), required: true }],
@@ -136,13 +144,42 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
     load();
   };
 
+  // Klonen / in einen anderen Tresor klonen oder verschieben
+  const copyTo = async (h, target, move) => {
+    const r = await api.hosts.copy(h.id, target, move, !move && target === vault ? `${h.name} (${t('Kopie')})` : undefined);
+    if (r.error) return toast(r.error);
+    toast((move ? t('Host verschoben.') : t('Host geklont.')) + (r.keyDropped ? ` ${t('Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.')}` : ''));
+    load();
+  };
+  const hostMenu = (h) => {
+    const others = vaults.filter((x) => x.id !== vault);
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="size-8" aria-label={t('Mehr')} onClick={(e) => e.stopPropagation()}><Ellipsis className="size-3.5" /></Button></DropdownMenuTrigger>
+        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+          {writable && <DropdownMenuItem onSelect={() => copyTo(h, vault, false)}><Copy className="size-4" />{t('Klonen')}</DropdownMenuItem>}
+          {others.length > 0 && <>
+            {writable && <DropdownMenuSeparator />}
+            <DropdownMenuLabel className="text-xs text-muted-foreground">{t('In Tresor klonen')}</DropdownMenuLabel>
+            {others.map((x) => <DropdownMenuItem key={`c${x.id}`} onSelect={() => copyTo(h, x.id, false)}>{x.id === 'personal' ? <User className="size-4" /> : <Users className="size-4" />}{x.name}</DropdownMenuItem>)}
+            {writable && <>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs text-muted-foreground">{t('In Tresor verschieben')}</DropdownMenuLabel>
+              {others.map((x) => <DropdownMenuItem key={`m${x.id}`} onSelect={() => copyTo(h, x.id, true)}>{x.id === 'personal' ? <User className="size-4" /> : <Users className="size-4" />}{x.name}</DropdownMenuItem>)}
+            </>}
+          </>}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
   const hostCard = (h) => (
     <Item key={h.id} dark={dark} icon={<HostIcon slug={h.icon || h.autoIcon} />} sub={`${h.user}@${h.host}:${h.port}`}
       title={<span className="flex items-center gap-2">{h.name}{(h.tags || []).slice(0, 2).map((tg) => <Badge key={tg} variant="secondary" className="px-1.5 py-0 text-xs">{tg}</Badge>)}</span>}
       onClick={() => connect(h)}
       actions={<><IconButton label="SFTP" onClick={() => openSftp(h)}><FolderOpen className="size-3.5" /></IconButton>
-        <IconButton label={t('Bearbeiten')} onClick={() => edit(h)}><Pencil className="size-3.5" /></IconButton>
-        <IconButton label={t('Löschen')} onClick={async () => { await api.hosts.remove(h.id); load(); }}><Trash2 className="size-3.5" /></IconButton></>} />
+        {(writable || vaults.some((x) => x.id !== vault)) && hostMenu(h)}
+        {writable && <><IconButton label={t('Bearbeiten')} onClick={() => edit(h)}><Pencil className="size-3.5" /></IconButton>
+        <IconButton label={t('Löschen')} onClick={async () => { await api.hosts.remove(h.id); load(); }}><Trash2 className="size-3.5" /></IconButton></>}</>} />
   );
   const grid = (kids) => <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">{kids}</div>;
   const heading = (text) => <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{text}</h3>;
@@ -159,12 +196,13 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input className="pl-9" placeholder={t('Suchen …')} value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
+        {writable && <>
         <Button variant="outline" onClick={() => setImportOpen(true)}><Download className="size-4" />{t('Importieren')}</Button>
         <Button variant="outline" onClick={newGroup}><FolderPlus className="size-4" />{t('Neue Gruppe')}</Button>
-        <Button onClick={() => edit()}><Plus className="size-4" />{t('Neuer Host')}</Button>
+        <Button onClick={() => edit()}><Plus className="size-4" />{t('Neuer Host')}</Button></>}
       </div>
 
-      <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} onDone={load} toast={toast} />
+      <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} onDone={load} toast={toast} vault={vault} />
       {searching ? (
         <>{!found.length && <Empty>{t('Keine Treffer.')}</Empty>}{grid(found.map(hostCard))}</>
       ) : current !== null ? (
@@ -185,7 +223,7 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
                 return (
                   <Item key={g.id} dark={dark} icon={<Folder className="size-5 text-primary" />} title={g.name} sub={t('{n} Server', { n })}
                     onClick={() => setCurrent(g.name)}
-                    actions={<><IconButton label={t('Umbenennen')} onClick={() => renameGroup(g)}><Pencil className="size-3.5" /></IconButton>
+                    actions={writable && <><IconButton label={t('Umbenennen')} onClick={() => renameGroup(g)}><Pencil className="size-3.5" /></IconButton>
                       <IconButton label={t('Gruppe löschen')} onClick={() => removeGroup(g)}><Trash2 className="size-3.5" /></IconButton></>} />
                 );
               }))}
@@ -216,13 +254,16 @@ function CensorButton({ on, toggle }) {
 
 function KeychainView({ dark, openForm, toast }) {
   const t = useT();
+  const { vault, writable, vaults } = useVault();
+  const [kc, setKc] = useState(null); // Cloud-Schlüsselbund-Status
+  useEffect(() => { if (vault === 'personal') api.kc.status().then(setKc).catch(() => {}); }, [vault]);
   const [items, setItems] = useState([]);
   const [q, setQ] = useState('');
   const [importOpen, setImportOpen] = useState(false);
   const [censor, toggleCensor] = useCensor();
   const [layout, setLayoutState] = useState(() => { try { return localStorage.getItem('keyLayout') || 'grid'; } catch { return 'grid'; } });
   const setLayout = (v) => { setLayoutState(v); try { localStorage.setItem('keyLayout', v); } catch { /* egal */ } };
-  const load = useCallback(() => api.keys.list().then(setItems), []);
+  const load = useCallback(() => api.keys.list().then((l) => setItems(l.filter((k) => inV(k, vault)))), [vault]);
   useEffect(() => { load(); }, [load]);
 
   const rename = (k) => openForm({
@@ -238,8 +279,43 @@ function KeychainView({ dark, openForm, toast }) {
       { name: 'comment', label: t('Kommentar (optional)') },
       { name: 'passphrase', label: t('Passphrase (optional)'), type: 'password' },
     ],
-    onSubmit: async (v) => { const err = await api.keys.generate(v); err ? toast(err) : load(); },
+    onSubmit: async (v) => { const err = await api.keys.generate({ ...v, vault }); err ? toast(err) : load(); },
   });
+  // In einen anderen Tresor klonen/verschieben; im Team ist auch der private Teil für alle Mitglieder sichtbar
+  const copyKey = async (k, target, move) => {
+    if (target !== 'personal' && !confirm(t('Der private Schlüssel ist danach für alle Mitglieder des Teams sichtbar. Fortfahren?'))) return;
+    const r = await api.keys.copy(k.id, target, move);
+    if (r.error) return toast(r.error);
+    toast(move ? t('Schlüssel verschoben.') : t('Schlüssel geklont.'));
+    load();
+  };
+  const toggleCloud = async (k) => {
+    const r = await api.kc.setKey(k.id, !k.cloud);
+    if (r.error) return toast(r.error);
+    toast(k.cloud ? t('Schlüssel aus der Cloud entfernt.') : t('Schlüssel in der Cloud gespeichert.'));
+    load();
+  };
+  const keyMenu = (k) => {
+    const others = vaults.filter((x) => x.id !== vault);
+    const cloudOk = vault === 'personal' && kc?.enabled && writable;
+    if (!others.length && !cloudOk) return null;
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="size-8" aria-label={t('Mehr')} onClick={(e) => e.stopPropagation()}><Ellipsis className="size-3.5" /></Button></DropdownMenuTrigger>
+        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+          {cloudOk && <DropdownMenuItem onSelect={() => toggleCloud(k)}><Cloud className="size-4" />{k.cloud ? t('Aus der Cloud entfernen') : t('In der Cloud speichern')}</DropdownMenuItem>}
+          {cloudOk && others.length > 0 && <DropdownMenuSeparator />}
+          {others.length > 0 && <DropdownMenuLabel className="text-xs text-muted-foreground">{t('In Tresor klonen')}</DropdownMenuLabel>}
+          {others.map((x) => <DropdownMenuItem key={`c${x.id}`} onSelect={() => copyKey(k, x.id, false)}>{x.id === 'personal' ? <User className="size-4" /> : <Users className="size-4" />}{x.name}</DropdownMenuItem>)}
+          {others.length > 0 && writable && !k.path && <>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs text-muted-foreground">{t('In Tresor verschieben')}</DropdownMenuLabel>
+            {others.map((x) => <DropdownMenuItem key={`m${x.id}`} onSelect={() => copyKey(k, x.id, true)}>{x.id === 'personal' ? <User className="size-4" /> : <Users className="size-4" />}{x.name}</DropdownMenuItem>)}
+          </>}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  };
   const rescan = async () => { const n = await api.keys.rescan(); toast(n ? t('{n} neue(r) Schlüssel aus ~/.ssh importiert.', { n }) : t('Keine neuen Schlüssel in ~/.ssh.')); load(); };
   const toHost = async (k) => openForm({
     title: t('Auf Host exportieren'), description: t('Trägt den öffentlichen Schlüssel „{name}“ in ~/.ssh/authorized_keys ein.', { name: k.name }), submitLabel: t('Exportieren'),
@@ -257,7 +333,7 @@ function KeychainView({ dark, openForm, toast }) {
     <>
       {/* Werkzeugleiste: geteilter „Neuer Schlüssel“-Knopf, Einlesen, Suche, Ansicht */}
       <div className="mb-8 flex flex-wrap items-center gap-2 rounded-xl border bg-card p-2">
-        <div className="flex">
+        {writable && <div className="flex">
           <Button className="rounded-e-none" onClick={generate}><Plus className="size-4" />{t('Neuer Schlüssel')}</Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -268,8 +344,8 @@ function KeychainView({ dark, openForm, toast }) {
               <DropdownMenuItem onSelect={() => setImportOpen(true)}><FileUp className="size-4" />{t('Schlüssel importieren')}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-        <Button variant="ghost" onClick={rescan}><RefreshCw className="size-4" />{t('~/.ssh einlesen')}</Button>
+        </div>}
+        {vault === 'personal' && <Button variant="ghost" onClick={rescan}><RefreshCw className="size-4" />{t('~/.ssh einlesen')}</Button>}
         <div className="ms-auto flex items-center gap-1">
           <div className="relative">
             <Search className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -280,22 +356,23 @@ function KeychainView({ dark, openForm, toast }) {
           <IconButton label={t('Listenansicht')} onClick={() => setLayout('list')}><List className={cn('size-4', layout === 'list' ? 'text-foreground' : 'text-muted-foreground')} /></IconButton>
         </div>
       </div>
-      <KeyImportSheet open={importOpen} onClose={() => setImportOpen(false)} onDone={load} toast={toast} />
+      <KeyImportSheet open={importOpen} onClose={() => setImportOpen(false)} onDone={load} toast={toast} vault={vault} />
       <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('Schlüssel')}</h3>
       {!list.length && <Empty>{t('Keine Schlüssel. Generiere einen oder lege Schlüssel in ~/.ssh ab.')}</Empty>}
       <div className={layout === 'grid' ? 'grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-3' : 'space-y-2'}>
         {list.map((k) => (
           <Item key={k.id} dark={dark} compact icon={<KeyRound className="size-5" />}
-            title={<span className="flex items-center gap-2">{k.name}<Badge variant="secondary">{k.source === 'generated' ? t('generiert') : t('importiert')}</Badge>{k.publicOnly && <Badge variant="outline">{t('nur öffentlich')}</Badge>}{k.encrypted && <Lock className="size-3 text-muted-foreground" />}</span>}
+            title={<span className="flex items-center gap-2">{k.name}<Badge variant="secondary">{k.source === 'generated' ? t('generiert') : t('importiert')}</Badge>{k.cloud && <Badge variant="outline"><Cloud className="me-1 size-3" />Cloud</Badge>}{k.publicOnly && <Badge variant="outline">{t('nur öffentlich')}</Badge>}{k.encrypted && <Lock className="size-3 text-muted-foreground" />}</span>}
             sub={`${k.type} · ${short(k.fingerprint)}`}
             onClick={() => k.publicKey && copy(k)}
             actions={<>
-              {k.encrypted && <IconButton label={t('Passphrase setzen')} onClick={() => passphrase(k)}><Lock className="size-3.5" /></IconButton>}
+              {keyMenu(k)}
+              {writable && k.encrypted && <IconButton label={t('Passphrase setzen')} onClick={() => passphrase(k)}><Lock className="size-3.5" /></IconButton>}
               {k.publicKey && <IconButton label={t('Öffentlichen Schlüssel kopieren')} onClick={() => copy(k)}><Copy className="size-3.5" /></IconButton>}
               {k.publicKey && <IconButton label={t('Auf Host exportieren')} onClick={() => toHost(k)}><Send className="size-3.5" /></IconButton>}
-              <IconButton label={t('Schlüssel umbenennen')} onClick={() => rename(k)}><Pencil className="size-3.5" /></IconButton>
+              {writable && <IconButton label={t('Schlüssel umbenennen')} onClick={() => rename(k)}><Pencil className="size-3.5" /></IconButton>}
               {!k.publicOnly && <IconButton label={t('Privaten Schlüssel speichern')} onClick={async () => { const err = await api.keys.exportPrivate(k.id); err && toast(err); }}><Download className="size-3.5" /></IconButton>}
-              {k.source !== 'imported' && <IconButton label={t('Löschen')} onClick={async () => { await api.keys.remove(k.id); load(); }}><Trash2 className="size-3.5" /></IconButton>}
+              {writable && k.source !== 'imported' && <IconButton label={t('Löschen')} onClick={async () => { await api.keys.remove(k.id); load(); }}><Trash2 className="size-3.5" /></IconButton>}
             </>} />
         ))}
       </div>
@@ -426,6 +503,8 @@ const SETTINGS_TABS = [
   ['appearance', T('Darstellung'), Palette],
   ['language', T('Sprache'), Languages],
   ['privacy', T('Datenschutz'), ShieldCheck],
+  ['keychain', T('Cloud-Schlüsselbund'), KeyRound],
+  ['teams', T('Teams'), Users],
   ['updates', T('Updates'), Download],
   ['files', T('Dateien öffnen'), FileText],
 ];
@@ -433,13 +512,13 @@ const SETTINGS_TABS = [
 // Update-Einstellungen: Version, Prüfen, automatisch prüfen, Quelle, Installieren
 function UpdatesSettings() {
   const t = useT();
-  const [s, setS] = useState({ auto: true, repo: '' });
+  const [s, setS] = useState({ auto: true, repo: '', channel: 'stable' });
   const [res, setRes] = useState(null);
   const [busy, setBusy] = useState(false);
   const [installing, setInstalling] = useState(false);
   const [err, setErr] = useState('');
   const check = useCallback(async () => { setBusy(true); setErr(''); const r = await api.update.check(); setBusy(false); setRes(r); if (r.error) setErr(r.error); }, []);
-  useEffect(() => { api.settings.get().then((x) => setS({ auto: x.updates?.auto !== false, repo: x.updates?.repo || '' })).then(check); }, [check]);
+  useEffect(() => { api.settings.get().then((x) => setS({ auto: x.updates?.auto !== false, repo: x.updates?.repo || '', channel: x.updates?.channel === 'dev' ? 'dev' : 'stable' })).then(check); }, [check]);
   const save = (p) => { const n = { ...s, ...p }; setS(n); api.settings.set({ updates: n }); };
   const install = async () => { setInstalling(true); setErr(''); const r = await api.update.install(); if (r.error) { setInstalling(false); setErr(r.error); } };
   const row = 'flex items-center justify-between gap-4 rounded-xl border bg-card p-4';
@@ -465,10 +544,51 @@ function UpdatesSettings() {
         <Switch checked={s.auto} onCheckedChange={(v) => save({ auto: v })} />
       </div>
       <div className={cn(row, 'flex-col items-stretch')}>
+        <p className="text-sm font-medium">{t('Update-Kanal')}</p>
+        <div className="grid grid-cols-2 rounded-lg bg-muted p-1 text-sm">
+          {[['stable', t('Stabil')], ['dev', t('Dev (Vorabversionen)')]].map(([v, l]) => (
+            <button key={v} type="button" onClick={() => { save({ channel: v }); setTimeout(check, 50); }}
+              className={cn('rounded-md px-3 py-1.5', s.channel === v ? 'bg-background font-medium shadow-sm' : 'text-muted-foreground')}>{l}</button>
+          ))}
+        </div>
+        {s.channel === 'dev' && <p className="text-xs text-muted-foreground">{t('Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.')}</p>}
+      </div>
+      <div className={cn(row, 'flex-col items-stretch')}>
         <p className="text-sm font-medium">{t('Update-Quelle (GitHub: Besitzer/Repository)')}</p>
         <Input value={s.repo} placeholder="HyperGaming99/ssh-deck" autoComplete="off" onChange={(e) => save({ repo: e.target.value.trim() })} />
       </div>
     </div>
+  );
+}
+
+// Tresor-Auswahl in der Kopfzeile: Persönlich oder eines der Teams
+function VaultSwitcher({ vaults, vault, setVault, signedIn, onNew, onManage }) {
+  const t = useT();
+  const cur = vaults.find((x) => x.id === vault) || vaults[0];
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button type="button" className="flex h-8 shrink-0 items-center gap-2 rounded-lg border border-transparent bg-accent/60 px-3 text-sm hover:bg-accent">
+          {cur.id === 'personal' ? <User className="size-4 text-muted-foreground" /> : <Users className="size-4 text-primary" />}
+          <span className="max-w-32 truncate">{cur.name}</span>
+          <ChevronDown className="size-3.5 text-muted-foreground" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-56">
+        {vaults.map((x) => (
+          <DropdownMenuItem key={x.id} onSelect={() => setVault(x.id)}>
+            {x.id === 'personal' ? <User className="size-4" /> : <Users className="size-4" />}
+            <span className="flex-1 truncate">{x.name}</span>
+            {x.role === 'viewer' && <span className="text-xs text-muted-foreground">{t('Betrachter')}</span>}
+            {x.id === vault && <Check className="size-4 text-primary" />}
+          </DropdownMenuItem>
+        ))}
+        <div className="my-1 h-px bg-border" />
+        {signedIn ? <DropdownMenuItem onSelect={onNew}><Plus className="size-4" />{t('Neues Team …')}</DropdownMenuItem>
+          : <p className="px-2 py-1.5 text-xs text-muted-foreground">{t('Melde dich an, um Teams zu nutzen.')}</p>}
+        <DropdownMenuItem onSelect={onManage}><SettingsIcon className="size-4" />{t('Teams verwalten')}</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -489,9 +609,10 @@ function UpdateBanner({ upd, onClose }) {
 }
 
 // Einstellungen mit eigener Seitenleiste (links Kategorien, rechts Inhalt)
-function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lang, setLang }) {
+function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lang, setLang, settingsTab, teams, refreshTeams, vault, setVault, toast }) {
   const t = useT();
-  const [tab, setTab] = useState('account');
+  const [tab, setTab] = useState(settingsTab || 'account');
+  useEffect(() => { if (settingsTab) setTab(settingsTab); }, [settingsTab]);
   const [editors, setEditors] = useState([]);
   const [editor, setEditor] = useState('auto');
   useEffect(() => { api.editors.list().then(setEditors); api.settings.get().then((s) => setEditor(s.editor || 'auto')); }, []);
@@ -547,6 +668,8 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
           </div>
         )}
         {tab === 'privacy' && <TorSettings />}
+        {tab === 'keychain' && <KeychainCloud st={st} toast={toast} goAccount={() => setTab('account')} />}
+        {tab === 'teams' && <TeamsSettings st={st} teams={teams} refresh={refreshTeams} vault={vault} setVault={setVault} toast={toast} goAccount={() => setTab('account')} />}
         {tab === 'updates' && <UpdatesSettings />}
         {tab === 'files' && (
           <div className={row}>
@@ -568,24 +691,25 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
 
 function SnippetsView({ dark, runSnippet, openForm, rev }) {
   const t = useT();
+  const { vault, writable } = useVault();
   const [items, setItems] = useState([]);
   const [q, setQ] = useState('');
-  const load = useCallback(() => api.snippets.list().then(setItems), []);
+  const load = useCallback(() => api.snippets.list().then((l) => setItems(l.filter((x) => inV(x, vault)))), [vault]);
   useEffect(() => { load(); }, [load, rev]);
   const edit = (s = {}) => openForm({
     title: s.id ? t('Snippet bearbeiten') : t('Neues Snippet'), values: s,
     fields: [{ name: 'name', label: t('Name'), required: true }, { name: 'cmd', label: t('Befehl'), required: true }],
-    onSubmit: async (v) => { await api.snippets.save({ ...v, id: s.id }); load(); },
+    onSubmit: async (v) => { await api.snippets.save({ ...v, id: s.id, vault: s.vault ?? vault }); load(); },
   });
   const list = items.filter((s) => matches(q, s.name, s.cmd));
   return (
     <>
-      <Toolbar q={q} setQ={setQ} label={t('Neues Snippet')} onNew={() => edit()} />
+      <Toolbar q={q} setQ={setQ} label={t('Neues Snippet')} onNew={writable ? () => edit() : null} />
       {!list.length && <Empty>{t('Keine Snippets.')}</Empty>}
       <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3">
         {list.map((s) => (
           <Item key={s.id} dark={dark} icon={<TermIcon className="size-5 text-muted-foreground" />} title={s.name} sub={s.cmd} onClick={() => runSnippet(s.cmd)}
-            actions={<><IconButton label={t('Bearbeiten')} onClick={() => edit(s)}><Pencil className="size-3.5" /></IconButton>
+            actions={writable && <><IconButton label={t('Bearbeiten')} onClick={() => edit(s)}><Pencil className="size-3.5" /></IconButton>
               <IconButton label={t('Löschen')} onClick={async () => { await api.snippets.remove(s.id); load(); }}><Trash2 className="size-3.5" /></IconButton></>} />
         ))}
       </div>
@@ -595,14 +719,15 @@ function SnippetsView({ dark, runSnippet, openForm, rev }) {
 
 function ForwardsView({ dark, toast, rev }) {
   const t = useT();
+  const { vault, writable } = useVault();
   const [rules, setRules] = useState([]);
   const [hosts, setHosts] = useState([]);
   const [q, setQ] = useState('');
   const [sheet, setSheet] = useState(null);
-  const load = useCallback(() => { api.fwd.list().then(setRules); api.hosts.list().then(setHosts); }, []);
+  const load = useCallback(() => { api.fwd.list().then((l) => setRules(l.filter((r) => inV(r, vault)))); api.hosts.list().then((l) => setHosts(l.filter((h) => inV(h, vault)))); }, [vault]);
   useEffect(() => { load(); }, [load, rev]);
   const hostName = (id) => hosts.find((h) => h.id === id)?.name ?? '?';
-  const open = (rule = {}) => setSheet({ rule, hosts, onSave: async (v) => { await api.fwd.save(v); load(); } });
+  const open = (rule = {}) => setSheet({ rule, hosts, onSave: async (v) => { await api.fwd.save({ ...v, vault: v.vault ?? vault }); load(); } });
   const sub = (r) => r.type === 'dynamic' ? t('SOCKS5-Proxy über {host}', { host: hostName(r.hostId) })
     : r.type === 'remote' ? `${hostName(r.hostId)}:${r.bindPort} → ${r.destHost}:${r.destPort}`
     : t('→ {target} über {host}', { target: `${r.destHost}:${r.destPort}`, host: hostName(r.hostId) });
@@ -610,14 +735,14 @@ function ForwardsView({ dark, toast, rev }) {
   const list = rules.filter((r) => matches(q, r.label, hostName(r.hostId), r.destHost, r.bindPort));
   return (
     <>
-      <Toolbar q={q} setQ={setQ} label={t('Neues Forwarding')} onNew={() => open()} />
+      <Toolbar q={q} setQ={setQ} label={t('Neues Forwarding')} onNew={writable ? () => open() : null} />
       {!list.length && <Empty>{t('Keine Regeln.')}</Empty>}
       <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3">
         {list.map((r) => (
           <Item key={r.id} dark={dark} compact title={<span className="flex items-center gap-2"><span className={cn('size-2 rounded-full', r.running ? 'bg-success shadow-[0_0_8px] shadow-success' : 'bg-border')} />{r.label || `${r.type} ${r.bindPort}`}</span>} sub={sub(r)}
             icon={<span className="text-lg font-semibold uppercase">{(r.label || r.type || '?')[0]}</span>}
             onClick={async () => { const err = await api.fwd.toggle(r.id); if (err) toast(err); load(); }}
-            actions={<><IconButton label={t('Bearbeiten')} onClick={() => open(r)}><Pencil className="size-3.5" /></IconButton>
+            actions={writable && <><IconButton label={t('Bearbeiten')} onClick={() => open(r)}><Pencil className="size-3.5" /></IconButton>
               <IconButton label={t('Löschen')} onClick={async () => { await api.fwd.remove(r.id); load(); }}><Trash2 className="size-3.5" /></IconButton></>} />
         ))}
       </div>
@@ -645,6 +770,9 @@ export default function App() {
   const [form, setForm] = useState(null);
   const [hostForm, setHostForm] = useState(null); // Host-Details-Panel
   const [upd, setUpd] = useState(null); // neue Version verfügbar
+  const [teams, setTeams] = useState([]);
+  const [vault, setVaultState] = useState(() => store('vault', 'personal'));
+  const [settingsTab, setSettingsTab] = useState(null);
   const [credAsks, setCredAsks] = useState([]); // Rückfragen nach Benutzer/Passwort (SFTP, Forwarding)
   const [hostKeys, setHostKeys] = useState([]); // Rückfragen zu unbekannten/geänderten Host-Schlüsseln (Warteschlange)
   const [recent, setRecent] = useState(() => { try { return JSON.parse(localStorage.getItem('recent') || '[]'); } catch { return []; } }); // zuletzt verbundene Hosts [{ id, at }]
@@ -695,6 +823,13 @@ export default function App() {
     for (const [k, v] of Object.entries(vars)) root.setProperty(k, v);
     return () => { for (const k of Object.keys(vars)) root.removeProperty(k); };
   }, [termActive, termTheme, xtheme]);
+  const setVault = (v) => { setVaultState(v); persist('vault', v); setSection('hosts'); setActive('home'); };
+  const refreshTeams = useCallback(() => { api.team.list().then((r) => setTeams(r.teams || [])).catch(() => {}); }, []);
+  const vaults = useMemo(() => [{ id: 'personal', name: t('Persönlich'), writable: true }, ...teams.map((x) => ({ id: x.id, name: x.name, role: x.role, writable: x.role !== 'viewer' }))], [teams, t]);
+  const activeV = vaults.find((x) => x.id === vault) || vaults[0];
+  const vctx = useMemo(() => ({ vault: activeV.id, name: activeV.name, role: activeV.role || 'owner', writable: activeV.writable, vaults: vaults.filter((x) => x.writable) }), [activeV, vaults]);
+  useEffect(() => { api.team.onChanged(refreshTeams); }, [refreshTeams]);
+  useEffect(() => { refreshTeams(); }, [refreshTeams, rev, st?.configured]);
   const toast = (m) => { setError(t(m)); setTimeout(() => setError(''), 4000); }; // Meldungen aus Hauptprozess/Server (deutsch) werden hier mit übersetzt
   const connect = (h, kind = 'ssh') => {
     if (kind === 'ssh') {
@@ -708,7 +843,7 @@ export default function App() {
     setActive(sid);
   };
   const editHost = async (id) => setHostForm({
-    values: await api.hosts.get(id), groups: await api.groups.list(), keys: await api.keys.list(),
+    values: await api.hosts.get(id), groups: await api.groups.list(), keys: await api.keys.list(), vaults: vaults.filter((x) => x.writable),
     onSave: async (o) => { const i = await api.hosts.save(o); setRev((r) => r + 1); return i; },
     onConnect: connect, onDelete: async (i) => { await api.hosts.remove(i); setRev((r) => r + 1); },
   });
@@ -749,6 +884,7 @@ export default function App() {
   return (
     <I18nContext.Provider value={i18n}>
     <TooltipProvider delayDuration={300}>
+    <VaultCtx.Provider value={vctx}>
       <div className="flex h-full flex-col">
         <header dir="ltr" className={cn('flex h-12 shrink-0 items-center gap-2 border-b bg-sidebar [-webkit-app-region:drag]', mac ? 'pl-[88px]' : 'pl-2')}>
           {gate && <Logo className="ml-2 h-6 w-[19px]" />}
@@ -756,6 +892,9 @@ export default function App() {
             <Button variant="ghost" size="icon" className="size-8 shrink-0" onClick={() => setNavOpen(!navOpen)} aria-label={t('Navigation')}><Menu className="size-4" /></Button>
             <Logo className="mx-1 h-6 w-[19px] shrink-0" />
             <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto [scrollbar-width:none]">
+              <VaultSwitcher vaults={vaults} vault={activeV.id} setVault={setVault} signedIn={!!st?.configured}
+                onNew={() => setForm({ title: t('Neues Team'), fields: [{ name: 'name', label: t('Name'), required: true }], submitLabel: t('Team erstellen'), onSubmit: async (v) => { const r = await api.team.create(v.name); if (r.error) return toast(r.error); await refreshTeams(); setVault(r.id); } })}
+                onManage={() => { setSection('settings'); setSettingsTab('teams'); setActive('home'); setTimeout(() => setSettingsTab(null), 0); }} />
               <Pill active={active === 'home'} onClick={() => setActive('home')}><Server className="size-4 shrink-0" />{t('Hosts')}</Pill>
               <Pill active={active === 'sftp'} onClick={() => { setSftpMounted(true); setActive('sftp'); }}><FolderOpen className="size-4 shrink-0" />SFTP</Pill>
               {tabs.map((tab) => (
@@ -805,7 +944,7 @@ export default function App() {
               <h1 className="mb-6 text-2xl font-semibold">
                 <ShinyText text={t(SECTIONS.find(([id]) => id === section)[1])} color={dark ? '#8a8a8a' : '#52525b'} shineColor={dark ? '#ffffff' : '#2563eb'} speed={4} />
               </h1>
-              <View lang={lang} setLang={setLang} st={st} setDark={setDark} side={side} setSide={setSide} onLogin={() => chooseSkip(false)} onLogout={() => chooseSkip(false)} dark={dark} connect={connect} openSftp={(h) => connect(h, 'sftp')} runSnippet={runSnippet} openForm={setForm} openHost={setHostForm} toast={toast} rev={rev} />
+              <View settingsTab={settingsTab} teams={teams} refreshTeams={refreshTeams} vault={activeV.id} setVault={setVault} lang={lang} setLang={setLang} st={st} setDark={setDark} side={side} setSide={setSide} onLogin={() => chooseSkip(false)} onLogout={() => chooseSkip(false)} dark={dark} connect={connect} openSftp={(h) => connect(h, 'sftp')} runSnippet={runSnippet} openForm={setForm} openHost={setHostForm} toast={toast} rev={rev} />
             </div>
             <div className={cn('absolute inset-0 p-2', active !== 'sftp' && 'hidden')}>
               {sftpMounted && <SftpTab sid="sftp" hostId={null} active={active === 'sftp'} toast={toast} openForm={setForm} />}
@@ -838,6 +977,7 @@ export default function App() {
       <CredDialog ask={credAsks[0]} onAnswer={(a) => { api.answerCred(credAsks[0].id, a); setCredAsks((q) => q.slice(1)); }} />
       <HostKeyDialog info={hostKeys[0]} onAnswer={(ok) => { api.answerHostKey(hostKeys[0].id, ok); setHostKeys((q) => q.slice(1)); }} />
       {error && <div className="fixed bottom-5 right-5 rounded-lg border bg-foreground px-4 py-2.5 text-sm text-background shadow-lg">{error}</div>}
+    </VaultCtx.Provider>
     </TooltipProvider>
     </I18nContext.Provider>
   );
