@@ -614,7 +614,11 @@ app.whenReady().then(() => {
   handle('sync:now', () => { runSync(); });
   handle('sync:logout', async () => {
     const c = loadSyncCfg();
-    if (c) await new syncTools.Backend({ url: c.server, token: crypt.decrypt(c.token) }, backendOpts(c.server)).logout().catch(() => {}); // Sitzung auch serverseitig beenden
+    // Sitzung auch serverseitig beenden – aber nie am Server oder am Schlüsselbund scheitern: Abmelden muss immer gehen
+    if (c) await Promise.race([
+      (async () => new syncTools.Backend({ url: c.server, token: crypt.decrypt(c.token) }, backendOpts(c.server)).logout())().catch(() => {}),
+      new Promise((r) => setTimeout(r, 4000)),
+    ]);
     fs.rmSync(syncCfgFile, { force: true });
     Object.assign(syncState, { status: 'off', lastSync: null, error: '' });
     send('sync:status', syncStatus());

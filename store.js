@@ -24,6 +24,9 @@ const plain = (file) => {
   };
 };
 
+// Für den Sync: nicht entschlüsselbare Geheimnisse (anderer System-Schlüsselbund) werden ausgelassen statt den ganzen Sync zu kippen
+const tryDec = (crypt, v) => { try { return crypt.decrypt(v); } catch { return undefined; } };
+
 const hosts = (file, crypt) => {
   const base = plain(file);
   return {
@@ -39,7 +42,7 @@ const hosts = (file, crypt) => {
     // vom Server erkanntes Betriebssystem-Icon (icon = manuelle Wahl hat Vorrang)
     setAutoIcon: (id, slug) => { const h = base.list().find((x) => x.id === id); if (h) base.save({ ...h, autoIcon: slug }); },
     // für den Sync: Geheimnisse im Klartext raus (der Sync verschlüsselt selbst), beim Einlesen lokal neu verschlüsseln
-    raw: () => base.raw().map((r) => (r.secret ? { ...r, secret: crypt.decrypt(r.secret) } : r)),
+    raw: () => base.raw().map((r) => (r.secret ? { ...r, secret: tryDec(crypt, r.secret) } : r)),
     setRaw: (arr) => base.setRaw(arr.map((r) => (r.secret ? { ...r, secret: crypt.encrypt(r.secret) } : r))),
     remove: base.remove,
   };
@@ -59,7 +62,7 @@ const keys = (file, crypt) => {
     // Cloud-Schlüsselbund: Schlüssel ein-/ausschalten; privateKey (Klartext) nur, wenn er noch nicht gespeichert ist (Schlüssel aus ~/.ssh)
     setCloud: (id, on, privateKey) => { const k = find(id); if (k) base.save({ ...k, cloud: !!on, ...(privateKey && { privateKey: sec(privateKey) }) }); },
     // für Team-Tresore: Schlüssel samt privatem Teil im Klartext raus (der Tresor wird mit dem Teamschlüssel verschlüsselt), lokal wieder verschlüsseln
-    raw: () => base.raw().map((r) => ({ ...r, privateKey: r.privateKey ? crypt.decrypt(r.privateKey) : undefined, passphrase: r.passphrase ? crypt.decrypt(r.passphrase) : undefined })),
+    raw: () => base.raw().map((r) => ({ ...r, privateKey: r.privateKey ? tryDec(crypt, r.privateKey) : undefined, passphrase: r.passphrase ? tryDec(crypt, r.passphrase) : undefined })),
     setRaw: (arr) => base.setRaw(arr.map((r) => ({ ...r, privateKey: sec(r.privateKey), passphrase: sec(r.passphrase) }))),
     remove: base.remove,
   };
