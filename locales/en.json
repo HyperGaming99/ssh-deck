@@ -425,5 +425,11 @@
  "Dev (Vorabversionen)": "Dev (pre-releases)",
  "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Dev versions appear with every push and may contain bugs.",
  "Etwas ist schiefgelaufen.": "Something went wrong.",
- "Neu laden": "Reload"
+ "Neu laden": "Reload",
+ "Einfügen im Terminal": "Paste in terminal",
+ "Strg+V und Rechtsklick fügen die Zwischenablage ein": "Ctrl+V and right-click paste the clipboard",
+ "Nachfragen": "Ask",
+ "Erlauben": "Allow",
+ "Aus": "Off",
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "Paste the clipboard into the terminal? This applies to Ctrl+V and right-click and can be changed in the settings."
 }

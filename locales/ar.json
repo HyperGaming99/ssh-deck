@@ -425,5 +425,11 @@
  "Dev (Vorabversionen)": "Dev (إصدارات تجريبية)",
  "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "تظهر إصدارات Dev مع كل دفع وقد تحتوي على أخطاء.",
  "Etwas ist schiefgelaufen.": "حدث خطأ ما.",
- "Neu laden": "إعادة التحميل"
+ "Neu laden": "إعادة التحميل",
+ "Einfügen im Terminal": "اللصق في الطرفية",
+ "Strg+V und Rechtsklick fügen die Zwischenablage ein": "Ctrl+V والنقر بزر الماوس الأيمن يلصقان الحافظة",
+ "Nachfragen": "اسأل",
+ "Erlauben": "السماح",
+ "Aus": "إيقاف",
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "لصق الحافظة في الطرفية؟ ينطبق هذا على Ctrl+V والنقر الأيمن ويمكن تغييره من الإعدادات."
 }

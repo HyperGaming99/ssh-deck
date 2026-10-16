@@ -425,5 +425,11 @@
  "Dev (Vorabversionen)": "Dev(プレリリース)",
  "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Dev版は push のたびに公開され、不具合を含む可能性があります。",
  "Etwas ist schiefgelaufen.": "問題が発生しました。",
- "Neu laden": "再読み込み"
+ "Neu laden": "再読み込み",
+ "Einfügen im Terminal": "ターミナルへの貼り付け",
+ "Strg+V und Rechtsklick fügen die Zwischenablage ein": "Ctrl+V と右クリックでクリップボードを貼り付けます",
+ "Nachfragen": "確認する",
+ "Erlauben": "許可",
+ "Aus": "オフ",
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "クリップボードをターミナルに貼り付けますか？ Ctrl+V と右クリックに適用され、設定で変更できます。"
 }

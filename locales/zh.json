@@ -425,5 +425,11 @@
  "Dev (Vorabversionen)": "Dev(预发布版)",
  "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Dev 版本会在每次推送时发布,可能包含错误。",
  "Etwas ist schiefgelaufen.": "出了点问题。",
- "Neu laden": "重新加载"
+ "Neu laden": "重新加载",
+ "Einfügen im Terminal": "在终端中粘贴",
+ "Strg+V und Rechtsklick fügen die Zwischenablage ein": "Ctrl+V 和右键单击会粘贴剪贴板内容",
+ "Nachfragen": "询问",
+ "Erlauben": "允许",
+ "Aus": "关闭",
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "要将剪贴板内容粘贴到终端吗？这适用于 Ctrl+V 和右键单击，可在设置中更改。"
 }

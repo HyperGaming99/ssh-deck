@@ -425,5 +425,11 @@
  "Dev (Vorabversionen)": "Dev (voorversies)",
  "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Dev-versies verschijnen bij elke push en kunnen fouten bevatten.",
  "Etwas ist schiefgelaufen.": "Er is iets misgegaan.",
- "Neu laden": "Opnieuw laden"
+ "Neu laden": "Opnieuw laden",
+ "Einfügen im Terminal": "Plakken in terminal",
+ "Strg+V und Rechtsklick fügen die Zwischenablage ein": "Ctrl+V en rechtsklik plakken het klembord",
+ "Nachfragen": "Vragen",
+ "Erlauben": "Toestaan",
+ "Aus": "Uit",
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "Klembord in het terminal plakken? Dit geldt voor Ctrl+V en rechtsklik en kan in de instellingen worden gewijzigd."
 }

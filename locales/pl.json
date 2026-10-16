@@ -425,5 +425,11 @@
  "Dev (Vorabversionen)": "Dev (wersje wstępne)",
  "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Wersje dev pojawiają się przy każdym pushu i mogą zawierać błędy.",
  "Etwas ist schiefgelaufen.": "Coś poszło nie tak.",
- "Neu laden": "Załaduj ponownie"
+ "Neu laden": "Załaduj ponownie",
+ "Einfügen im Terminal": "Wklejanie w terminalu",
+ "Strg+V und Rechtsklick fügen die Zwischenablage ein": "Ctrl+V i prawy przycisk wklejają schowek",
+ "Nachfragen": "Pytaj",
+ "Erlauben": "Zezwól",
+ "Aus": "Wył.",
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "Wkleić schowek do terminala? Dotyczy Ctrl+V i prawego przycisku, można zmienić w ustawieniach."
 }

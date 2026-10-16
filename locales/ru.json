@@ -425,5 +425,11 @@
  "Dev (Vorabversionen)": "Dev (предварительные версии)",
  "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Dev-версии появляются при каждом push и могут содержать ошибки.",
  "Etwas ist schiefgelaufen.": "Что-то пошло не так.",
- "Neu laden": "Перезагрузить"
+ "Neu laden": "Перезагрузить",
+ "Einfügen im Terminal": "Вставка в терминале",
+ "Strg+V und Rechtsklick fügen die Zwischenablage ein": "Ctrl+V и правый клик вставляют буфер обмена",
+ "Nachfragen": "Спрашивать",
+ "Erlauben": "Разрешить",
+ "Aus": "Выкл.",
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "Вставить буфер обмена в терминал? Это относится к Ctrl+V и правому клику и меняется в настройках."
 }

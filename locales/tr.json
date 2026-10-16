@@ -425,5 +425,11 @@
  "Dev (Vorabversionen)": "Dev (ön sürümler)",
  "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Dev sürümleri her push'ta çıkar ve hata içerebilir.",
  "Etwas ist schiefgelaufen.": "Bir şeyler ters gitti.",
- "Neu laden": "Yeniden yükle"
+ "Neu laden": "Yeniden yükle",
+ "Einfügen im Terminal": "Terminale yapıştırma",
+ "Strg+V und Rechtsklick fügen die Zwischenablage ein": "Ctrl+V ve sağ tık panoyu yapıştırır",
+ "Nachfragen": "Sor",
+ "Erlauben": "İzin ver",
+ "Aus": "Kapalı",
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "Pano terminale yapıştırılsın mı? Bu, Ctrl+V ve sağ tık için geçerlidir ve ayarlardan değiştirilebilir."
 }

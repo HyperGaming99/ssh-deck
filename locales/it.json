@@ -425,5 +425,11 @@
  "Dev (Vorabversionen)": "Dev (pre-release)",
  "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Le versioni dev compaiono a ogni push e possono contenere errori.",
  "Etwas ist schiefgelaufen.": "Qualcosa è andato storto.",
- "Neu laden": "Ricarica"
+ "Neu laden": "Ricarica",
+ "Einfügen im Terminal": "Incolla nel terminale",
+ "Strg+V und Rechtsklick fügen die Zwischenablage ein": "Ctrl+V e clic destro incollano gli appunti",
+ "Nachfragen": "Chiedi",
+ "Erlauben": "Consenti",
+ "Aus": "Disattivato",
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "Incollare gli appunti nel terminale? Vale per Ctrl+V e clic destro e si può cambiare nelle impostazioni."
 }

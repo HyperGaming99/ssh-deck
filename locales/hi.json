@@ -425,5 +425,11 @@
  "Dev (Vorabversionen)": "Dev (प्री-रिलीज़)",
  "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Dev संस्करण हर पुश पर आते हैं और उनमें त्रुटियाँ हो सकती हैं।",
  "Etwas ist schiefgelaufen.": "कुछ गलत हो गया।",
- "Neu laden": "पुनः लोड करें"
+ "Neu laden": "पुनः लोड करें",
+ "Einfügen im Terminal": "टर्मिनल में पेस्ट",
+ "Strg+V und Rechtsklick fügen die Zwischenablage ein": "Ctrl+V और राइट-क्लिक क्लिपबोर्ड पेस्ट करते हैं",
+ "Nachfragen": "पूछें",
+ "Erlauben": "अनुमति दें",
+ "Aus": "बंद",
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "क्लिपबोर्ड टर्मिनल में पेस्ट करें? यह Ctrl+V और राइट-क्लिक पर लागू होता है और सेटिंग्स में बदला जा सकता है।"
 }

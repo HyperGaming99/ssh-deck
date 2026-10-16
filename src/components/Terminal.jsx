@@ -5,6 +5,7 @@ import '@fontsource/jetbrains-mono/400.css';
 import '@fontsource/fira-code/400.css';
 import '@fontsource/source-code-pro/400.css';
 import '@fontsource/ibm-plex-mono/400.css';
+import { useT } from '@/i18n';
 
 
 // Schreib-Funktionen der offenen Terminals; App leitet ssh:data hierhin.
@@ -14,9 +15,15 @@ export const writers = new Map();
 const SECRET_PROMPT = /(pass(word|phrase|wort)?|kennwort|code|token|pin)[^\n]*:\s*$/i;
 const strip = (x) => x.replace(/\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b\][^\x07]*\x07/g, '');
 
+// Einfügen per Strg+V / Rechtsklick: 'ask' (beim ersten Mal fragen), 'on', 'off'; liegt in localStorage wie die Schrift
+export const getPaste = () => { try { return localStorage.getItem('termPaste') || 'ask'; } catch { return 'ask'; } };
+export const setPaste = (v) => { try { localStorage.setItem('termPaste', v); } catch { /* egal */ } };
+
 export default function Terminal({ sid, hostId, active, theme, font, attempt = 0, onCommand }) {
   const box = useRef(null);
   const ref = useRef({});
+  const t = useT();
+  const tr = useRef(t); tr.current = t;
 
   useEffect(() => {
     const term = new XTerm({ fontFamily: font.family, fontSize: font.size, cursorBlink: true, theme });
@@ -27,6 +34,26 @@ export default function Terminal({ sid, hostId, active, theme, font, attempt = 0
     ref.current = { term, fit };
     let tail = '', line = ''; // letzte Ausgabe / aktuell getippte Zeile
     writers.set(sid, (d) => { tail = (tail + strip(d)).slice(-200); term.write(d); });
+    const paste = async () => {
+      const m = getPaste();
+      if (m === 'off') return;
+      if (m === 'ask') { if (!confirm(tr.current('Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.'))) return setPaste('off'); setPaste('on'); }
+      try { const x = await navigator.clipboard.readText(); if (x) term.paste(x); } catch { /* Zwischenablage nicht lesbar */ }
+    };
+    const copy = () => { const x = term.getSelection(); if (x) navigator.clipboard.writeText(x).catch(() => {}); };
+    // Strg+C kopiert nur bei Markierung (sonst Abbruch ans Terminal), Strg+Shift+C immer; Strg+A bleibt für die Shell, Strg+Shift+A markiert alles
+    term.attachCustomKeyEventHandler((e) => {
+      if (e.type !== 'keydown' || !e.ctrlKey || e.altKey || e.metaKey) return true;
+      const k = e.key.toLowerCase();
+      if (k === 'v') { e.preventDefault(); paste(); return false; }
+      if (k === 'c' && (e.shiftKey || term.hasSelection())) { e.preventDefault(); copy(); return false; }
+      if (k === 'a' && e.shiftKey) { e.preventDefault(); term.selectAll(); return false; }
+      return true;
+    });
+    // Rechtsklick: mit Markierung kopieren, sonst einfügen
+    const el = box.current;
+    const onCtx = (e) => { e.preventDefault(); if (term.hasSelection()) { copy(); term.clearSelection(); } else paste(); };
+    el.addEventListener('contextmenu', onCtx);
     term.onData((d) => {
       api.input(sid, d);
       if (d === '\r') { if (line.trim() && !SECRET_PROMPT.test(tail.split('\n').pop())) onCommand?.(sid, line.trim()); line = ''; }
@@ -38,7 +65,7 @@ export default function Terminal({ sid, hostId, active, theme, font, attempt = 0
     api.open(sid, hostId, term.cols, term.rows);
     const ro = new ResizeObserver(() => box.current.offsetParent && fit.fit());
     ro.observe(box.current);
-    return () => { ro.disconnect(); writers.delete(sid); api.close(sid); term.dispose(); };
+    return () => { el.removeEventListener('contextmenu', onCtx); ro.disconnect(); writers.delete(sid); api.close(sid); term.dispose(); };
   }, [sid, hostId, attempt]);
 
   useEffect(() => { if (ref.current.term) ref.current.term.options.theme = theme; }, [theme]);

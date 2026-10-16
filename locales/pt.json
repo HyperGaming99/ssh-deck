@@ -425,5 +425,11 @@
  "Dev (Vorabversionen)": "Dev (pré-lançamentos)",
  "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "As versões dev aparecem a cada push e podem conter erros.",
  "Etwas ist schiefgelaufen.": "Algo deu errado.",
- "Neu laden": "Recarregar"
+ "Neu laden": "Recarregar",
+ "Einfügen im Terminal": "Colar no terminal",
+ "Strg+V und Rechtsklick fügen die Zwischenablage ein": "Ctrl+V e clique direito colam a área de transferência",
+ "Nachfragen": "Perguntar",
+ "Erlauben": "Permitir",
+ "Aus": "Desativado",
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "Colar a área de transferência no terminal? Vale para Ctrl+V e clique direito e pode ser alterado nas configurações."
 }

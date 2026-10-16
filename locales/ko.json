@@ -425,5 +425,11 @@
  "Dev (Vorabversionen)": "Dev (사전 릴리스)",
  "Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.": "Dev 버전은 push할 때마다 나오며 오류가 있을 수 있습니다.",
  "Etwas ist schiefgelaufen.": "문제가 발생했습니다.",
- "Neu laden": "새로고침"
+ "Neu laden": "새로고침",
+ "Einfügen im Terminal": "터미널에 붙여넣기",
+ "Strg+V und Rechtsklick fügen die Zwischenablage ein": "Ctrl+V와 오른쪽 클릭으로 클립보드를 붙여넣습니다",
+ "Nachfragen": "묻기",
+ "Erlauben": "허용",
+ "Aus": "끄기",
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "클립보드를 터미널에 붙여넣을까요? Ctrl+V와 오른쪽 클릭에 적용되며 설정에서 변경할 수 있습니다."
 }

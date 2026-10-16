@@ -26,7 +26,7 @@ import ImportDialog from '@/components/ImportDialog';
 import KeyImportSheet from '@/components/KeyImportSheet';
 import { maskFingerprint, maskHost } from '@/lib/censor.mjs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import Terminal, { writers } from '@/components/Terminal';
+import Terminal, { writers, getPaste, setPaste } from '@/components/Terminal';
 import SftpTab from '@/components/SftpTab';
 import LoginScreen from '@/components/LoginScreen';
 import LanguageSetup from '@/components/LanguageSetup';
@@ -617,6 +617,8 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
   const [editors, setEditors] = useState([]);
   const [editor, setEditor] = useState('auto');
   useEffect(() => { api.editors.list().then(setEditors); api.settings.get().then((s) => setEditor(s.editor || 'auto')); }, []);
+  const [paste, setPasteState] = useState(getPaste);
+  const pickPaste = (v) => { setPasteState(v); setPaste(v); };
   const pickEditor = (v) => { setEditor(v); api.settings.set({ editor: v }); };
   const row = 'flex items-center justify-between gap-4 rounded-xl border bg-card p-4';
   const seg = (opts, value, onChange) => (
@@ -650,6 +652,10 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
             <div className={row}>
               <div><p className="text-sm font-medium">{t('Seitenleiste')}</p><p className="text-xs text-muted-foreground">{t('Stil der linken Navigation')}</p></div>
               {seg([['compact', t('Kompakt')], ['wide', t('Breit')], ['float', t('Schwebend')]], side, setSide)}
+            </div>
+            <div className={row}>
+              <div><p className="text-sm font-medium">{t('Einfügen im Terminal')}</p><p className="text-xs text-muted-foreground">{t('Strg+V und Rechtsklick fügen die Zwischenablage ein')}</p></div>
+              {seg([['ask', t('Nachfragen')], ['on', t('Erlauben')], ['off', t('Aus')]], paste, pickPaste)}
             </div>
           </>
         )}
