@@ -431,5 +431,11 @@
  "Nachfragen": "询问",
  "Erlauben": "允许",
  "Aus": "关闭",
- "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "要将剪贴板内容粘贴到终端吗？这适用于 Ctrl+V 和右键单击，可在设置中更改。"
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "要将剪贴板内容粘贴到终端吗？这适用于 Ctrl+V 和右键单击，可在设置中更改。",
+ "Animationen": "动画",
+ "Glow bei Hosts und Gruppen sowie Übergänge": "主机和分组的发光效果及过渡",
+ "An": "开启",
+ "Gespeicherte Anmeldedaten lassen sich nicht entschlüsseln (Schlüsselbund des Systems geändert). Bitte abmelden und neu anmelden.": "无法解密已保存的凭据（系统密钥环已更改）。请退出登录后重新登录。",
+ "Andere Version installieren (auch ältere)": "安装其他版本（包括旧版本）",
+ "Gespeichertes Passwort nicht lesbar – neu eingeben": "无法读取已保存的密码，请重新输入"
 }

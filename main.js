@@ -104,7 +104,7 @@ const kcCtx = () => {
 const kcErr = (e) => {
   if (e.code === 'SK') return 'Geheimschlüssel ungültig';
   if (e.code === 'WRONG') return 'Passwort oder Geheimschlüssel falsch';
-  if (e.message === 'fetch failed') return 'Server nicht erreichbar.';
+  if (/decrypting the ciphertext|fetch failed/.test(e.message)) return syncMsg(e);
   if (e.status === 404 && e.message === 'Nicht gefunden') return 'Der Server kennt noch keinen Cloud-Schlüsselbund. Bitte den Server aktualisieren.';
   return e.status ? e.message : 'Aktion fehlgeschlagen';
 };
@@ -145,6 +145,10 @@ async function syncTeams(ctx) {
   return errors.join(' · ');
 }
 
+// Lesbarer Fehlertext statt der rohen Electron-/Netzwerkmeldung
+const syncMsg = (e) => /decrypting the ciphertext/.test(e.message) ? 'Gespeicherte Anmeldedaten lassen sich nicht entschlüsseln (Schlüsselbund des Systems geändert). Bitte abmelden und neu anmelden.'
+  : /fetch failed/.test(e.message) ? 'Server nicht erreichbar.' : e.message;
+
 async function runSync() {
   const c = loadSyncCfg();
   if (!c) return;
@@ -156,8 +160,8 @@ async function runSync() {
     const cloud = new syncTools.Backend({ url: c.server, token: crypt.decrypt(c.token) }, backendOpts(c.server));
     await syncTools.syncOnce({ cloud, key: Buffer.from(crypt.decrypt(c.key), 'base64'), local: { get: snapshot, set: applySnapshot } });
     syncState.status = 'ok'; syncState.lastSync = Date.now();
-    try { const ctx = teamCtx(); await ctx.api.setPubkey(ctx.ident.pub); syncState.teamError = await syncTeams(ctx); } catch (e) { syncState.teamError = e.message === 'fetch failed' ? 'Server nicht erreichbar.' : e.message; }
-    try { syncState.keychainError = await syncKeychain(kcCtx()); } catch (e) { syncState.keychainError = e.message; }
+    try { const ctx = teamCtx(); await ctx.api.setPubkey(ctx.ident.pub); syncState.teamError = await syncTeams(ctx); } catch (e) { syncState.teamError = syncMsg(e); }
+    try { syncState.keychainError = await syncKeychain(kcCtx()); } catch (e) { syncState.keychainError = syncMsg(e); }
     if (allSig() !== before) send('hosts:changed'); // andere Geräte haben etwas geändert
   } catch (e) {
     if (e.status === 401) { // Sitzung ungültig: zurück zum Login
@@ -165,7 +169,7 @@ async function runSync() {
       syncState.status = 'off'; syncState.error = 'Sitzung abgelaufen – bitte neu anmelden.';
     } else {
       syncState.status = 'error';
-      syncState.error = e.message === 'Unsupported state or unable to authenticate data' ? 'Die Cloud-Daten lassen sich mit diesem Passwort nicht entschlüsseln.' : /fetch failed/.test(e.message) ? 'Server nicht erreichbar.' : e.message;
+      syncState.error = e.message === 'Unsupported state or unable to authenticate data' ? 'Die Cloud-Daten lassen sich mit diesem Passwort nicht entschlüsseln.' : syncMsg(e);
     }
   }
   syncing = false;
@@ -465,7 +469,7 @@ async function checkUpdate() {
   const cur = curVersion(), c = updCfg();
   try {
     const l = await updater.latest({ repo: c.repo, url: c.url, channel: c.channel, fetch: updFetch });
-    updInfo = { current: cur, latest: l.version, channel: c.channel, prerelease: l.prerelease, available: updater.isNewer(l.version, cur), notes: l.notes, page: l.page, tarball: l.tarball, canInstall: !app.isPackaged };
+    updInfo = { current: cur, latest: l.version, channel: c.channel, prerelease: l.prerelease, available: updater.available(l.version, cur, l.prerelease), notes: l.notes, page: l.page, tarball: l.tarball, canInstall: !app.isPackaged };
   } catch (e) { return { current: cur, error: updErr(e) }; }
   if (updInfo.available) send('update:available', { latest: updInfo.latest, canInstall: updInfo.canInstall });
   return updInfo;
@@ -517,14 +521,21 @@ app.whenReady().then(() => {
   handle('settings:get', () => readSettings());
   handle('settings:set', (_, patch) => { fs.writeFileSync(settingsFile, JSON.stringify({ ...readSettings(), ...patch })); });
   handle('update:check', async () => { const u = await checkUpdate(); return u.error ? u : publicUpd(u); });
-  handle('update:openPage', () => { const u = updInfo; if (u && /^https:\/\/github\.com\//.test(u.page)) shell.openExternal(u.page); });
-  handle('update:install', async () => {
+  let relCache = []; // Veröffentlichungen für die Versionswahl (auch ältere)
+  handle('update:list', async () => {
+    try { relCache = await updater.releases({ repo: updCfg().repo, fetch: updFetch }); } catch (e) { return { error: updErr(e) }; }
+    return { current: curVersion(), list: relCache.map(({ tarball, ...r }) => r) };
+  });
+  const pickRelease = (ver) => (ver ? relCache.find((r) => r.version === ver) : updInfo && updInfo.available && { version: updInfo.latest, tarball: updInfo.tarball, page: updInfo.page });
+  handle('update:openPage', (_, ver) => { const u = pickRelease(ver) || updInfo; if (u && /^https:\/\/github\.com\//.test(u.page)) shell.openExternal(u.page); });
+  handle('update:install', async (_, ver) => {
     if (app.isPackaged) return { error: 'Update fehlgeschlagen' }; // installierte Pakete aktualisiert die Release-Seite
-    if (!updInfo || !updInfo.available || updBusy) return { error: 'Update fehlgeschlagen' };
+    const pick = pickRelease(ver);
+    if (!pick || updBusy) return { error: 'Update fehlgeschlagen' };
     updBusy = true;
     try {
-      const base = await updater.install({ tarball: updInfo.tarball, dir: __dirname, fetch: updFetch, onStep: (step) => send('update:step', step) });
-      fs.writeFileSync(installedFile(), JSON.stringify({ version: updInfo.latest, base })); // merkt sich z. B. den Dev-Build
+      const base = await updater.install({ tarball: pick.tarball, dir: __dirname, fetch: updFetch, onStep: (step) => send('update:step', step) });
+      fs.writeFileSync(installedFile(), JSON.stringify({ version: pick.version, base })); // merkt sich z. B. den Dev-Build
     }
     catch (e) { updBusy = false; return { error: updErr(e) }; }
     setTimeout(() => { app.relaunch(); app.exit(0); }, 600);
@@ -532,15 +543,16 @@ app.whenReady().then(() => {
   });
   if (updCfg().auto) { setTimeout(checkUpdate, 8000); setInterval(() => updCfg().auto && checkUpdate(), 6 * 36e5); }
   // ---- Teams: Rückgabe { ... } oder { error } ----
-  const teamErr = (e) => (e.message === 'fetch failed' ? 'Server nicht erreichbar.' : e.status === 404 && e.message === 'Nicht gefunden' ? 'Der Server kennt noch keine Teams. Bitte den Server aktualisieren.' : e.status ? e.message : 'Team-Aktion fehlgeschlagen');
+  const teamErr = (e) => (/decrypting the ciphertext|fetch failed/.test(e.message) ? syncMsg(e) : e.status === 404 && e.message === 'Nicht gefunden' ? 'Der Server kennt noch keine Teams. Bitte den Server aktualisieren.' : e.status ? e.message : 'Team-Aktion fehlgeschlagen');
   const teamKey = async (ctx, id) => { if (!teamKeys.has(id)) await refreshTeams(ctx); const k = teamKeys.get(id); if (!k) throw Object.assign(new Error('Schlüssel fehlt'), { status: 400 }); return k; };
   const teamDo = (fn, { sync = true } = {}) => async (_, ...a) => {
-    const ctx = teamCtx();
-    if (!ctx) return { error: 'Nicht angemeldet' };
-    try { const r = await fn(ctx, ...a); if (sync) { send('teams:changed'); scheduleSync(); } return r ?? {}; } catch (e) { return { error: teamErr(e) }; }
+    try {
+      const ctx = teamCtx();
+      if (!ctx) return { error: 'Nicht angemeldet' };
+      const r = await fn(ctx, ...a); if (sync) { send('teams:changed'); scheduleSync(); } return r ?? {}; } catch (e) { return { error: teamErr(e) }; }
   };
   ipcMain.handle('team:list', async () => {
-    const ctx = teamCtx();
+    let ctx; try { ctx = teamCtx(); } catch (e) { return { teams: loadTeams(), error: teamErr(e) }; } // z. B. Schlüsselbund des Systems geändert
     if (!ctx) return { teams: loadTeams(), signedOut: true };
     try { await ctx.api.setPubkey(ctx.ident.pub); return { teams: await refreshTeams(ctx) }; } catch (e) { return { teams: loadTeams(), error: teamErr(e) }; }
   });
@@ -558,14 +570,17 @@ app.whenReady().then(() => {
   }));
   ipcMain.handle('team:delete', teamDo(async (ctx, id) => { await ctx.api.remove(id); await refreshTeams(ctx); send('hosts:changed'); }));
   // ---- Cloud-Schlüsselbund: Rückgabe { ... } oder { error } ----
-  const kcDo = (fn) => async (_, ...a) => { const ctx = kcCtx(); if (!ctx) return { error: 'Nicht angemeldet' }; try { return (await fn(ctx, ...a)) ?? {}; } catch (e) { return { error: kcErr(e) }; } };
+  const kcDo = (fn) => async (_, ...a) => { try { const ctx = kcCtx(); if (!ctx) return { error: 'Nicht angemeldet' }; return (await fn(ctx, ...a)) ?? {}; } catch (e) { return { error: kcErr(e) }; } };
   const kcPassword = (ctx, password) => { if (!syncTools.deriveKeys(ctx.c.email, String(password || '')).enc.equals(ctx.enc)) throw Object.assign(new Error('Passwort falsch'), { status: 400 }); };
   const kcStore = (vk, sk) => kcSave({ vk: crypt.encrypt(vk.toString('base64')), sk: crypt.encrypt(sk), tomb: [] });
   ipcMain.handle('kc:status', async () => {
-    const ctx = kcCtx(), cfg = kcLoad();
+    let ctx, cfg;
+    try { ctx = kcCtx(); cfg = kcLoad(); } catch (e) { return { signedIn: true, error: syncMsg(e) }; } // z. B. Schlüsselbund des Systems geändert
     if (!ctx) return { signedIn: false };
-    let remote = false; try { remote = !!(await ctx.api.request('GET', 'keyvault')).vault; } catch { /* Server alt oder offline */ }
-    return { signedIn: true, enabled: !!cfg.vk, remote, keys: keys.raw().filter((k) => k.cloud && !k.deleted).length };
+    const keysN = keys.raw().filter((k) => k.cloud && !k.deleted).length;
+    let remote = false;
+    try { remote = !!(await ctx.api.request('GET', 'keyvault')).vault; } catch (e) { if (!e.status) return { signedIn: true, enabled: !!cfg.vk, keys: keysN, error: syncMsg(e) }; /* Server alt */ }
+    return { signedIn: true, enabled: !!cfg.vk, remote, keys: keysN };
   });
   ipcMain.handle('kc:enable', kcDo(async (ctx, password) => {
     kcPassword(ctx, password);

@@ -431,5 +431,11 @@
  "Nachfragen": "Pytaj",
  "Erlauben": "Zezwól",
  "Aus": "Wył.",
- "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "Wkleić schowek do terminala? Dotyczy Ctrl+V i prawego przycisku, można zmienić w ustawieniach."
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "Wkleić schowek do terminala? Dotyczy Ctrl+V i prawego przycisku, można zmienić w ustawieniach.",
+ "Animationen": "Animacje",
+ "Glow bei Hosts und Gruppen sowie Übergänge": "Poświata na hostach i grupach oraz przejścia",
+ "An": "Wł.",
+ "Gespeicherte Anmeldedaten lassen sich nicht entschlüsseln (Schlüsselbund des Systems geändert). Bitte abmelden und neu anmelden.": "Zapisanych danych logowania nie można odszyfrować (zmienił się systemowy pęk kluczy). Wyloguj się i zaloguj ponownie.",
+ "Andere Version installieren (auch ältere)": "Zainstaluj inną wersję (także starszą)",
+ "Gespeichertes Passwort nicht lesbar – neu eingeben": "Zapisane hasło jest nieczytelne – wpisz je ponownie"
 }

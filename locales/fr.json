@@ -431,5 +431,11 @@
  "Nachfragen": "Demander",
  "Erlauben": "Autoriser",
  "Aus": "Désactivé",
- "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "Coller le presse-papiers dans le terminal ? Cela s’applique à Ctrl+V et au clic droit et peut être modifié dans les réglages."
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "Coller le presse-papiers dans le terminal ? Cela s’applique à Ctrl+V et au clic droit et peut être modifié dans les réglages.",
+ "Animationen": "Animations",
+ "Glow bei Hosts und Gruppen sowie Übergänge": "Lueur sur les hôtes et groupes, et transitions",
+ "An": "Activé",
+ "Gespeicherte Anmeldedaten lassen sich nicht entschlüsseln (Schlüsselbund des Systems geändert). Bitte abmelden und neu anmelden.": "Les identifiants enregistrés ne peuvent pas être déchiffrés (le trousseau du système a changé). Veuillez vous déconnecter puis vous reconnecter.",
+ "Andere Version installieren (auch ältere)": "Installer une autre version (même plus ancienne)",
+ "Gespeichertes Passwort nicht lesbar – neu eingeben": "Mot de passe enregistré illisible – saisissez-le à nouveau"
 }

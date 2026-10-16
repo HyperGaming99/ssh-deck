@@ -10,6 +10,8 @@ const EASINGS = {
 const TRIGGERS = ['loop', 'hover', 'view'];
 const FALLOFF = [0, 0.2, 0.4, 0.6, 0.8, 1];
 
+const animOff = () => typeof document !== 'undefined' && document.documentElement.dataset.anim === 'off'; // Einstellung „Animationen aus“
+
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
 let paint = null;
@@ -85,12 +87,18 @@ const ShinyText = ({
     yoyo,
     followPointer,
     pauseOnHover,
-    disabled
+    disabled: disabled || animOff()
   };
 
   useEffect(() => {
     syncRef.current?.();
   });
+
+  useEffect(() => { // Schalter in den Einstellungen wirkt sofort
+    const mo = new MutationObserver(() => { settingsRef.current.disabled = disabled || animOff(); syncRef.current?.(); });
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-anim'] });
+    return () => mo.disconnect();
+  }, [disabled]);
 
   useEffect(() => {
     const root = rootRef.current;

@@ -431,5 +431,11 @@
  "Nachfragen": "पूछें",
  "Erlauben": "अनुमति दें",
  "Aus": "बंद",
- "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "क्लिपबोर्ड टर्मिनल में पेस्ट करें? यह Ctrl+V और राइट-क्लिक पर लागू होता है और सेटिंग्स में बदला जा सकता है।"
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "क्लिपबोर्ड टर्मिनल में पेस्ट करें? यह Ctrl+V और राइट-क्लिक पर लागू होता है और सेटिंग्स में बदला जा सकता है।",
+ "Animationen": "एनिमेशन",
+ "Glow bei Hosts und Gruppen sowie Übergänge": "होस्ट और ग्रुप का ग्लो और ट्रांज़िशन",
+ "An": "चालू",
+ "Gespeicherte Anmeldedaten lassen sich nicht entschlüsseln (Schlüsselbund des Systems geändert). Bitte abmelden und neu anmelden.": "सहेजे गए क्रेडेंशियल डिक्रिप्ट नहीं हो सकते (सिस्टम कीरिंग बदल गई)। कृपया साइन आउट करके दोबारा साइन इन करें।",
+ "Andere Version installieren (auch ältere)": "दूसरा संस्करण इंस्टॉल करें (पुराने सहित)",
+ "Gespeichertes Passwort nicht lesbar – neu eingeben": "सहेजा गया पासवर्ड पढ़ा नहीं जा सका – फिर से दर्ज करें"
 }

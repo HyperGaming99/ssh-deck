@@ -431,5 +431,11 @@
  "Nachfragen": "確認する",
  "Erlauben": "許可",
  "Aus": "オフ",
- "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "クリップボードをターミナルに貼り付けますか？ Ctrl+V と右クリックに適用され、設定で変更できます。"
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "クリップボードをターミナルに貼り付けますか？ Ctrl+V と右クリックに適用され、設定で変更できます。",
+ "Animationen": "アニメーション",
+ "Glow bei Hosts und Gruppen sowie Übergänge": "ホストとグループのグロー効果と切り替え",
+ "An": "オン",
+ "Gespeicherte Anmeldedaten lassen sich nicht entschlüsseln (Schlüsselbund des Systems geändert). Bitte abmelden und neu anmelden.": "保存された認証情報を復号できません（システムのキーリングが変更されました）。サインアウトして、もう一度サインインしてください。",
+ "Andere Version installieren (auch ältere)": "別のバージョンをインストール（古いものも可）",
+ "Gespeichertes Passwort nicht lesbar – neu eingeben": "保存されたパスワードを読み取れません。もう一度入力してください"
 }

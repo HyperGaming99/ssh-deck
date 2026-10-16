@@ -35,6 +35,9 @@ export default function Terminal({ sid, hostId, active, theme, font, attempt = 0
     let tail = '', line = ''; // letzte Ausgabe / aktuell getippte Zeile
     writers.set(sid, (d) => { tail = (tail + strip(d)).slice(-200); term.write(d); });
     const paste = async () => {
+      try { await pasteNow(); } finally { setTimeout(() => term.focus(), 0); } // confirm() nimmt dem Terminal den Fokus
+    };
+    const pasteNow = async () => {
       const m = getPaste();
       if (m === 'off') return;
       if (m === 'ask') { if (!confirm(tr.current('Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.'))) return setPaste('off'); setPaste('on'); }
@@ -52,7 +55,7 @@ export default function Terminal({ sid, hostId, active, theme, font, attempt = 0
     });
     // Rechtsklick: mit Markierung kopieren, sonst einfügen
     const el = box.current;
-    const onCtx = (e) => { e.preventDefault(); if (term.hasSelection()) { copy(); term.clearSelection(); } else paste(); };
+    const onCtx = (e) => { e.preventDefault(); term.focus(); if (term.hasSelection()) { copy(); term.clearSelection(); } else paste(); };
     el.addEventListener('contextmenu', onCtx);
     term.onData((d) => {
       api.input(sid, d);

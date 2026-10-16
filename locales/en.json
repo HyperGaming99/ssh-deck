@@ -431,5 +431,11 @@
  "Nachfragen": "Ask",
  "Erlauben": "Allow",
  "Aus": "Off",
- "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "Paste the clipboard into the terminal? This applies to Ctrl+V and right-click and can be changed in the settings."
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "Paste the clipboard into the terminal? This applies to Ctrl+V and right-click and can be changed in the settings.",
+ "Animationen": "Animations",
+ "Glow bei Hosts und Gruppen sowie Übergänge": "Glow on hosts and groups, and transitions",
+ "An": "On",
+ "Gespeicherte Anmeldedaten lassen sich nicht entschlüsseln (Schlüsselbund des Systems geändert). Bitte abmelden und neu anmelden.": "Stored credentials cannot be decrypted (the system keyring changed). Please sign out and sign in again.",
+ "Andere Version installieren (auch ältere)": "Install another version (including older ones)",
+ "Gespeichertes Passwort nicht lesbar – neu eingeben": "Stored password unreadable – enter it again"
 }

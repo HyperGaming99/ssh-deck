@@ -50,7 +50,7 @@ contextBridge.exposeInMainWorld('api', {
     invite: (id, email, role) => ipcRenderer.invoke('team:invite', id, email, role), setRole: (id, u, role) => ipcRenderer.invoke('team:setRole', id, u, role),
     remove: (id, u) => ipcRenderer.invoke('team:remove', id, u), leave: (id) => ipcRenderer.invoke('team:leave', id), delete: (id) => ipcRenderer.invoke('team:delete', id),
     onChanged: (cb) => ipcRenderer.on('teams:changed', () => cb()) },
-  update: { check: () => ipcRenderer.invoke('update:check'), install: () => ipcRenderer.invoke('update:install'), openPage: () => ipcRenderer.invoke('update:openPage'),
+  update: { check: () => ipcRenderer.invoke('update:check'), install: (v) => ipcRenderer.invoke('update:install', v), openPage: (v) => ipcRenderer.invoke('update:openPage', v), list: () => ipcRenderer.invoke('update:list'),
     onAvailable: (cb) => ipcRenderer.on('update:available', (_, u) => cb(u)), onStep: (cb) => ipcRenderer.on('update:step', (_, s) => cb(s)) },
   settings: { get: () => ipcRenderer.invoke('settings:get'), set: (patch) => ipcRenderer.invoke('settings:set', patch) },
   onHostsChanged: (cb) => ipcRenderer.on('hosts:changed', cb),

@@ -716,6 +716,7 @@ const mock = {
   assert.equal(dev.version, '0.1.4-dev.10', 'Dev: höchster Build (10 > 2), Entwürfe zählen nicht');
   assert(dev.prerelease && dev.tarball.endsWith('/dev10'));
   assert(updater.isNewer(dev.version, '0.1.4-dev.2') && !updater.isNewer(dev.version, '0.1.4-dev.10'), 'Dev-Update nur bei höherer Build-Nummer');
+  assert(updater.available('0.1.4-dev.16', '0.1.4', true) && !updater.available('0.1.4-dev.16', '0.1.4-dev.16', true) && !updater.available('0.1.4-dev.16', '0.1.4', false), 'Quell-Installation 0.1.4 bekommt Dev-Builds von 0.1.4');
   srv.close();
   console.log('channels ok');
 })().catch((e) => { console.error(e); process.exit(1); });

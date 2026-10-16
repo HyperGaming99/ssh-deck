@@ -431,5 +431,11 @@
  "Nachfragen": "Vragen",
  "Erlauben": "Toestaan",
  "Aus": "Uit",
- "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "Klembord in het terminal plakken? Dit geldt voor Ctrl+V en rechtsklik en kan in de instellingen worden gewijzigd."
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "Klembord in het terminal plakken? Dit geldt voor Ctrl+V en rechtsklik en kan in de instellingen worden gewijzigd.",
+ "Animationen": "Animaties",
+ "Glow bei Hosts und Gruppen sowie Übergänge": "Gloed bij hosts en groepen, en overgangen",
+ "An": "Aan",
+ "Gespeicherte Anmeldedaten lassen sich nicht entschlüsseln (Schlüsselbund des Systems geändert). Bitte abmelden und neu anmelden.": "Opgeslagen inloggegevens kunnen niet worden ontsleuteld (de sleutelhanger van het systeem is gewijzigd). Meld je af en weer aan.",
+ "Andere Version installieren (auch ältere)": "Andere versie installeren (ook oudere)",
+ "Gespeichertes Passwort nicht lesbar – neu eingeben": "Opgeslagen wachtwoord onleesbaar – voer het opnieuw in"
 }

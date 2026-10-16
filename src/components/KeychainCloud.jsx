@@ -26,6 +26,7 @@ export default function KeychainCloud({ st, toast, goAccount }) {
     return <div className={cn(row, 'max-w-xl space-y-3')}><p className="text-sm">{t('Melde dich an, um den Cloud-Schlüsselbund zu nutzen.')}</p><Button onClick={goAccount}>{t('Konto & Sync')}</Button></div>;
   }
   if (!s) return null;
+  if (s.error && !s.enabled) return <div className={cn(row, 'max-w-xl space-y-3')}><p className="text-sm text-destructive">{t(s.error)}</p><Button variant="outline" onClick={goAccount}>{t('Konto & Sync')}</Button></div>;
   const secretBox = secret && (
     <div className={cn(row, 'space-y-3')}>
       <p className="text-sm font-semibold">{t('Dein Geheimschlüssel')}</p>
@@ -44,7 +45,7 @@ export default function KeychainCloud({ st, toast, goAccount }) {
   return (
     <div className="max-w-xl space-y-4">
       <p className="rounded-xl bg-muted p-4 text-xs text-muted-foreground">{t('Schlüssel, die du hier einschaltest, liegen verschlüsselt in der Cloud und sind auf allen deinen Geräten da. Der Server sieht nur Chiffretext. Zusätzlich schützt ein Geheimschlüssel, den nur du hast: Selbst wenn jemand die Server-Daten stiehlt und dein Passwort errät, bleiben die Schlüssel sicher.')}</p>
-      {st.keychainError && <p className="text-sm text-destructive">{st.keychainError}</p>}
+      {(s.error || st.error || st.keychainError) && <p className="text-sm text-destructive">{t(s.error || st.error || st.keychainError)}</p>}
       {secretBox}
       {!secret && s.enabled && (
         <div className={cn(row, 'space-y-3')}>

@@ -28,7 +28,8 @@ const hosts = (file, crypt) => {
   const base = plain(file);
   return {
     list: () => base.list().map(({ secret, ...h }) => ({ ...h, hasSecret: !!secret })),
-    get: (id) => { const h = base.list().find((x) => x.id === id); return h && { ...h, secret: h.secret ? crypt.decrypt(h.secret) : '' }; },
+    // Passwort nicht entschlüsselbar (anderer System-Schlüsselbund): trotzdem liefern, damit „Bearbeiten“ aufgeht; Passwort neu eingeben
+    get: (id) => { const h = base.list().find((x) => x.id === id); if (!h) return h; try { return { ...h, secret: h.secret ? crypt.decrypt(h.secret) : '' }; } catch { return { ...h, secret: '', secretLost: true }; } },
     // secret === undefined: bestehendes Geheimnis behalten
     save: (h) => {
       const old = base.list().find((x) => x.id === h.id);

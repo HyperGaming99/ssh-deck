@@ -132,7 +132,7 @@ export default function HostSheet({ spec, onClose }) {
                   {showPw ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </Button>}>
                 <Input className={cn(inputCls, 'pe-11')} type={showPw ? 'text' : 'password'} autoComplete="new-password"
-                  placeholder={spec.values.hasSecret ? t('Passwort (leer = unverändert)') : t('Passwort')} value={v.secret ?? ''} onChange={set('secret')} />
+                  placeholder={spec.values.secretLost ? t('Gespeichertes Passwort nicht lesbar – neu eingeben') : spec.values.hasSecret ? t('Passwort (leer = unverändert)') : t('Passwort')} value={v.secret ?? ''} onChange={set('secret')} />
               </Field>
 
               {keyOpen ? (

@@ -431,5 +431,11 @@
  "Nachfragen": "Спрашивать",
  "Erlauben": "Разрешить",
  "Aus": "Выкл.",
- "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "Вставить буфер обмена в терминал? Это относится к Ctrl+V и правому клику и меняется в настройках."
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "Вставить буфер обмена в терминал? Это относится к Ctrl+V и правому клику и меняется в настройках.",
+ "Animationen": "Анимации",
+ "Glow bei Hosts und Gruppen sowie Übergänge": "Свечение у хостов и групп и переходы",
+ "An": "Вкл.",
+ "Gespeicherte Anmeldedaten lassen sich nicht entschlüsseln (Schlüsselbund des Systems geändert). Bitte abmelden und neu anmelden.": "Сохранённые учётные данные не удаётся расшифровать (изменилась системная связка ключей). Выйдите и войдите снова.",
+ "Andere Version installieren (auch ältere)": "Установить другую версию (в том числе старую)",
+ "Gespeichertes Passwort nicht lesbar – neu eingeben": "Сохранённый пароль не читается – введите его снова"
 }

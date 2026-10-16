@@ -521,7 +521,9 @@ function UpdatesSettings() {
   const check = useCallback(async () => { setBusy(true); setErr(''); const r = await api.update.check(); setBusy(false); setRes(r); if (r.error) setErr(r.error); }, []);
   useEffect(() => { api.settings.get().then((x) => setS({ auto: x.updates?.auto !== false, repo: x.updates?.repo || '', channel: x.updates?.channel === 'dev' ? 'dev' : 'stable' })).then(check); }, [check]);
   const save = (p) => { const n = { ...s, ...p }; setS(n); api.settings.set({ updates: n }); };
-  const install = async () => { setInstalling(true); setErr(''); const r = await api.update.install(); if (r.error) { setInstalling(false); setErr(r.error); } };
+  const [rel, setRel] = useState({ list: [], pick: '' }); // Versionswahl, auch ältere
+  useEffect(() => { api.update.list().then((r) => r.list && setRel({ list: r.list, pick: '' })); }, []);
+  const install = async (v) => { setInstalling(true); setErr(''); const r = await api.update.install(v); if (r.error) { setInstalling(false); setErr(r.error); } };
   const row = 'flex items-center justify-between gap-4 rounded-xl border bg-card p-4';
   return (
     <div className="max-w-xl space-y-3">
@@ -536,7 +538,7 @@ function UpdatesSettings() {
         <div className={cn(row, 'flex-col items-stretch')}>
           {res.notes && <pre className="max-h-40 overflow-auto whitespace-pre-wrap text-xs text-muted-foreground">{res.notes}</pre>}
           {res.canInstall
-            ? <Button disabled={installing} onClick={install}>{installing ? t('Update wird installiert …') : t('Installieren und neu starten')}</Button>
+            ? <Button disabled={installing} onClick={() => install()}>{installing ? t('Update wird installiert …') : t('Installieren und neu starten')}</Button>
             : <Button onClick={() => api.update.openPage()}>{t('Release-Seite öffnen')}</Button>}
         </div>
       )}
@@ -544,6 +546,20 @@ function UpdatesSettings() {
         <p className="text-sm font-medium">{t('Automatisch nach Updates suchen')}</p>
         <Switch checked={s.auto} onCheckedChange={(v) => save({ auto: v })} />
       </div>
+      {rel.list.length > 0 && (
+        <div className={cn(row, 'flex-col items-stretch')}>
+          <p className="text-sm font-medium">{t('Andere Version installieren (auch ältere)')}</p>
+          <div className="flex gap-2">
+            <select value={rel.pick} onChange={(e) => setRel({ ...rel, pick: e.target.value })} className="h-9 min-w-0 flex-1 rounded-md border bg-background px-2 text-sm">
+              <option value="" />
+              {rel.list.map((r) => <option key={r.version} value={r.version}>{r.version}{r.version === res?.current ? ' ✓' : ''}</option>)}
+            </select>
+            <Button disabled={!rel.pick || rel.pick === res?.current || installing} onClick={() => (res?.canInstall ? install(rel.pick) : api.update.openPage(rel.pick))}>
+              {res?.canInstall ? t('Installieren und neu starten') : t('Release-Seite öffnen')}
+            </Button>
+          </div>
+        </div>
+      )}
       <div className={cn(row, 'flex-col items-stretch')}>
         <p className="text-sm font-medium">{t('Update-Kanal')}</p>
         <div className="grid grid-cols-2 rounded-lg bg-muted p-1 text-sm">
@@ -609,6 +625,11 @@ function UpdateBanner({ upd, onClose }) {
   );
 }
 
+// Animationen (Glow, Übergänge) an/aus: Merkmal am <html>, das CSS blendet alles aus; liegt in localStorage
+const getAnim = () => { try { return localStorage.getItem('anim') || 'on'; } catch { return 'on'; } };
+const applyAnim = (v) => { document.documentElement.dataset.anim = v; try { localStorage.setItem('anim', v); } catch { /* egal */ } };
+applyAnim(getAnim());
+
 // Einstellungen mit eigener Seitenleiste (links Kategorien, rechts Inhalt)
 function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lang, setLang, settingsTab, teams, refreshTeams, vault, setVault, toast }) {
   const t = useT();
@@ -619,6 +640,8 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
   useEffect(() => { api.editors.list().then(setEditors); api.settings.get().then((s) => setEditor(s.editor || 'auto')); }, []);
   const [paste, setPasteState] = useState(getPaste);
   const pickPaste = (v) => { setPasteState(v); setPaste(v); };
+  const [anim, setAnim] = useState(getAnim);
+  const pickAnim = (v) => { setAnim(v); applyAnim(v); };
   const pickEditor = (v) => { setEditor(v); api.settings.set({ editor: v }); };
   const row = 'flex items-center justify-between gap-4 rounded-xl border bg-card p-4';
   const seg = (opts, value, onChange) => (
@@ -652,6 +675,10 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
             <div className={row}>
               <div><p className="text-sm font-medium">{t('Seitenleiste')}</p><p className="text-xs text-muted-foreground">{t('Stil der linken Navigation')}</p></div>
               {seg([['compact', t('Kompakt')], ['wide', t('Breit')], ['float', t('Schwebend')]], side, setSide)}
+            </div>
+            <div className={row}>
+              <div><p className="text-sm font-medium">{t('Animationen')}</p><p className="text-xs text-muted-foreground">{t('Glow bei Hosts und Gruppen sowie Übergänge')}</p></div>
+              {seg([['on', t('An')], ['off', t('Aus')]], anim, pickAnim)}
             </div>
             <div className={row}>
               <div><p className="text-sm font-medium">{t('Einfügen im Terminal')}</p><p className="text-xs text-muted-foreground">{t('Strg+V und Rechtsklick fügen die Zwischenablage ein')}</p></div>

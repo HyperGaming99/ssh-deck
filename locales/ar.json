@@ -431,5 +431,11 @@
  "Nachfragen": "اسأل",
  "Erlauben": "السماح",
  "Aus": "إيقاف",
- "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "لصق الحافظة في الطرفية؟ ينطبق هذا على Ctrl+V والنقر الأيمن ويمكن تغييره من الإعدادات."
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "لصق الحافظة في الطرفية؟ ينطبق هذا على Ctrl+V والنقر الأيمن ويمكن تغييره من الإعدادات.",
+ "Animationen": "الرسوم المتحركة",
+ "Glow bei Hosts und Gruppen sowie Übergänge": "توهج المضيفين والمجموعات والانتقالات",
+ "An": "تشغيل",
+ "Gespeicherte Anmeldedaten lassen sich nicht entschlüsseln (Schlüsselbund des Systems geändert). Bitte abmelden und neu anmelden.": "تعذّر فك تشفير بيانات الاعتماد المحفوظة (تغيّرت سلسلة مفاتيح النظام). يرجى تسجيل الخروج ثم تسجيل الدخول مرة أخرى.",
+ "Andere Version installieren (auch ältere)": "تثبيت إصدار آخر (بما في ذلك الأقدم)",
+ "Gespeichertes Passwort nicht lesbar – neu eingeben": "تعذّرت قراءة كلمة المرور المحفوظة – أعد إدخالها"
 }

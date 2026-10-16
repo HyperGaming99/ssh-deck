@@ -431,5 +431,11 @@
  "Nachfragen": "Питати",
  "Erlauben": "Дозволити",
  "Aus": "Вимк.",
- "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "Вставити буфер обміну в термінал? Це стосується Ctrl+V і правого кліку й змінюється в налаштуваннях."
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "Вставити буфер обміну в термінал? Це стосується Ctrl+V і правого кліку й змінюється в налаштуваннях.",
+ "Animationen": "Анімації",
+ "Glow bei Hosts und Gruppen sowie Übergänge": "Світіння хостів і груп та переходи",
+ "An": "Увімк.",
+ "Gespeicherte Anmeldedaten lassen sich nicht entschlüsseln (Schlüsselbund des Systems geändert). Bitte abmelden und neu anmelden.": "Збережені облікові дані не вдається розшифрувати (змінилася системна в’язка ключів). Вийдіть і увійдіть знову.",
+ "Andere Version installieren (auch ältere)": "Встановити іншу версію (зокрема старішу)",
+ "Gespeichertes Passwort nicht lesbar – neu eingeben": "Збережений пароль не читається – введіть його знову"
 }

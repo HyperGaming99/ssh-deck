@@ -431,5 +431,11 @@
  "Nachfragen": "Chiedi",
  "Erlauben": "Consenti",
  "Aus": "Disattivato",
- "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "Incollare gli appunti nel terminale? Vale per Ctrl+V e clic destro e si può cambiare nelle impostazioni."
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "Incollare gli appunti nel terminale? Vale per Ctrl+V e clic destro e si può cambiare nelle impostazioni.",
+ "Animationen": "Animazioni",
+ "Glow bei Hosts und Gruppen sowie Übergänge": "Bagliore su host e gruppi, e transizioni",
+ "An": "Attivato",
+ "Gespeicherte Anmeldedaten lassen sich nicht entschlüsseln (Schlüsselbund des Systems geändert). Bitte abmelden und neu anmelden.": "Le credenziali salvate non possono essere decifrate (il portachiavi di sistema è cambiato). Esci e accedi di nuovo.",
+ "Andere Version installieren (auch ältere)": "Installa un’altra versione (anche precedente)",
+ "Gespeichertes Passwort nicht lesbar – neu eingeben": "Password salvata illeggibile: inseriscila di nuovo"
 }

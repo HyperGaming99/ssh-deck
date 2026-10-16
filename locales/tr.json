@@ -431,5 +431,11 @@
  "Nachfragen": "Sor",
  "Erlauben": "İzin ver",
  "Aus": "Kapalı",
- "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "Pano terminale yapıştırılsın mı? Bu, Ctrl+V ve sağ tık için geçerlidir ve ayarlardan değiştirilebilir."
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "Pano terminale yapıştırılsın mı? Bu, Ctrl+V ve sağ tık için geçerlidir ve ayarlardan değiştirilebilir.",
+ "Animationen": "Animasyonlar",
+ "Glow bei Hosts und Gruppen sowie Übergänge": "Hostlarda ve gruplarda parıltı ve geçişler",
+ "An": "Açık",
+ "Gespeicherte Anmeldedaten lassen sich nicht entschlüsseln (Schlüsselbund des Systems geändert). Bitte abmelden und neu anmelden.": "Kayıtlı kimlik bilgilerinin şifresi çözülemiyor (sistem anahtar zinciri değişti). Lütfen çıkış yapıp tekrar giriş yapın.",
+ "Andere Version installieren (auch ältere)": "Başka bir sürüm yükle (eskiler dahil)",
+ "Gespeichertes Passwort nicht lesbar – neu eingeben": "Kayıtlı parola okunamıyor – yeniden girin"
 }

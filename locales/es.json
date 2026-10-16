@@ -431,5 +431,11 @@
  "Nachfragen": "Preguntar",
  "Erlauben": "Permitir",
  "Aus": "Desactivado",
- "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "¿Pegar el portapapeles en el terminal? Se aplica a Ctrl+V y clic derecho y se puede cambiar en los ajustes."
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "¿Pegar el portapapeles en el terminal? Se aplica a Ctrl+V y clic derecho y se puede cambiar en los ajustes.",
+ "Animationen": "Animaciones",
+ "Glow bei Hosts und Gruppen sowie Übergänge": "Brillo en hosts y grupos, y transiciones",
+ "An": "Activado",
+ "Gespeicherte Anmeldedaten lassen sich nicht entschlüsseln (Schlüsselbund des Systems geändert). Bitte abmelden und neu anmelden.": "Las credenciales guardadas no se pueden descifrar (el llavero del sistema cambió). Cierra sesión e inicia sesión de nuevo.",
+ "Andere Version installieren (auch ältere)": "Instalar otra versión (también anteriores)",
+ "Gespeichertes Passwort nicht lesbar – neu eingeben": "Contraseña guardada ilegible: vuelve a introducirla"
 }

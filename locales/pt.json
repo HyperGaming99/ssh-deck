@@ -431,5 +431,11 @@
  "Nachfragen": "Perguntar",
  "Erlauben": "Permitir",
  "Aus": "Desativado",
- "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "Colar a área de transferência no terminal? Vale para Ctrl+V e clique direito e pode ser alterado nas configurações."
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "Colar a área de transferência no terminal? Vale para Ctrl+V e clique direito e pode ser alterado nas configurações.",
+ "Animationen": "Animações",
+ "Glow bei Hosts und Gruppen sowie Übergänge": "Brilho em hosts e grupos, e transições",
+ "An": "Ativado",
+ "Gespeicherte Anmeldedaten lassen sich nicht entschlüsseln (Schlüsselbund des Systems geändert). Bitte abmelden und neu anmelden.": "As credenciais guardadas não podem ser descriptografadas (o chaveiro do sistema mudou). Saia e entre novamente.",
+ "Andere Version installieren (auch ältere)": "Instalar outra versão (inclusive anteriores)",
+ "Gespeichertes Passwort nicht lesbar – neu eingeben": "Senha guardada ilegível – digite novamente"
 }

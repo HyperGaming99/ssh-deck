@@ -431,5 +431,11 @@
  "Nachfragen": "묻기",
  "Erlauben": "허용",
  "Aus": "끄기",
- "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "클립보드를 터미널에 붙여넣을까요? Ctrl+V와 오른쪽 클릭에 적용되며 설정에서 변경할 수 있습니다."
+ "Zwischenablage ins Terminal einfügen? Das gilt für Strg+V und Rechtsklick und lässt sich in den Einstellungen ändern.": "클립보드를 터미널에 붙여넣을까요? Ctrl+V와 오른쪽 클릭에 적용되며 설정에서 변경할 수 있습니다.",
+ "Animationen": "애니메이션",
+ "Glow bei Hosts und Gruppen sowie Übergänge": "호스트·그룹의 글로우와 전환 효과",
+ "An": "켜기",
+ "Gespeicherte Anmeldedaten lassen sich nicht entschlüsseln (Schlüsselbund des Systems geändert). Bitte abmelden und neu anmelden.": "저장된 자격 증명을 복호화할 수 없습니다(시스템 키링이 변경됨). 로그아웃 후 다시 로그인하세요.",
+ "Andere Version installieren (auch ältere)": "다른 버전 설치(이전 버전 포함)",
+ "Gespeichertes Passwort nicht lesbar – neu eingeben": "저장된 비밀번호를 읽을 수 없습니다. 다시 입력하세요"
 }
