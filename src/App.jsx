@@ -61,7 +61,7 @@ function IconButton({ label, onClick, children }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant="ghost" size="icon" className="size-8" onClick={(e) => { e.stopPropagation(); onClick(); }}>{children}</Button>
+        <Button variant="ghost" size="icon" className="size-8" aria-label={label} onClick={(e) => { e.stopPropagation(); onClick(); }}>{children}</Button>
       </TooltipTrigger>
       <TooltipContent>{label}</TooltipContent>
     </Tooltip>
@@ -1093,7 +1093,7 @@ export default function App() {
                             onAnswer={(a) => { api.answer(p.sid, a); updPane(p.sid, (q) => ({ conn: { ...q.conn, state: 'connecting' } })); }}
                             onEdit={() => editHost(tab.hostId)}
                             onRetry={() => updPane(p.sid, (q) => ({ conn: null, attempt: (q.attempt || 0) + 1 }))} />}</>} />
-                        {mobile && <KeyBar sid={fp.sid} />}
+                        {mobile && ready && <KeyBar sid={fp.sid} />}
                         </Wrap>
                         {panel && ready && fp.conn && mobile && <div className="fixed inset-0 z-30 bg-black/40" onClick={togglePanel} />}
                         {panel && ready && fp.conn && <TermPanel onClose={togglePanel} sid={fp.sid} hostId={tab.hostId} dark={dark} history={history[fp.sid] || []} themeId={termTheme} setThemeId={setTheme} font={font} setFont={setFont} toast={toast} rev={rev} />}

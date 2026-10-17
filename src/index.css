@@ -117,7 +117,7 @@ html[data-mobile] .mnav > button > svg { width: 1.25rem; height: 1.25rem; }
 html[data-mobile] .mtool { flex-wrap: wrap; }
 html[data-mobile] .mtool > div:first-child { flex-basis: 100%; max-width: none; }
 html[data-mobile] .mcard { flex-wrap: wrap; }
-html[data-mobile] .mact { position: static; transform: none; translate: none; opacity: 1; width: 100%; justify-content: flex-end; border: 0; box-shadow: none; background: none; padding: 0; }
+html[data-mobile] .mact { position: static; transform: none; --tw-translate-x: 0px; --tw-translate-y: 0px; --tw-backdrop-blur: blur(0px); opacity: 1; width: 100%; justify-content: flex-end; border: 0; box-shadow: none; background: none; padding: 0; } /* Aktionen unter dem Text statt darüber (die Tailwind-Variablen für Verschiebung und Weichzeichner werden zurückgesetzt, sonst überdeckte der Balken die zweite Zeile) */
 html[data-mobile] .mact button { min-width: 44px; min-height: 44px; }
 html[data-mobile] .mrow { flex-wrap: wrap; }
 html[data-mobile] .mset { flex-direction: column; gap: 1rem; }
