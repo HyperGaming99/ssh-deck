@@ -37,8 +37,10 @@ const hosts = (file, crypt) => {
     save: (h) => {
       const old = base.list().find((x) => x.id === h.id);
       const secret = h.secret === undefined ? (old ? old.secret : '') : (h.secret ? crypt.encrypt(h.secret) : '');
-      return base.save({ id: h.id, name: h.name, group: h.group || '', host: h.host, port: +h.port || 22, user: h.user, keyPath: h.keyPath || '', keyId: h.keyId || '', icon: h.icon || '', tags: Array.isArray(h.tags) ? h.tags.map(String) : (old ? old.tags || [] : []), autoIcon: old ? old.autoIcon || '' : '', secret, ...((h.vault || old?.vault) && { vault: h.vault || old.vault }) });
+      return base.save({ id: h.id, name: h.name, group: h.group || '', host: h.host, port: +h.port || 22, user: h.user, keyPath: h.keyPath || '', keyId: h.keyId || '', icon: h.icon || '', tags: Array.isArray(h.tags) ? h.tags.map(String) : (old ? old.tags || [] : []), autoIcon: old ? old.autoIcon || '' : '', fav: h.fav === undefined ? !!old?.fav : !!h.fav, lastUsed: h.lastUsed || old?.lastUsed || 0, secret, ...((h.vault || old?.vault) && { vault: h.vault || old.vault }) });
     },
+    // Zuletzt verwendet: nur lokal speichern, updatedAt bleibt (löst keinen Sync aus; geht beim nächsten echten Speichern mit)
+    touch: (id) => { const a = base.raw(); const h = a.find((x) => x.id === id && !x.deleted); if (h) { h.lastUsed = Date.now(); base.setRaw(a); } },
     // vom Server erkanntes Betriebssystem-Icon (icon = manuelle Wahl hat Vorrang)
     setAutoIcon: (id, slug) => { const h = base.list().find((x) => x.id === id); if (h) base.save({ ...h, autoIcon: slug }); },
     // für den Sync: Geheimnisse im Klartext raus (der Sync verschlüsselt selbst), beim Einlesen lokal neu verschlüsseln

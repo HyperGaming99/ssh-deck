@@ -260,6 +260,32 @@ assert.equal(osIcon('ID=somethingnew'), 'linux');
 assert.equal(osIcon('Darwin\n'), 'apple');
 assert.equal(osIcon(''), '');
 
+// fav/lastUsed überleben save; touch ändert updatedAt nicht
+const fid = s.save({ name: 'f', host: 'h', user: 'u', fav: true });
+s.touch(fid);
+const f1 = s.list().find((x) => x.id === fid);
+assert(f1.fav === true && f1.lastUsed > 0, 'fav/lastUsed gesetzt');
+const upd = JSON.parse(fs.readFileSync(file, 'utf8')).find((x) => x.id === fid).updatedAt;
+s.touch(fid);
+assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).find((x) => x.id === fid).updatedAt, upd, 'touch löst keinen Sync aus');
+s.save({ id: fid, name: 'f2', host: 'h', user: 'u' }); // ohne fav/lastUsed
+assert(s.list().find((x) => x.id === fid).fav && s.list().find((x) => x.id === fid).lastUsed === f1.lastUsed, 'überleben save');
+s.save({ id: fid, name: 'f2', host: 'h', user: 'u', fav: false });
+assert.equal(s.list().find((x) => x.id === fid).fav, false);
+
+// ssh-Befehl und SSH-Config
+(async () => {
+  const S = await import('./src/lib/sshcmd.mjs');
+  assert.equal(S.sshCommand({ host: 'h.io', user: 'me', port: 22 }), 'ssh me@h.io');
+  assert.equal(S.sshCommand({ host: 'h.io', user: 'me', port: 2222, keyPath: '/k/id' }), 'ssh -p 2222 -i /k/id me@h.io');
+  assert.equal(S.sshCommand({ host: '[::1]', user: 'me', port: '22' }), 'ssh me@::1');
+  assert.equal(S.sshCommand({ host: 'h', user: 'me', keyPath: "/my keys/id" }), "ssh -i '/my keys/id' me@h");
+  const c = S.sshConfig([{ name: 'Web Prod 1', host: '10.0.0.1', user: 'root', port: 2200, keyPath: '~/.ssh/k', secret: 'pw' }, { name: 'db', host: '::1', user: 'u', port: 22 }]);
+  assert.equal(c, 'Host WebProd1\n  HostName 10.0.0.1\n  User root\n  Port 2200\n  IdentityFile ~/.ssh/k\n\nHost db\n  HostName ::1\n  User u\n');
+  assert(!c.includes('pw'));
+  console.log('sshcmd ok');
+})().catch((e) => { console.error(e); process.exit(1); });
+
 // Pfad-Helfer (Windows/Linux) und Laufwerksliste
 (async () => {
   const P = await import('./src/lib/paths.mjs');
