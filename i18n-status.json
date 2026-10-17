@@ -1,0 +1,14 @@
+{
+  "Status": "Status",
+  "Lädt …": "Loading …",
+  "Server-Status nicht verfügbar (nur Linux).": "Server status not available (Linux only).",
+  "CPU-Last": "CPU load",
+  "Kerne": "cores",
+  "Arbeitsspeicher": "Memory",
+  "Festplatte (/)": "Disk (/)",
+  "Laufzeit": "Uptime",
+  "Tage": "days",
+  "Snippet ausführen": "Run snippet",
+  "Ausführen": "Run",
+  "Platzhalter: {{name}} oder {{name:Standardwert}} – wird beim Ausführen abgefragt.": "Placeholders: {{name}} or {{name:default}} – asked for when running."
+}

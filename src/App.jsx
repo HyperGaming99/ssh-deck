@@ -15,6 +15,7 @@ import Logo from '@/components/Logo';
 import KeychainCloud from '@/components/KeychainCloud';
 import TeamsSettings from '@/components/TeamsSettings';
 import TermPanel from '@/components/TermPanel';
+import { vars, fill } from '@/lib/snippetVars.mjs';
 import { FONTS, chromeVars, resolveTheme } from '@/lib/termThemes';
 import ConnectScreen from '@/components/ConnectScreen';
 import ForwardSheet from '@/components/ForwardSheet';
@@ -697,7 +698,7 @@ function SnippetsView({ dark, runSnippet, openForm, rev }) {
   const load = useCallback(() => api.snippets.list().then((l) => setItems(l.filter((x) => inV(x, vault)))), [vault]);
   useEffect(() => { load(); }, [load, rev]);
   const edit = (s = {}) => openForm({
-    title: s.id ? t('Snippet bearbeiten') : t('Neues Snippet'), values: s,
+    title: s.id ? t('Snippet bearbeiten') : t('Neues Snippet'), values: s, description: t('Platzhalter: {{name}} oder {{name:Standardwert}} – wird beim Ausführen abgefragt.'),
     fields: [{ name: 'name', label: t('Name'), required: true }, { name: 'cmd', label: t('Befehl'), required: true }],
     onSubmit: async (v) => { await api.snippets.save({ ...v, id: s.id, vault: s.vault ?? vault }); load(); },
   });
@@ -872,7 +873,9 @@ export default function App() {
   const runSnippet = (cmd) => {
     const sid = tabs.some((x) => x.sid === active) ? active : tabs.at(-1)?.sid;
     if (!sid) return toast(t('Erst ein Terminal öffnen.'));
-    api.input(sid, cmd + '\n');
+    const vs = vars(cmd);
+    if (vs.length) setForm({ title: t('Snippet ausführen'), submitLabel: t('Ausführen'), fields: vs.map((v) => ({ name: v.name, label: v.name })), values: Object.fromEntries(vs.map((v) => [v.name, v.def])), onSubmit: (v) => api.input(sid, fill(cmd, v) + '\n') });
+    else api.input(sid, cmd + '\n');
     setActive(sid);
   };
 

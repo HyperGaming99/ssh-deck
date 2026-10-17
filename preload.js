@@ -88,6 +88,7 @@ contextBridge.exposeInMainWorld('api', {
   pathOf: (file) => webUtils.getPathForFile(file), // Pfad einer aus dem Dateimanager gezogenen Datei
   fwd: { ...coll('fwd'), toggle: (id) => ipcRenderer.invoke('fwd:toggle', id) },
   open: (sid, id, cols, rows) => ipcRenderer.send('ssh:open', sid, id, cols, rows),
+  stats: (sid) => ipcRenderer.invoke('stats:get', sid),
   input: (sid, d) => ipcRenderer.send('ssh:input', sid, d),
   resize: (sid, c, r) => ipcRenderer.send('ssh:resize', sid, c, r),
   close: (sid) => ipcRenderer.send('ssh:close', sid),
