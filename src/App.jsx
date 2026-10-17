@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronLeft, Eye, EyeOff, LayoutGrid, List, CloudOff, Fingerprint, Languages, ShieldCheck, Check, FileText, Palette, Settings as SettingsIcon, User, Folder, FolderPlus, Menu, Minus, Square, ArrowLeftRight, Code2, Copy, Download, Ellipsis, FileUp, FolderOpen, KeyRound, Lock, Moon, Pencil, Plus, RefreshCw, Search, Send, Server, Sun, PanelRight, Terminal as TermIcon, Trash2, Users, X } from 'lucide-react';
+import { ChevronDown, ChevronLeft, Eye, EyeOff, LayoutGrid, List, CloudOff, Fingerprint, Languages, ShieldCheck, Check, FileText, Palette, Settings as SettingsIcon, User, Folder, FolderPlus, Menu, Minus, Square, ArrowLeftRight, Code2, Copy, Download, Ellipsis, FileUp, FolderOpen, KeyRound, Lock, Moon, Pencil, Circle, Plus, RefreshCw, Search, Send, Server, Sun, PanelRight, Terminal as TermIcon, Trash2, Users, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import Logo from '@/components/Logo';
 import KeychainCloud from '@/components/KeychainCloud';
 import TeamsSettings from '@/components/TeamsSettings';
 import TermPanel from '@/components/TermPanel';
+import ReconnectBar from '@/components/ReconnectBar';
 import { FONTS, chromeVars, resolveTheme } from '@/lib/termThemes';
 import ConnectScreen from '@/components/ConnectScreen';
 import ForwardSheet from '@/components/ForwardSheet';
@@ -25,7 +26,7 @@ import ImportDialog from '@/components/ImportDialog';
 import KeyImportSheet from '@/components/KeyImportSheet';
 import { maskFingerprint, maskHost } from '@/lib/censor.mjs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import Terminal, { writers } from '@/components/Terminal';
+import Terminal, { writers, startRec, stopRec } from '@/components/Terminal';
 import SftpTab from '@/components/SftpTab';
 import LoginScreen from '@/components/LoginScreen';
 import LanguageSetup from '@/components/LanguageSetup';
@@ -616,6 +617,7 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
   const [editors, setEditors] = useState([]);
   const [editor, setEditor] = useState('auto');
   useEffect(() => { api.editors.list().then(setEditors); api.settings.get().then((s) => setEditor(s.editor || 'auto')); }, []);
+  const [autoRe, setAutoRe] = useState(() => { try { return localStorage.getItem('autoReconnect') !== '0'; } catch { return true; } });
   const pickEditor = (v) => { setEditor(v); api.settings.set({ editor: v }); };
   const row = 'flex items-center justify-between gap-4 rounded-xl border bg-card p-4';
   const seg = (opts, value, onChange) => (
@@ -649,6 +651,10 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
             <div className={row}>
               <div><p className="text-sm font-medium">{t('Seitenleiste')}</p><p className="text-xs text-muted-foreground">{t('Stil der linken Navigation')}</p></div>
               {seg([['compact', t('Kompakt')], ['wide', t('Breit')], ['float', t('Schwebend')]], side, setSide)}
+            </div>
+            <div className={row}>
+              <div><p className="text-sm font-medium">{t('Automatisch neu verbinden')}</p><p className="text-xs text-muted-foreground">{t('Bei unerwartet getrennter Verbindung erneut versuchen')}</p></div>
+              <Switch checked={autoRe} onCheckedChange={(v) => { setAutoRe(v); try { localStorage.setItem('autoReconnect', v ? '1' : '0'); } catch { /* egal */ } }} />
             </div>
           </>
         )}
@@ -811,7 +817,11 @@ export default function App() {
     api.sync.onStatus(setSt);
     api.onCredAsk((a) => setCredAsks((q) => [...q, a]));
     api.update.onAvailable(setUpd);
-    api.onStatus((sid, conn) => setTabs((prev) => prev.map((x) => (x.sid === sid ? { ...x, conn } : x))));
+    api.onStatus((sid, conn) => setTabs((prev) => prev.map((x) => (x.sid !== sid ? x
+      : conn.state === 'ready' ? { ...x, conn, tries: 0, lost: false, closed: false }
+      : conn.state === 'failed' && x.tries ? { ...x, conn: null, lost: true } // Versuch nach Verbindungsabbruch gescheitert: weiter in der Leiste
+      : { ...x, conn }))));
+    api.onLost((sid) => setTabs((prev) => prev.map((x) => (x.sid === sid ? { ...x, lost: true } : x))));
     api.onClosed((sid) => setTabs((prev) => prev.map((x) => (x.sid === sid ? { ...x, closed: true } : x))));
   }, []);
 
@@ -847,6 +857,14 @@ export default function App() {
     onSave: async (o) => { const i = await api.hosts.save(o); setRev((r) => r + 1); return i; },
     onConnect: connect, onDelete: async (i) => { await api.hosts.remove(i); setRev((r) => r + 1); },
   });
+  const [recs, setRecs] = useState({}); // sid -> true, solange aufgezeichnet wird
+  const toggleRec = async (tab) => {
+    if (!recs[tab.sid]) { startRec(tab.sid); return setRecs((r) => ({ ...r, [tab.sid]: true })); }
+    setRecs((r) => ({ ...r, [tab.sid]: false }));
+    const text = stopRec(tab.sid);
+    if (text && await api.saveRec(text, tab.title.replace(/[\\/:*?"<>|]/g, '_'))) toast(t('Aufzeichnung gespeichert.'));
+  };
+  const reconnect = (sid) => setTabs((p) => p.map((x) => (x.sid === sid ? { ...x, lost: false, closed: false, conn: null, tries: (x.tries || 0) + 1, reconn: (x.reconn || 0) + 1 } : x)));
   const closeTab = (sid) => {
     setTabs((prev) => prev.filter((x) => x.sid !== sid));
     setActive((a) => (a === sid ? 'home' : a));
@@ -900,13 +918,14 @@ export default function App() {
               {tabs.map((tab) => (
                 <Pill key={tab.sid} active={active === tab.sid} onClick={() => setActive(tab.sid)} onClose={() => closeTab(tab.sid)}>
                   {tab.kind === 'sftp' ? <FolderOpen className="size-4 shrink-0" /> : tab.kind === 'new' ? <Search className="size-4 shrink-0" /> : <TermIcon className="size-4 shrink-0" />}
-                  <span className="truncate">{tab.kind === 'new' ? t('Neuer Tab') : tab.title}</span>{tab.closed && <span className="text-xs opacity-60">{t('(getrennt)')}</span>}
+                  {recs[tab.sid] && <Circle className="size-2.5 shrink-0 fill-red-500 text-red-500" />}<span className="truncate">{tab.kind === 'new' ? t('Neuer Tab') : tab.title}</span>{tab.closed && <span className="text-xs opacity-60">{t('(getrennt)')}</span>}
                 </Pill>
               ))}
             </div>
             <IconButton label={t('Neue Verbindung')} onClick={openNewTab}><Plus className="size-4" /></IconButton>
           </div>}
           <div className="ml-auto flex h-full items-center [-webkit-app-region:no-drag]">
+            {tabs.find((x) => x.sid === active && (x.kind === 'ssh' || !x.kind)) && <Button variant="ghost" size="icon" className={cn('mr-1 size-8', recs[active] && 'text-red-500')} onClick={() => toggleRec(tabs.find((x) => x.sid === active))} aria-label={recs[active] ? t('Aufzeichnung beenden') : t('Aufzeichnen')} title={recs[active] ? t('Aufzeichnung beenden') : t('Aufzeichnen')}><Circle className={cn('size-4', recs[active] && 'fill-current')} /></Button>}
             {tabs.find((x) => x.sid === active && (x.kind === 'ssh' || !x.kind)) && <Button variant="ghost" size="icon" className={cn('mr-1 size-8', panel && 'text-primary')} onClick={togglePanel} aria-label={t('Seitenleiste ein-/ausblenden')}><PanelRight className="size-4" /></Button>}
             <Button variant="ghost" size="icon" className="mr-1 size-8" onClick={() => setDark(!dark)} aria-label={t('Theme wechseln')}>
               {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
@@ -958,7 +977,8 @@ export default function App() {
                     : (() => { const ready = tab.conn?.state === 'ready' || !tab.conn; return (
                       <div className="flex size-full">
                         <div className="relative min-w-0 flex-1 p-2" style={{ background: xtheme.background }}>
-                          <Terminal sid={tab.sid} hostId={tab.hostId} active={active === tab.sid} theme={xtheme} font={font} attempt={tab.attempt} onCommand={onCommand} />
+                          <Terminal sid={tab.sid} hostId={tab.hostId} active={active === tab.sid} theme={xtheme} font={font} attempt={tab.attempt} reconn={tab.reconn} onCommand={onCommand} />
+                          {tab.lost && !tab.conn && <ReconnectBar key={tab.tries || 0} tries={tab.tries || 0} onNow={() => reconnect(tab.sid)} onCancel={() => setTabs((p) => p.map((x) => (x.sid === tab.sid ? { ...x, lost: false, closed: true } : x)))} />}
                           {tab.conn && tab.conn.state !== 'ready' && <ConnectScreen conn={tab.conn} onClose={() => closeTab(tab.sid)}
                             onAnswer={(a) => { api.answer(tab.sid, a); setTabs((p) => p.map((x) => (x.sid === tab.sid ? { ...x, conn: { ...x.conn, state: 'connecting' } } : x))); }}
                             onEdit={() => editHost(tab.hostId)}
