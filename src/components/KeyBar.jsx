@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { mods, setMod } from '@/components/Terminal';
+import { mods, setMod } from '@/lib/termState';
 import { cn } from '@/lib/utils';
 
 // Sondertasten-Leiste für das Handy-Terminal (horizontal scrollbar); Strg/Alt rasten ein
