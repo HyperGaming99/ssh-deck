@@ -47,8 +47,15 @@ android {
     buildTypes {
         release {
             if (ks('storeFile', 'SSHDECK_KEYSTORE')) signingConfig signingConfigs.release
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            minifyEnabled true // R8: Code verkleinern (Play-Empfehlung); Schutzregeln in proguard-rules.pro
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        // zum Prüfen von R8 auf dem Gerät: wie release, aber mit dem Debug-Schlüssel (lässt sich über die Debug-App installieren)
+        r8test {
+            initWith release
+            signingConfig signingConfigs.debug
+            matchingFallbacks = ['release']
         }
     }
 }

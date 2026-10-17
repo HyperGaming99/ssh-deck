@@ -19,3 +19,9 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Node.js-Brücke: native-lib.cpp findet die Klasse und ruft sendMessageToApplication per Namen auf; die native-Methoden heißen im JNI-Symbol gleich
+-keep class com.janeasystems.rn_nodejs_mobile.** { *; }
+# Capacitor-Plugin (wird per Annotation/Reflexion geladen)
+-keep class io.github.hypergaming99.sshdeck.** { *; }
+-keepclasseswithmembernames class * { native <methods>; }
