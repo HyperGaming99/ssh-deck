@@ -17,7 +17,7 @@
 
 <p align="center">
   <a href="docs/trailer.mp4"><img src="docs/trailer-poster.jpg" alt="Watch the trailer" width="760"></a><br>
-  <sub>▶ Watch the 54-second trailer · <a href="#about-the-trailer">how it is made</a></sub>
+  <sub>▶ Watch the 64-second trailer · <a href="#about-the-trailer">how it is made</a></sub>
 </p>
 
 ## What is SSH Deck?
@@ -125,7 +125,7 @@ Found a bug or have an idea? [Open an issue](https://github.com/HyperGaming99/ss
 
 ## About the trailer
 
-The trailer ([`docs/trailer.mp4`](docs/trailer.mp4), 54 s) is **not a screen recording and not an AI video**. Every frame is rendered from the real app with demo data, so it always matches what the app looks like — and it can be re-rendered whenever the UI changes. The pipeline lives in [`trailer/`](trailer):
+The trailer ([`docs/trailer.mp4`](docs/trailer.mp4), 64 s) is **not a screen recording and not an AI video**. Every frame is rendered from the real app with demo data, so it always matches what the app looks like — and it can be re-rendered whenever the UI changes. The pipeline lives in [`trailer/`](trailer):
 
 1. **Capture** – `capture2.js` starts the built UI in an invisible Electron window with a stub backend (fake hosts, keys and a fake server — never real data), clicks through the app and saves a screenshot of every state, plus the positions of buttons for the mouse cursor.
 2. **Timeline** – `timeline2.js` plans the whole film in *bars* of the music: camera moves, cursor path, clicks, typed commands, captions and theme changes. Everything lands on the beat.

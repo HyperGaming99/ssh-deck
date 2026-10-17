@@ -1,96 +1,187 @@
-// Zeitleiste des zweiten Trailers (Terminal + Themes). Einzige Quelle für Bühne (stage2.html) und Soundeffekte (sfx.js).
-// Alles in Takten geplant (bpm der Musik); Positionen kommen aus layout.json (capture2.js).
+// Zeitleiste des Trailers. Einzige Quelle für Bühne (stage2.html) und Soundeffekte (sfx.js).
+// Aufbau in Szenen (in Takten der Musik): jede Szene hat Bildzustände, Kamera-Ausschnitt, Mausweg und einen Untertitel.
+// Kamera: fit() legt den wichtigen Bereich eines Bildes (Fensterkoordinaten 1920x1080) rechts neben den Untertitel – nichts wird verdeckt oder angeschnitten.
 (function (root) {
   function buildTimeline(bpm = 100) {
     const L = root.LAYOUT || require('./layout.json');
-    const bar = 240 / bpm, T = (n) => n * bar, beat = bar / 4;
-    const OUT = 20.8; // Takt des Abspanns (Film unter 55 s)
-    const duration = T(OUT + 1.7);
-    const TR = L.tour;
-
-    // ---- Bildzustände (ein Fenster, spätere liegen oben und blenden über) ----
-    const themeSeq = [ // [Takt, Theme] – Schlag auf Schlag im Takt der Musik
-      [3.15, 'auto'], [4.75, 'tokyo'], [5.25, 'dracula'], [5.75, 'nord'], [6.0, 'gruvbox'], [6.25, 'solarl'], [6.5, 'hackerg'],
-      [6.75, 'monokai'], [7.0, 'onedark'], [7.25, 'hackerb'], [7.5, 'tokyo'],
-    ].map(([b, id]) => ({ t: T(b), id }));
-    const NAMES = { auto: 'Automatic', tokyo: 'Tokyo Night', dracula: 'Dracula', nord: 'Nord', gruvbox: 'Gruvbox', solarl: 'Solarized Light', hackerg: 'Hacker Green', monokai: 'Monokai', onedark: 'One Dark', hackerb: 'Hacker Blue' };
-    const lay = (name, b, fade) => ({ name, t0: T(b), fade });
-    const layers = [
-      { name: 'hosts', t0: -9, fade: .01 }, lay('c_log', 2.15, .3), lay('c_hk', 2.5, .4),
-      ...themeSeq.map((s) => ({ name: 'th_' + s.id, t0: s.t, fade: s.id === 'auto' ? .5 : .3 })),
-      lay('font', 8.4, .5), lay('p_snip', 9.85, .45), lay('p_hist', 10.25, .35), lay('p_fwd', 10.6, .35), lay('fw0', 10.9, .5), lay('fw1', 11.5, .3), lay('c_key', 12.0, .7),
-      lay('hosts_all', 13.0, .7), lay('sheet', 13.65, .45), lay('import', 14.4, .55), lay('sftp', 15.35, .7), lay('keychain', 16.55, .7), lay('keychain_open', 17.15, .3),
-      lay('known', 17.85, .7), lay('set_privacy', 18.75, .7), lay('set_lang', 19.7, .7),
-    ];
-    const overlay = { t0: T(3.2), t1: T(12.0) }; // gezeichnetes Terminal über dem Aufnahme-Fenster
-    const dimAt = T(10.9); // Seitenblatt (Forwarding) dimmt auch das Terminal-Overlay
-
-    // ---- Terminal: Befehle werden getippt ----
-    const term = [{ t0: 3.4 * bar, cps: 22 }, { t0: 3.95 * bar, cps: 22 }, { t0: 4.45 * bar, cps: 26 }];
-    const cmdLen = [6, 9, 25];
-    const keys = []; term.forEach((c, i) => { for (let k = 0; k < cmdLen[i]; k++) keys.push(c.t0 + k / c.cps); });
-    const fontClicks = [T(8.7), T(8.85), T(9.0)]; // Schrift wächst bei den Klicks auf "+"
-
-    // ---- Kamera: Bewegungen laufen über die Bildwechsel hinweg (keine harten Schnitte) ----
-    const cam = [
-      [0.9, 960, 540, 0.5], [1.9, 520, 340, 1.3], [2.5, 960, 380, 1.45], [3.0, 960, 400, 1.55], [3.45, 760, 465, 1.2],
-      [4.4, 700, 400, 1.5], [4.75, 960, 600, 0.9], [7.2, 960, 600, 0.93], [7.9, 960, 560, 1.0],
-      [8.3, 1700, 230, 1.65], [9.05, 1700, 250, 1.62], [9.4, 640, 300, 1.4], [9.7, 640, 300, 1.4],
-      [9.95, 1710, 330, 1.55], [10.75, 1640, 400, 1.5], [11.5, 1580, 330, 1.45], [11.95, 960, 400, 1.5], [12.9, 960, 420, 1.38],
-      [13.0, 960, 540, 1.0], [13.5, 1250, 420, 1.15], [14.3, 760, 330, 1.3], [14.9, 960, 540, 1.1], [15.5, 760, 400, 1.2], [16.2, 1220, 440, 1.2],
-      [16.6, 960, 540, 1.05], [17.1, 1500, 260, 1.4], [17.8, 960, 500, 1.1], [18.7, 700, 380, 1.25], [19.5, 960, 540, 1.1], [19.9, 800, 400, 1.2],
-      [20.4, 960, 540, 1.05], [OUT - 0.2, 960, 540, 0.62],
-    ].map(([b, x, y, z]) => ({ t: T(b), x, y, z }));
-
-    // ---- Mauszeiger (Bildschirmkoordinaten des Fensters) ----
+    const bar = 240 / bpm, beat = bar / 4;
+    // Zeitraffer: die Szenen sind unten in "Roh-Takten" geplant; warp() staucht sie abschnittsweise (Forwarding am stärksten), Film ~64 s
+    const K = [[0, 0, .94], [1.6, 0, .72], [7.85, 0, .8], [10.95, 0, .7], [14.05, 0, .5], [17.8, 0, .68], [35.8, 0, 1]];
+    for (let i = 1; i < K.length; i++) K[i][1] = K[i - 1][1] + (K[i][0] - K[i - 1][0]) * K[i - 1][2];
+    const warp = (b) => { let i = 0; while (i + 1 < K.length && b >= K[i + 1][0]) i++; return K[i][1] + (b - K[i][0]) * K[i][2]; };
+    const T = (n) => warp(n) * bar;
+    const TR = L.tour, N = TR.NEW, Fb = L.fwBtn;
     const mid = (r, dx = 0) => ({ x: r.x + r.w / 2 + dx, y: r.y + r.h / 2 });
-    const C = (b, p, v = 1) => ({ t: T(b), x: p.x, y: p.y, v });
-    const cur = [C(1.5, { x: 1400, y: 820 }, 0), C(1.7, { x: 1250, y: 700 }, 1), C(2.05, mid(L.hostCard)), C(2.5, { x: 1180, y: 620 }), C(3.0, mid(L.hkAdd)), C(3.5, { x: 1300, y: 700 }, 1), C(4.55, { x: 1500, y: 650 }, 1)];
-    const clicks = [[2.05, mid(L.hostCard)], [3.0, mid(L.hkAdd)]];
-    const row = (id) => { const p = mid(L.rows[id]); return { x: p.x - 40, y: p.y }; };
-    themeSeq.slice(1).forEach((s) => { const p = row(s.id); cur.push({ t: s.t - 0.03, x: p.x, y: p.y, v: 1 }); clicks.push([s.t / bar, p]); });
-    const fr = mid(L.fontRow), sp = mid(L.sizePlus), tb = (id) => mid(L.tabs[id]);
-    cur.push(C(7.7, { x: 1500, y: 300 }), C(8.4, { x: fr.x - 40, y: fr.y }), C(8.7, sp));
-    clicks.push([8.4, { x: fr.x - 40, y: fr.y }]); fontClicks.forEach((t) => { clicks.push([t / bar, sp]); cur.push({ t: t - 0.02, x: sp.x, y: sp.y, v: 1 }); });
-    cur.push(C(9.5, { x: sp.x - 60, y: sp.y + 40 }), C(9.85, tb('snip')), C(10.25, tb('hist')), C(10.6, tb('fwd')), C(10.85, mid(L.newFwd)), C(11.45, mid(L.fwContinue)), C(11.9, { x: 1500, y: 700 }, 0));
-    clicks.push([9.85, tb('snip')], [10.25, tb('hist')], [10.6, tb('fwd')], [10.85, mid(L.newFwd)], [11.45, mid(L.fwContinue)]);
+
+    // ---- Kamera: Rechteck r so groß wie möglich in den Bildbereich rechts vom Untertitel legen ----
+    const VIEW = { x: 720, y: 100, w: 1120, h: 880 };
+    const fit = (r, v = VIEW, max = 1.6) => {
+      const z = Math.min(v.w / r.w, v.h / r.h, max);
+      return { x: r.x + r.w / 2 - (v.x + v.w / 2 - 960) / z, y: r.y + r.h / 2 - (v.y + v.h / 2 - 540) / z, z };
+    };
+    // wichtige Bereiche der Aufnahmen (Fensterkoordinaten)
+    const R = {
+      hosts: { x: 20, y: 40, w: 1180, h: 330 }, conn: { x: 660, y: 130, w: 600, h: 460 }, term: { x: 0, y: 40, w: 1100, h: 560 },
+      themes: { x: 0, y: 0, w: 1920, h: 1000 }, font: { x: 1000, y: 0, w: 920, h: 640 }, panel: { x: 1000, y: 0, w: 920, h: 700 },
+      fwd: { x: 1330, y: 0, w: 590, h: 600 }, hostsAll: { x: 20, y: 40, w: 1230, h: 480 }, sheet: { x: 1280, y: 0, w: 640, h: 1080 },
+      import: { x: 600, y: 320, w: 720, h: 420 }, sftp: { x: 40, y: 40, w: 1860, h: 640 }, keychain: { x: 40, y: 60, w: 1860, h: 320 },
+      known: { x: 40, y: 60, w: 1860, h: 420 }, set: (h) => ({ x: 40, y: 60, w: 1000, h }), vault: { x: 0, y: 0, w: 960, h: 480 },
+    };
+
+    const layers = [], cam = [], cur = [], clicks = [], caps = [], sfx = [];
+    const lay = (name, b, fade = .5) => { layers.push({ name, t0: T(b), fade }); if (b > 1.5) sfx.push({ t: T(b), kind: 'pop' }); };
+    const look = (b, r, push = 1) => { const c = fit(r); cam.push({ t: T(b), x: c.x, y: c.y, z: c.z * push }); };
+    const move = (b, p, v = 1) => cur.push({ t: T(b), x: p.x, y: p.y, v });
+    const click = (b, p) => { move(b - .02, p); clicks.push({ t: T(b), x: p.x, y: p.y }); sfx.push({ t: T(b), kind: 'click' }); };
+    const cap = (a, b, label, title, sub) => caps.push({ a: T(a), b: T(b), label, title, sub });
+    // Szene: Kamera fährt in .3 Takten heran, steht dann ruhig und schiebt langsam nach (kein Hektik-Schnitt)
+    const scene = (a, b, r) => { look(a, r); look(b - .3, r, 1.04); sfx.push({ t: T(a - .3), kind: 'whoosh', dur: T(.3) }); };
+
+    // ---- 0: Intro (Logo), Fenster erscheint ----
+    cam.push({ t: T(0.9), x: 960, y: 540, z: 0.5 });
+    layers.push({ name: 'hosts', t0: -9, fade: .01 });
+
+    // ---- 1: Hosts ----
+    scene(1.6, 3.0, R.hosts);
+    cap(1.7, 2.85, 'HOSTS', ['Every server,', 'neatly organized.'], 'Groups, tags and icons for every OS.');
+    move(1.7, { x: 1100, y: 600 }, 0); move(1.9, { x: 900, y: 420 }); click(2.75, mid(L.hostCard));
+
+    // ---- 2: Verbinden mit Host-Key-Prüfung ----
+    lay('c_log', 2.95, .35); lay('c_hk', 3.45, .4);
+    scene(3.0, 4.45, R.conn);
+    cap(3.1, 4.3, 'CONNECT', ['Trust,', 'verified.'], 'New host keys are checked right in the tab.');
+    move(3.5, { x: 1250, y: 520 }); click(4.15, mid(L.hkAdd));
+
+    // ---- 3: Smart Login ----
+    lay('c_key', 4.45, .4);
+    scene(4.45, 5.7, R.conn);
+    cap(4.55, 5.55, 'SMART LOGIN', ['Asks only for', 'what is missing.'], 'Username, password, key or one-time code.');
+    move(5.0, { x: 1150, y: 480 });
+
+    // ---- 4: Terminal (gezeichnet, Befehle werden getippt) ----
+    lay('th_auto', 5.65, .5);
+    const overlay = { t0: T(5.75), t1: T(17.75) };
+    const term = [{ t0: T(6.0), cps: 20 }, { t0: T(6.55), cps: 20 }, { t0: T(7.1), cps: 24 }];
+    const cmdLen = [6, 9, 25];
+    term.forEach((c, i) => { for (let k = 0; k < cmdLen[i]; k++) sfx.push({ t: c.t0 + k / c.cps, kind: 'key' }); });
+    scene(5.75, 7.85, R.term);
+    cap(5.85, 7.7, 'TERMINAL', ['A terminal that', 'just works.'], 'Copy, paste, select all — with history beside it.');
+    move(5.9, { x: 1000, y: 500 }, 0);
+
+    // ---- 5: Themes (Schlag auf Schlag) ----
+    const seq = [[7.95, 'auto'], [8.3, 'tokyo'], [8.6, 'dracula'], [8.9, 'nord'], [9.2, 'gruvbox'], [9.45, 'solarl'], [9.7, 'hackerg'], [9.95, 'monokai'], [10.2, 'onedark'], [10.45, 'hackerb'], [10.7, 'tokyo']];
+    const themeSeq = seq.map(([b, id]) => ({ t: T(b), id }));
+    const NAMES = { auto: 'Automatic', tokyo: 'Tokyo Night', dracula: 'Dracula', nord: 'Nord', gruvbox: 'Gruvbox', solarl: 'Solarized Light', hackerg: 'Hacker Green', monokai: 'Monokai', onedark: 'One Dark', hackerb: 'Hacker Blue' };
+    seq.forEach(([b, id], i) => { layers.push({ name: 'th_' + id, t0: T(b), fade: i ? .3 : .5 }); if (i) { const p = mid(L.rows[id]); click(b, { x: p.x - 40, y: p.y }); } });
+    scene(7.95, 10.95, R.themes);
+    cap(8.0, 10.8, 'THEMES', ['Make it', 'yours.'], 'Ten color themes — for the whole window.');
+    move(7.95, { x: 1500, y: 300 });
+
+    // ---- 6: Schrift ----
+    const fr = mid(L.fontRow), sp = mid(L.sizePlus);
+    lay('font', 11.05, .5);
+    scene(11.0, 12.45, R.font);
+    cap(11.1, 12.3, 'FONTS', ['Your font.', 'Your size.'], 'Bundled monospace fonts, live preview.');
+    click(11.05, { x: fr.x - 40, y: fr.y });
+    const fontB = [11.5, 11.7, 11.9], fontClicks = fontB.map(T);
+    fontB.forEach((b) => click(b, sp));
+    move(12.3, { x: sp.x - 60, y: sp.y + 40 });
+
+    // ---- 7: Seitenleiste ----
+    const tb = (id) => mid(L.tabs[id]);
+    lay('p_snip', 12.55, .45); lay('p_hist', 13.15, .35);
+    scene(12.5, 13.95, R.panel);
+    cap(12.6, 13.8, 'SIDE PANEL', ['Everything', 'one click away.'], 'Snippets and command history.');
+    click(12.55, tb('snip')); click(13.15, tb('hist'));
+
+    // ---- 8: Port-Forwarding: alle fünf Schritte des Assistenten ----
+    lay('p_fwd', 14.05, .35); lay('fw0', 14.45, .5);
+    const dimAt = T(14.45);
+    scene(14.05, 17.8, R.fwd);
+    cap(14.1, 17.6, 'PORT FORWARDING', ['Port forwarding,', 'guided.'], 'Every step explained — local, remote or dynamic.');
+    click(14.05, tb('fwd')); click(14.4, mid(L.newFwd));
+    [[15.1, 'fw1'], [15.75, 'fw2'], [16.4, 'fw3'], [17.05, 'fw4']].forEach(([b, n], i) => { click(b - .05, mid(Fb[i])); lay(n, b, .3); });
+    click(17.6, mid(Fb[4]));
+
+    // ---- 9: Hosts anlegen und importieren ----
+    lay('hosts_all', 17.85, .7);
+    scene(17.85, 18.65, R.hostsAll);
+    click(18.55, mid(TR.newHost));
+    lay('sheet', 18.65, .45);
+    scene(18.65, 19.65, R.sheet);
+    cap(17.95, 19.5, 'NEW HOST', ['Add a server', 'in seconds.'], 'Address, user, key — and tags.');
+    move(19.3, { x: 1500, y: 500 });
+    lay('import', 19.7, .55);
+    scene(19.65, 20.75, R.import);
+    cap(19.75, 20.6, 'IMPORT', ['Bring your', 'hosts along.'], 'ssh config, CSV, PuTTY, MobaXterm, SecureCRT.');
+    move(20.1, { x: 1000, y: 560 });
+
+    // ---- 10: SFTP ----
     const dragA = mid(TR.sftpFrom, -240), dragB = mid(TR.sftpTo, -240);
-    cur.push(C(13.1, { x: 1300, y: 700 }, 1), C(13.6, mid(TR.newHost)), C(14.0, { x: 1000, y: 420 }), C(14.4, mid(TR.importBtn)), C(14.9, { x: 900, y: 500 }),
-      C(15.5, dragA), C(16.15, dragB), C(16.5, { x: 1200, y: 600 }), C(17.1, mid(TR.eye)), C(17.7, { x: 1300, y: 500 }), C(18.7, mid(TR.privacy)), C(19.65, mid(TR.language)), C(20.2, { x: 1200, y: 600 }, 0));
-    clicks.push([13.6, mid(TR.newHost)], [14.4, mid(TR.importBtn)], [15.5, dragA], [17.1, mid(TR.eye)], [18.7, mid(TR.privacy)], [19.65, mid(TR.language)]);
-    cur.sort((a, b) => a.t - b.t);
-    const clickList = clicks.map(([b, p]) => ({ t: b * bar, ...p })); // t in Sekunden
-    const chip = { t0: T(15.5), t1: T(16.15), from: dragA, to: dragB };
+    lay('sftp', 20.8, .7);
+    scene(20.8, 22.45, R.sftp);
+    cap(20.9, 22.3, 'SFTP', ['Move files by', 'dragging them.'], 'Two panes — even from server to server.');
+    click(21.25, dragA); move(21.95, dragB); move(22.3, { x: 1200, y: 600 });
+    const chip = { t0: T(21.25), t1: T(21.95), from: dragA, to: dragB };
 
-    // ---- Untertitel ----
-    const caps = [
-      { a: 2.55, b: 3.15, label: 'CONNECT', title: ['Trust,', 'verified.'], sub: 'Host keys are checked right in the tab.' },
-      { a: 3.55, b: 4.6, label: 'TERMINAL', title: ['A terminal that', 'just works.'], sub: 'History, snippets and forwarding beside it.' },
-      { a: 4.8, b: 7.4, label: 'THEMES', title: ['Make it', 'yours.'], sub: 'Ten color themes — applied to the whole window.' },
-      { a: 8.45, b: 9.1, label: 'FONTS', title: ['Your font.', 'Your size.'], sub: 'Bundled fonts, live preview.' },
-      { a: 9.9, b: 10.8, label: 'SIDE PANEL', title: ['Everything', 'one click away.'], sub: 'Snippets, history and port forwarding.' },
-      { a: 10.95, b: 11.85, label: 'FORWARDING', title: ['Port forwarding,', 'guided.'], sub: 'Local, remote or dynamic.' },
-      { a: 12.05, b: 12.9, label: 'SMART LOGIN', title: ['Asks only for', 'what is missing.'], sub: 'Username, password, key or one-time code.' },
-      { a: 13.1, b: 14.25, label: 'HOSTS', title: ['Every server,', 'neatly organized.'], sub: 'Groups, tags and OS icons.' },
-      { a: 14.5, b: 15.25, label: 'IMPORT', title: ['Bring your', 'hosts along.'], sub: 'ssh config, CSV, PuTTY, MobaXterm, SecureCRT.' },
-      { a: 15.45, b: 16.45, label: 'SFTP', title: ['Move files by', 'dragging them.'], sub: 'Even from server to server.' },
-      { a: 16.7, b: 17.75, label: 'KEYCHAIN', title: ['Your keys,', 'under control.'], sub: 'Generate, import, export — censor fingerprints.' },
-      { a: 17.95, b: 18.6, label: 'KNOWN HOSTS', title: ['Know every', 'fingerprint.'], sub: 'Review and import at a glance.' },
-      { a: 18.85, b: 19.6, label: 'PRIVACY', title: ['Private', 'by design.'], sub: 'Encrypted sync. Optional Tor.' },
-      { a: 19.8, b: 20.5, label: '16 LANGUAGES', title: ['Speaks your', 'language.'], sub: 'With a setup assistant on first start.' },
-    ].map((c) => ({ ...c, a: T(c.a), b: T(c.b) }));
+    // ---- 11: Schlüsselbund ----
+    lay('keychain', 22.55, .7); lay('keychain_open', 23.25, .3);
+    scene(22.55, 24.05, R.keychain);
+    cap(22.65, 23.9, 'KEYCHAIN', ['Your keys,', 'under control.'], 'Generate, import, export — fingerprints masked.');
+    click(23.2, mid(TR.eye));
 
-    // ---- Soundeffekte ----
-    const big = [[0.9, 1.9], [2.2, 2.5], [3.1, 3.45], [4.4, 4.75], [7.2, 7.9], [8.0, 8.3], [9.1, 9.4], [9.7, 9.95], [11.9, 12.0], [12.9, 13.0], [OUT - 0.6, OUT - 0.2]];
-    const sfx = [
-      ...big.map(([a, b]) => ({ t: T(a), kind: 'whoosh', dur: T(b) - T(a) })),
-      ...clickList.map((c) => ({ t: c.t, kind: 'click' })), ...keys.map((t) => ({ t, kind: 'key' })),
-      ...themeSeq.slice(1).map((s) => ({ t: s.t, kind: 'pop' })), { t: T(10.9), kind: 'swish' }, { t: T(OUT), kind: 'thud' },
-      ...[12.0, 13.0, 13.65, 14.4, 15.35, 16.55, 17.85, 18.75, 19.7].map((b) => ({ t: T(b), kind: 'pop' })),
-    ].sort((a, b) => a.t - b.t);
+    // ---- 12: Known Hosts ----
+    lay('known', 24.1, .7);
+    scene(24.1, 25.45, R.known);
+    cap(24.2, 25.3, 'KNOWN HOSTS', ['Know every', 'fingerprint.'], 'Review and import at a glance.');
+    move(24.7, { x: 900, y: 300 });
 
+    // ---- 13–19: Einstellungen und neue Funktionen ----
+    const st = (id, dx = -30) => { const p = mid(N[id] || TR[id]); return { x: p.x + dx, y: p.y }; };
+    lay('set_kc', 25.55, .6);
+    scene(25.55, 26.9, R.set(460));
+    cap(25.65, 26.75, 'CLOUD KEYCHAIN', ['Your keys on', 'every device.'], 'Locked by a secret key only you hold.');
+    move(26.2, st('teams'));
+
+    click(26.95, st('teams')); lay('set_teams', 27.0, .6);
+    scene(27.0, 28.5, R.set(880));
+    cap(27.1, 28.35, 'TEAMS', ['Share vaults', 'with your team.'], 'End-to-end encrypted, with roles.');
+    click(27.55, mid(N.teamRow));
+
+    click(28.5, mid(N.vault)); lay('vault_menu', 28.55, .5);
+    scene(28.55, 29.95, R.vault);
+    cap(28.65, 29.8, 'VAULTS', ['Personal or team —', 'one click.'], 'Switch right in the title bar.');
+    move(29.6, { x: 700, y: 420 });
+
+    lay('set_privacy', 30.0, .6);
+    scene(30.0, 31.35, R.set(560));
+    cap(30.1, 31.2, 'PRIVACY', ['Private', 'by design.'], 'End-to-end encrypted sync. Optional Tor.');
+    move(30.9, st('language'));
+
+    click(31.35, st('language')); lay('set_lang', 31.4, .6);
+    scene(31.4, 32.75, R.set(520));
+    cap(31.5, 32.6, '16 LANGUAGES', ['Speaks your', 'language.'], 'Including right-to-left.');
+
+    click(32.75, st('appearance')); lay('set_app', 32.8, .6);
+    scene(32.8, 34.15, R.set(460));
+    cap(32.9, 34.0, 'APPEARANCE', ['Calm when', 'you want it.'], 'Light or dark — animations on or off.');
+    click(33.45, mid(N.animOff)); lay('set_app_off', 33.5, .2);
+
+    click(34.15, st('updates')); lay('set_upd', 34.2, .6);
+    scene(34.2, 35.65, R.set(880));
+    cap(34.3, 35.5, 'UPDATES', ['Any version,', 'any time.'], 'Stable or dev channel — and roll back.');
+    move(35.4, { x: 1200, y: 600 }, 0);
+
+    // ---- Abspann ----
+    const OUT = 35.8;
+    const duration = T(OUT + 1.7);
+    cam.push({ t: T(OUT - 0.2), x: 960, y: 540, z: 0.62 });
+    sfx.push({ t: T(OUT - 0.6), kind: 'whoosh', dur: T(.4) }, { t: T(OUT), kind: 'thud' }, { t: T(14.45), kind: 'swish' });
+
+    const byT = (a, b) => a.t - b.t;
+    layers.sort((a, b) => a.t0 - b.t0); cam.sort(byT); cur.sort(byT); clicks.sort(byT); sfx.sort(byT); caps.sort((a, b) => a.a - b.a);
     const sizeNum = { x: L.sizePlus.x - 34, y: L.sizePlus.y - 1, w: 30, h: L.sizePlus.h + 2 }; // die Zahl zwischen "-" und "+"
-    return { bpm, bar, beat, duration, outroAt: T(OUT), chip, sizeNum, fontShow: [T(8.4), T(9.85)], T, layers, themeSeq, NAMES, overlay, dimAt, term, cmdLen, fontClicks, cam, cursor: cur, clicks: clickList, caps, sfx, termRect: L.term };
+    return { bpm, bar, beat, duration, outroAt: T(OUT), chip, sizeNum, fontShow: [T(11.05), T(12.5)], T, layers, themeSeq, NAMES, overlay, dimAt, term, cmdLen, fontClicks, cam, cursor: cur, clicks, caps, sfx, termRect: L.term };
   }
   if (typeof module !== 'undefined') module.exports = { buildTimeline };
   else root.buildTimeline2 = buildTimeline;
