@@ -64,6 +64,17 @@ SSH Deck is a desktop app (Electron + React) to connect to your servers. You kee
 | Light themes work too | SFTP, drag &amp; drop between panes and servers |
 | ![Keychain](docs/keychain.jpg) | ![Languages](docs/languages.jpg) |
 | Keychain with masked fingerprints | 16 languages |
+| ![Teams](docs/teams.jpg) | ![Team vaults](docs/vaults.jpg) |
+| Teams with roles and verifiable key fingerprints | Switch between *Personal* and team vaults in the title bar |
+| ![Cloud keychain](docs/cloud-keychain.jpg) | ![Port forwarding](docs/forwarding.jpg) |
+| Cloud keychain, end-to-end encrypted | Port forwarding with a guided wizard |
+
+**Android**
+
+| | | | |
+|---|---|---|---|
+| ![Hosts on Android](docs/android-hosts.jpg) | ![Terminal on Android](docs/android-terminal.jpg) | ![Command suggestions on Android](docs/android-suggestions.jpg) | ![SFTP on Android](docs/android-sftp.jpg) |
+| Hosts and groups | Terminal with key bar | Command suggestions | SFTP |
 
 ## Install
 
