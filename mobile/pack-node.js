@@ -19,7 +19,7 @@ fs.rmSync(tmp, { recursive: true, force: true });
 fs.mkdirSync(tmp, { recursive: true });
 fs.copyFileSync(path.join(out, 'package.json'), path.join(tmp, 'package.json'));
 execFileSync('npm', ['install', '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund'], { cwd: tmp, stdio: 'inherit' });
-const strip = (d) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) { if (['build', 'deps', 'test', 'tests', 'docs', 'examples'].includes(e.name)) fs.rmSync(p, { recursive: true, force: true }); else strip(p); } else if (/\.(node|md|ts|map)$/.test(e.name)) fs.rmSync(p); } };
+const strip = (d) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) { if (['deps', 'test', 'tests', 'docs', 'examples'].includes(e.name) || (e.name === 'build' && /(crypto|cpu-features|buildcheck)/.test(d))) fs.rmSync(p, { recursive: true, force: true }); else strip(p); } else if (/\.(node|md|ts|map)$/.test(e.name)) fs.rmSync(p); } };
 strip(path.join(tmp, 'node_modules'));
 fs.cpSync(path.join(tmp, 'node_modules'), path.join(out, 'node_modules'), { recursive: true });
 

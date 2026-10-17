@@ -6,7 +6,8 @@ const path = require('path');
 const crypto = require('crypto');
 const { EventEmitter } = require('events');
 
-const DATA = process.env.DECK_DATA || path.join(os.tmpdir(), 'ssh-deck-mobile');
+const DATA = process.env.DECK_DATA || path.join(require('rn-bridge').app.datadir(), 'ssh-deck'); // privater App-Speicher; os.tmpdir() ist auf Android nicht beschreibbar
+process.env.HOME = process.env.HOME || DATA; // os.homedir() (z. B. ~/.ssh) soll nicht ins Leere zeigen
 fs.mkdirSync(DATA, { recursive: true });
 
 // Kanal: nodejs-mobile bringt "rn-bridge" mit, Tests setzen global.__deckChannel
