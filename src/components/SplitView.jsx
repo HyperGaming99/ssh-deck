@@ -1,7 +1,8 @@
 import { Columns2, Radio, Rows2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import Terminal from '@/components/Terminal';
+import { Suspense, lazy } from 'react';
+const Terminal = lazy(() => import('@/components/Terminal')); // xterm wird erst beim ersten Terminal geladen
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -18,7 +19,7 @@ export default function SplitView({ tab, active, theme, font, onCommand, setFocu
         return (
           <div key={p.sid} onMouseDownCapture={() => !on && setFocus(p.sid)}
             className={cn('relative min-h-0 min-w-0 flex-1 p-2', multi && 'border-2', multi && (on ? 'border-primary' : 'border-transparent'))} style={{ background: theme.background }}>
-            <Terminal sid={p.sid} hostId={tab.hostId} active={active && on} theme={theme} font={font} attempt={p.attempt} reconn={p.reconn} onCommand={onCommand} />
+            <Suspense fallback={null}><Terminal sid={p.sid} hostId={tab.hostId} active={active && on} theme={theme} font={font} attempt={p.attempt} reconn={p.reconn} onCommand={onCommand} /></Suspense>
             {multi && <button type="button" title={t('Pane schließen')} aria-label={t('Pane schließen')} onClick={() => closePane(p.sid)}
               className="absolute end-1 top-1 z-20 grid size-5 place-items-center rounded bg-background/60 text-muted-foreground opacity-60 hover:opacity-100"><X className="size-3" /></button>}
             {overlay(p)}

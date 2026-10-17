@@ -1,4 +1,4 @@
-import { Fragment, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, Suspense, createContext, lazy, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronLeft, Eye, EyeOff, LayoutGrid, List, Cloud, CloudOff, Fingerprint, Languages, ShieldCheck, Check, FileText, Palette, Settings as SettingsIcon, User, Folder, FolderPlus, Menu, Minus, Square, ArrowLeftRight, Code2, Copy, Star, Download, Ellipsis, FileUp, FolderOpen, KeyRound, Lock, Moon, Pencil, Circle, Plus, RefreshCw, Search, Send, Server, Sun, PanelRight, Terminal as TermIcon, Trash2, Users, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -29,10 +29,10 @@ import KeyImportSheet from '@/components/KeyImportSheet';
 import { maskFingerprint, maskHost } from '@/lib/censor.mjs';
 import { sshCommand, sshConfig } from '@/lib/sshcmd.mjs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { bcast, writers, getPaste, setPaste, getSuggest, setSuggest, startRec, stopRec } from '@/components/Terminal';
+import { bcast, writers, getPaste, setPaste, getSuggest, setSuggest, startRec, stopRec } from '@/lib/termState';
 import SplitView, { MAX_PANES, SplitTools } from '@/components/SplitView';
 import KeyBar from '@/components/KeyBar';
-import SftpTab from '@/components/SftpTab';
+const SftpTab = lazy(() => import('@/components/SftpTab')); // erst beim ersten SFTP-Tab
 import LoginScreen from '@/components/LoginScreen';
 import LanguageSetup from '@/components/LanguageSetup';
 import { I18nContext, LANGS, RTL, T, makeT, useLang, useT } from '@/i18n';
@@ -1077,14 +1077,14 @@ export default function App() {
               <ErrorBoundary key={section + vault}><View settingsTab={settingsTab} teams={teams} refreshTeams={refreshTeams} vault={activeV.id} setVault={setVault} lang={lang} setLang={setLang} st={st} setDark={setDark} side={side} setSide={setSide} onLogin={() => chooseSkip(false)} onLogout={() => chooseSkip(false)} dark={dark} connect={connect} openSftp={(h) => connect(h, 'sftp')} runSnippet={runSnippet} openForm={setForm} openHost={setHostForm} toast={toast} rev={rev} /></ErrorBoundary>
             </div>
             <div className={cn('absolute inset-0 p-2', active !== 'sftp' && 'hidden')}>
-              {sftpMounted && <SftpTab sid="sftp" hostId={null} active={active === 'sftp'} toast={toast} openForm={setForm} />}
+              {sftpMounted && <Suspense fallback={null}><SftpTab sid="sftp" hostId={null} active={active === 'sftp'} toast={toast} openForm={setForm} /></Suspense>}
             </div>
             {tabs.map((tab) => (
               <div key={tab.sid} className={cn('absolute inset-0', tab.kind !== 'ssh' && tab.kind && 'p-2', active !== tab.sid && 'hidden')}>
                 {tab.kind === 'new'
                   ? <NewTab active={active === tab.sid} tabs={tabs} recent={recent} onConnect={(h) => { closeTab(tab.sid); connect(h); }} onSwitch={(sid) => { closeTab(tab.sid); setActive(sid); }} />
                   : tab.kind === 'sftp'
-                    ? <SftpTab sid={tab.sid} hostId={tab.hostId} toast={toast} openForm={setForm} />
+                    ? <Suspense fallback={null}><SftpTab sid={tab.sid} hostId={tab.hostId} toast={toast} openForm={setForm} /></Suspense>
                     : (() => { const fp = tab.panes.find((p) => p.sid === tab.focus) || tab.panes[0]; const ready = fp.conn?.state === 'ready' || !fp.conn; return (
                       <div className="flex size-full">
                         <Wrap {...(mobile && { className: 'flex min-h-0 min-w-0 flex-1 flex-col' })}>
