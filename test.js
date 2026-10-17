@@ -719,3 +719,36 @@ const mock = {
   srv.close();
   console.log('channels ok');
 })().catch((e) => { console.error(e); process.exit(1); });
+
+// Jump-Hosts: Kette, Schleifen, Tiefe; Telnet: IAC-Verhandlung
+(() => {
+  const jump = require('./jump');
+  const telnet = require('./telnet');
+  const L = [{ id: 'a' }, { id: 'b', jumpId: 'a' }, { id: 'c', jumpId: 'b' }, { id: 'd', jumpId: 'c' }, { id: 'e', jumpId: 'd' }, { id: 't', protocol: 'telnet' }];
+  const get = (id) => L.find((x) => x.id === id);
+  assert.deepEqual(jump.chain(get, get('c')).map((x) => x.id), ['a', 'b'], 'außen zuerst');
+  assert.deepEqual(jump.chain(get, get('a')), []);
+  assert.equal(jump.chain(get, get('d')).length, 3);
+  assert.throws(() => jump.chain(get, get('e')), /max\. 3/);
+  assert.throws(() => jump.chain(get, { id: 'a', jumpId: 'c' }), /Schleife/, 'a -> c -> b -> a');
+  assert.throws(() => jump.chain(get, { id: 'x', jumpId: 'x' }), /Schleife/);
+  assert.throws(() => jump.chain(get, { id: 'x', jumpId: 't' }), /Telnet/);
+  assert.throws(() => jump.chain(get, { id: 'x', jumpId: 'zz' }), /nicht gefunden/);
+  assert.deepEqual(jump.candidates(L, 'a').map((x) => x.id), [], 'b..e hängen an a (Schleife), t ist Telnet');
+  assert(!jump.candidates(L, 'x').some((x) => x.id === 'e'), 'Tiefe 4 nicht wählbar');
+
+  const IAC = 255;
+  const st = telnet.newState(100, 30);
+  let r = telnet.parse(st, Buffer.from([IAC, 251, 1, IAC, 251, 3, IAC, 253, 31, IAC, 253, 24, IAC, 251, 99, 65, IAC, IAC, 66, IAC]));
+  assert.deepEqual([...r.data], [65, 255, 66], 'IAC IAC = Datenbyte 255; angefangene Sequenz wartet');
+  assert.deepEqual([...r.reply], [IAC, 253, 1, IAC, 253, 3, IAC, 251, 31, IAC, 250, 31, 0, 100, 0, 30, IAC, 240, IAC, 252, 24, IAC, 254, 99], 'ECHO/SGA/NAWS an, Rest abgelehnt');
+  r = telnet.parse(st, Buffer.from([251, 1, 67]));
+  assert.deepEqual([...r.data], [67]);
+  assert.equal(r.reply.length, 0, 'zweites WILL ECHO: keine erneute Antwort');
+  telnet.parse(st, Buffer.from([IAC, 250, 24, 1, IAC]));
+  r = telnet.parse(st, Buffer.from([240, 68]));
+  assert.deepEqual([...r.data], [68], 'Unterverhandlung über Chunk-Grenze ignoriert');
+  assert.deepEqual([...telnet.encode('a\r')], [97, 13, 0]);
+  assert.deepEqual([...telnet.nawsFrame(255, 24)], [IAC, 250, 31, 0, 255, 255, 0, 24, IAC, 240], '255 in NAWS wird verdoppelt');
+  console.log('jump/telnet ok');
+})();

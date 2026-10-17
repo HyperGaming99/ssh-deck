@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Eye, EyeOff, FolderOpen, KeyRound, Lock, Plus, Tag, Trash2, Type, User, Users, X } from 'lucide-react';
+import { ChevronDown, Eye, EyeOff, FolderOpen, KeyRound, Lock, Plus, Server, ShieldAlert, Tag, Trash2, Type, User, Users, X } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -34,18 +34,22 @@ export default function HostSheet({ spec, onClose }) {
   const [more, setMore] = useState(false);
   const [keyOpen, setKeyOpen] = useState(false);
   const [own, setOwn] = useState({ keyId: '', user: '' }); // mein eigener Zugang zu einem Team-Host (nur für mich)
+  const [jumps, setJumps] = useState([]); // mögliche Jump-Hosts
   const action = useRef('save');
   useEffect(() => {
     if (!spec) return;
     setV({ ...spec.values, tags: (spec.values.tags || []).join(', ') });
     setShowPw(false); setMore(false); setKeyOpen(!!spec.values.keyId); setOwn({ keyId: '', user: '' });
     if (spec.values.id && spec.values.vault && spec.values.vault !== 'personal') api.override.get(spec.values.id).then(setOwn);
+    api.hosts.jumpCandidates(spec.values.id, spec.values.vault || 'personal').then(setJumps);
   }, [spec]);
   if (!spec) return null;
 
   const set = (k) => (e) => setV((o) => ({ ...o, [k]: e.target.value }));
   const pick = (k) => (x) => setV((o) => ({ ...o, [k]: x === '__none' ? '' : x }));
   const editing = !!spec.values.id;
+  const telnet = v.protocol === 'telnet';
+  const pickProto = (x) => setV((o) => ({ ...o, protocol: x, port: +o.port === 22 || +o.port === 23 || !o.port ? (x === 'telnet' ? 23 : 22) : o.port })); // Standard-Port mitwechseln
   const cur = v.vault || 'personal', vaults = spec.vaults || [];
   const pickVault = (x) => setV((o) => ({ ...o, vault: x, group: '', keyId: '' })); // Gruppen und Schlüssel gehören zu einem Tresor
 
@@ -121,9 +125,29 @@ export default function HostSheet({ spec, onClose }) {
 
             <Card>
               <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-semibold">{t('SSH-Port')}</span>
-                <Input type="number" min="1" max="65535" className="h-9 w-24 rounded-xl text-center" value={v.port ?? 22} onChange={set('port')} />
+                <span className="text-sm font-semibold">{t('Protokoll')}</span>
+                <Select value={v.protocol || 'ssh'} onValueChange={pickProto}>
+                  <SelectTrigger className="h-9 w-32 rounded-xl"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="ssh">SSH</SelectItem><SelectItem value="telnet">Telnet</SelectItem></SelectContent>
+                </Select>
               </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-semibold">{telnet ? t('Telnet-Port') : t('SSH-Port')}</span>
+                <Input type="number" min="1" max="65535" className="h-9 w-24 rounded-xl text-center" value={v.port ?? (telnet ? 23 : 22)} onChange={set('port')} />
+              </div>
+              {telnet && (
+                <p className="flex items-start gap-2 rounded-xl bg-destructive/10 p-3 text-xs text-destructive"><ShieldAlert className="mt-0.5 size-4 shrink-0" />{t('Telnet ist unverschlüsselt: Eingaben und Passwörter gehen im Klartext über das Netz. Kein SFTP und kein Forwarding.')}</p>
+              )}
+              <Field icon={Server}>
+                <Select value={v.jumpId || '__none'} onValueChange={pick('jumpId')}>
+                  <SelectTrigger className={triggerCls}><SelectValue placeholder={t('Verbinden über')} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none">{t('Direkt verbinden')}</SelectItem>
+                    {jumps.map((j) => <SelectItem key={j.id} value={j.id}>{`${j.name} · ${j.host}`}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </Field>
+              {!telnet && <>
               <div className="border-t" />
               <h3 className="text-sm font-semibold">{t('Zugangsdaten')}</h3>
               <Field icon={User}><Input className={inputCls} placeholder={t('Benutzer')} autoComplete="off" value={v.user ?? ''} onChange={set('user')} /></Field>
@@ -153,6 +177,7 @@ export default function HostSheet({ spec, onClose }) {
                   <Plus className="size-4" />{t('Schlüssel hinzufügen')}
                 </Button>
               )}
+              </>}
 
               <div className="border-t" />
               <button type="button" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground" onClick={() => setMore(!more)}>

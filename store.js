@@ -33,7 +33,7 @@ const hosts = (file, crypt) => {
     save: (h) => {
       const old = base.list().find((x) => x.id === h.id);
       const secret = h.secret === undefined ? (old ? old.secret : '') : (h.secret ? crypt.encrypt(h.secret) : '');
-      return base.save({ id: h.id, name: h.name, group: h.group || '', host: h.host, port: +h.port || 22, user: h.user, keyPath: h.keyPath || '', keyId: h.keyId || '', icon: h.icon || '', tags: Array.isArray(h.tags) ? h.tags.map(String) : (old ? old.tags || [] : []), autoIcon: old ? old.autoIcon || '' : '', secret, ...((h.vault || old?.vault) && { vault: h.vault || old.vault }) });
+      return base.save({ id: h.id, name: h.name, group: h.group || '', host: h.host, protocol: h.protocol === 'telnet' ? 'telnet' : 'ssh', port: +h.port || (h.protocol === 'telnet' ? 23 : 22), jumpId: h.jumpId || '', user: h.user || '', keyPath: h.keyPath || '', keyId: h.keyId || '', icon: h.icon || '', tags: Array.isArray(h.tags) ? h.tags.map(String) : (old ? old.tags || [] : []), autoIcon: old ? old.autoIcon || '' : '', secret, ...((h.vault || old?.vault) && { vault: h.vault || old.vault }) });
     },
     // vom Server erkanntes Betriebssystem-Icon (icon = manuelle Wahl hat Vorrang)
     setAutoIcon: (id, slug) => { const h = base.list().find((x) => x.id === id); if (h) base.save({ ...h, autoIcon: slug }); },

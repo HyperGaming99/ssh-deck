@@ -1,0 +1,13 @@
+{
+  "Protokoll": "Protocol",
+  "Telnet-Port": "Telnet port",
+  "Telnet ist unverschlüsselt: Eingaben und Passwörter gehen im Klartext über das Netz. Kein SFTP und kein Forwarding.": "Telnet is unencrypted: input and passwords travel in plain text over the network. No SFTP and no forwarding.",
+  "Verbinden über": "Connect via",
+  "Direkt verbinden": "Connect directly",
+  "SFTP gibt es nicht für Telnet.": "SFTP is not available for Telnet.",
+  "Forwarding gibt es nicht für Telnet.": "Forwarding is not available for Telnet.",
+  "Jump-Host-Schleife": "Jump host loop",
+  "Jump-Host nicht gefunden": "Jump host not found",
+  "Telnet-Host kann kein Jump-Host sein": "A Telnet host cannot be a jump host",
+  "Zu viele Jump-Hosts (max. 3)": "Too many jump hosts (max. 3)"
+}

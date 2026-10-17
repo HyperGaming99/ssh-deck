@@ -30,7 +30,7 @@ export default function NewTab({ active, tabs, recent, onConnect, onSwitch }) {
   const hostHits = needle ? hosts.filter((h) => [h.name, h.host, h.user, h.group, ...(h.tags || [])].join(' ').toLowerCase().includes(needle)) : [];
   const tabHits = needle ? tabs.filter((x) => x.kind !== 'new' && x.title.toLowerCase().includes(needle)) : [];
   const recents = recent.map((r) => hosts.find((h) => h.id === r.id)).filter(Boolean);
-  const hostRow = (h) => <Row key={h.id} icon={<HostIcon slug={h.icon || h.autoIcon} />} title={h.name} sub={`${h.user}@${h.host}:${h.port}`} onClick={() => onConnect(h)} />;
+  const hostRow = (h) => <Row key={h.id} icon={<HostIcon slug={h.icon || h.autoIcon} />} title={h.name} sub={h.protocol === 'telnet' ? `telnet://${h.host}:${h.port}` : `${h.user}@${h.host}:${h.port}`} onClick={() => onConnect(h)} />;
 
   const enter = (e) => {
     if (e.key !== 'Enter') return;

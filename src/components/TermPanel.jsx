@@ -24,10 +24,12 @@ export default function TermPanel({ sid, hostId, dark, history, themeId, setThem
   const [rules, setRules] = useState([]);
   const [snippets, setSnippets] = useState([]);
   const [sheet, setSheet] = useState(null);
+  const [telnet, setTelnet] = useState(false); // Telnet: kein Forwarding
   const pick = (x) => { setTab(x); try { localStorage.setItem('termPanelTab', x); } catch { /* egal */ } };
   const load = useCallback(() => { api.fwd.list().then((l) => setRules(l.filter((r) => r.hostId === hostId))); api.snippets.list().then(setSnippets); }, [hostId]);
   useEffect(() => { load(); }, [load, rev]);
-  const TABS = [['fwd', t('Forwarding'), ArrowLeftRight], ['snip', t('Snippets'), Code2], ['hist', t('Verlauf'), Clock], ['themes', t('Terminal-Themes'), Palette]];
+  useEffect(() => { api.hosts.get(hostId).then((h) => setTelnet(h?.protocol === 'telnet')); }, [hostId, rev]);
+  const TABS = [...(telnet ? [] : [['fwd', t('Forwarding'), ArrowLeftRight]]), ['snip', t('Snippets'), Code2], ['hist', t('Verlauf'), Clock], ['themes', t('Terminal-Themes'), Palette]];
   const label = (r) => r.label || `${r.type} ${r.bindPort}`;
   const Row = ({ onClick, children }) => <button type="button" onClick={onClick} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-start text-sm hover:bg-accent">{children}</button>;
 
@@ -79,7 +81,7 @@ export default function TermPanel({ sid, hostId, dark, history, themeId, setThem
             {[...history].reverse().map((c, i) => <Row key={i} onClick={() => api.input(sid, c)}><span className="truncate font-mono text-xs">{c}</span></Row>)}
           </>
         )}
-        {tab === 'fwd' && (
+        {tab === 'fwd' && !telnet && (
           <>
             <Row onClick={async () => setSheet({ rule: { hostId }, hosts: await api.hosts.list(), onSave: async (v) => { await api.fwd.save(v); load(); } })}><Plus className="size-4 text-primary" /><span className="font-medium">{t('Neues Forwarding')}</span></Row>
             {!rules.length && <p className="p-3 text-sm text-muted-foreground">{t('Keine Regeln.')}</p>}
