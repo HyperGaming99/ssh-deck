@@ -50,7 +50,7 @@
     "email": "130169800+HyperGaming99@users.noreply.github.com"
   },
   "homepage": "https://github.com/HyperGaming99/ssh-deck",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "build": {
     "appId": "com.hypergaming.sshdeck",
     "productName": "SSH Deck",

@@ -445,7 +445,25 @@ function KnownHostsView({ dark, toast, rev }) {
 }
 
 // Konto-Status; Anmelden passiert im Login-Bildschirm
-function SyncView({ st, onLogin, onLogout }) {
+// Sync-Server: Standard ist der Server des Projekts; ein eigener kann eingetragen werden (nur ohne Anmeldung änderbar)
+function ServerField({ st, locked, toast }) {
+  const t = useT();
+  const [v, setV] = useState(st.server);
+  useEffect(() => setV(st.server), [st.server]);
+  const save = async (x) => { const r = await api.settings.set({ syncServer: x === st.defaultServer ? '' : x }); if (r?.error) { toast(r.error); setV(st.server); } };
+  return (
+    <div className="mt-4 space-y-1.5 border-t pt-4">
+      <p className="text-xs font-medium text-muted-foreground">{t('Sync-Server')}</p>
+      <div className="flex gap-2">
+        <Input dir="ltr" value={v} disabled={locked} autoComplete="off" onChange={(e) => setV(e.target.value)} onBlur={() => v !== st.server && save(v.trim())} onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()} />
+        {!locked && st.server !== st.defaultServer && <Button type="button" variant="outline" onClick={() => save(st.defaultServer)}>{t('Standard')}</Button>}
+      </div>
+      {locked && <p className="text-xs text-muted-foreground">{t('Zum Ändern zuerst abmelden.')}</p>}
+    </div>
+  );
+}
+
+function SyncView({ st, onLogin, onLogout, toast }) {
   const t = useT();
   const lang = useLang();
   const [del, setDel] = useState(null); // null = zu, sonst { pw, busy, error }
@@ -457,6 +475,7 @@ function SyncView({ st, onLogin, onLogout }) {
           <p className="font-medium">{t('Nicht angemeldet')}</p>
           <p className="mt-1 text-sm text-muted-foreground">{t('Ohne Konto bleiben deine Daten nur auf diesem Gerät.')}</p>
           <Button className="mt-4" onClick={onLogin}>{t('Anmelden')}</Button>
+          <ServerField st={st} toast={toast} />
         </div>
       </div>
     );
@@ -477,6 +496,7 @@ function SyncView({ st, onLogin, onLogout }) {
         <Button variant="outline" onClick={() => api.sync.now()} disabled={st.status === 'syncing'}><RefreshCw className="size-4" />{t('Jetzt synchronisieren')}</Button>
       </div>
       {st.error && <p className="mt-3 text-sm text-destructive">{t(st.error)}</p>}
+      <ServerField st={st} locked toast={toast} />
       <p className="mt-4 border-t pt-4 text-xs text-muted-foreground">{t('Gesynct werden Hosts (mit Passwörtern), Gruppen, Snippets und Forwarding-Regeln – Ende-zu-Ende verschlüsselt. Private Schlüssel bleiben auf dem Gerät. Der Abgleich läuft automatisch.')}</p>
       <div className="mt-3 flex justify-end">
         <Button variant="ghost" className="text-destructive" onClick={() => { if (confirm(t('Abmelden? Die lokalen Daten bleiben erhalten, der Sync stoppt auf diesem Gerät.'))) { api.sync.logout(); onLogout(); } }}>{t('Abmelden')}</Button>
@@ -713,7 +733,7 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
         ))}
       </aside>
       <div className="min-w-0 max-w-2xl flex-1 space-y-3">
-        {tab === 'account' && <SyncView st={st} onLogin={onLogin} onLogout={onLogout} />}
+        {tab === 'account' && <SyncView st={st} onLogin={onLogin} onLogout={onLogout} toast={toast} />}
         {tab === 'appearance' && (
           <>
             <div className={row}>

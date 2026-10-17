@@ -502,5 +502,8 @@
  "Passwort zur Bestätigung": "Password per confermare",
  "Konto endgültig löschen": "Elimina account definitivamente",
  "Nicht angemeldet.": "Accesso non effettuato.",
- "Bitte das Passwort eingeben.": "Inserisci la password."
+ "Bitte das Passwort eingeben.": "Inserisci la password.",
+ "Sync-Server": "Server di sincronizzazione",
+ "Standard": "Predefinito",
+ "Zum Ändern zuerst abmelden.": "Esci prima per modificarlo."
 }

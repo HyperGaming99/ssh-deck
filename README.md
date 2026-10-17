@@ -155,4 +155,4 @@ Needs `ffmpeg` and Node.js 22. The music is **not included**: put your own track
 
 ## License
 
-No license has been chosen yet — all rights reserved.
+[MIT](LICENSE) © 2026 HyperGaming99. The sync server defaults to `https://ssh.arolg.dev`; you can enter your own under Settings → Account & Sync (or set `DECK_SERVER`).

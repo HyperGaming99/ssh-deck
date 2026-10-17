@@ -502,5 +502,8 @@
  "Passwort zur Bestätigung": "확인용 비밀번호",
  "Konto endgültig löschen": "계정 영구 삭제",
  "Nicht angemeldet.": "로그인되어 있지 않습니다.",
- "Bitte das Passwort eingeben.": "비밀번호를 입력하세요."
+ "Bitte das Passwort eingeben.": "비밀번호를 입력하세요.",
+ "Sync-Server": "동기화 서버",
+ "Standard": "기본값",
+ "Zum Ändern zuerst abmelden.": "변경하려면 먼저 로그아웃하세요."
 }

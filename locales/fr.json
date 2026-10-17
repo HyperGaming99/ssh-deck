@@ -502,5 +502,8 @@
  "Passwort zur Bestätigung": "Mot de passe pour confirmer",
  "Konto endgültig löschen": "Supprimer définitivement le compte",
  "Nicht angemeldet.": "Non connecté.",
- "Bitte das Passwort eingeben.": "Veuillez saisir le mot de passe."
+ "Bitte das Passwort eingeben.": "Veuillez saisir le mot de passe.",
+ "Sync-Server": "Serveur de synchronisation",
+ "Standard": "Par défaut",
+ "Zum Ändern zuerst abmelden.": "Déconnectez-vous d'abord pour le modifier."
 }

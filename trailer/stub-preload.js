@@ -57,7 +57,7 @@ contextBridge.exposeInMainWorld('api', {
   hosts: { list: () => ok(hosts), get: (id) => ok(hosts.find((x) => x.id === id)), save: () => ok('new'), remove: () => ok() },
   win: { minimize() {}, toggleMax() {}, close() {} },
   groups: { list: () => ok(groups), create: () => ok(null), rename: () => ok(null), remove: () => ok() },
-  sync: { status: () => ok({ configured: true, email: 'alex@example.com', server: 'https://sync.example.com', status: 'ok', lastSync: now - 120000, error: '' }),
+  sync: { status: () => ok({ configured: true, email: 'alex@example.com', server: 'https://sync.example.com', defaultServer: 'https://sync.example.com', status: 'ok', lastSync: now - 120000, error: '' }),
     auth: () => ok({ ok: true }), now: () => ok(), logout: () => ok(), onStatus() {} }, // Sync-Status ändert sich in der Demo nie (cb.status gehört dem SSH-Verbindungsstatus)
   known: { list: () => ok(known), remove: () => ok(), import: () => ok({ added: 0, skipped: 0 }) },
   onHostKey: (ask) => cb.hostKey.push(ask),

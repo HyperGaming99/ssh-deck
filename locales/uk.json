@@ -502,5 +502,8 @@
  "Passwort zur Bestätigung": "Пароль для підтвердження",
  "Konto endgültig löschen": "Остаточно видалити обліковий запис",
  "Nicht angemeldet.": "Вхід не виконано.",
- "Bitte das Passwort eingeben.": "Введіть пароль."
+ "Bitte das Passwort eingeben.": "Введіть пароль.",
+ "Sync-Server": "Сервер синхронізації",
+ "Standard": "За замовчуванням",
+ "Zum Ändern zuerst abmelden.": "Щоб змінити, спочатку вийдіть."
 }

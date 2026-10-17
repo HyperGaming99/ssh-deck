@@ -502,5 +502,8 @@
  "Passwort zur Bestätigung": "Hasło potwierdzające",
  "Konto endgültig löschen": "Usuń konto na stałe",
  "Nicht angemeldet.": "Nie zalogowano.",
- "Bitte das Passwort eingeben.": "Wpisz hasło."
+ "Bitte das Passwort eingeben.": "Wpisz hasło.",
+ "Sync-Server": "Serwer synchronizacji",
+ "Standard": "Domyślny",
+ "Zum Ändern zuerst abmelden.": "Aby to zmienić, najpierw się wyloguj."
 }

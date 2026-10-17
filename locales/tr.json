@@ -502,5 +502,8 @@
  "Passwort zur Bestätigung": "Onay için parola",
  "Konto endgültig löschen": "Hesabı kalıcı olarak sil",
  "Nicht angemeldet.": "Oturum açılmadı.",
- "Bitte das Passwort eingeben.": "Lütfen parolayı girin."
+ "Bitte das Passwort eingeben.": "Lütfen parolayı girin.",
+ "Sync-Server": "Eşitleme sunucusu",
+ "Standard": "Varsayılan",
+ "Zum Ändern zuerst abmelden.": "Değiştirmek için önce oturumu kapatın."
 }

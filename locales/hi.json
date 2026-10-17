@@ -502,5 +502,8 @@
  "Passwort zur Bestätigung": "पुष्टि के लिए पासवर्ड",
  "Konto endgültig löschen": "खाता हमेशा के लिए हटाएँ",
  "Nicht angemeldet.": "साइन इन नहीं है।",
- "Bitte das Passwort eingeben.": "कृपया पासवर्ड दर्ज करें।"
+ "Bitte das Passwort eingeben.": "कृपया पासवर्ड दर्ज करें।",
+ "Sync-Server": "सिंक सर्वर",
+ "Standard": "डिफ़ॉल्ट",
+ "Zum Ändern zuerst abmelden.": "बदलने के लिए पहले साइन आउट करें।"
 }

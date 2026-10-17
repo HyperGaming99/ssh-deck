@@ -502,5 +502,8 @@
  "Passwort zur Bestätigung": "确认密码",
  "Konto endgültig löschen": "永久删除账户",
  "Nicht angemeldet.": "未登录。",
- "Bitte das Passwort eingeben.": "请输入密码。"
+ "Bitte das Passwort eingeben.": "请输入密码。",
+ "Sync-Server": "同步服务器",
+ "Standard": "默认",
+ "Zum Ändern zuerst abmelden.": "如需更改,请先退出登录。"
 }

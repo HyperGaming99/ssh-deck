@@ -502,5 +502,8 @@
  "Passwort zur Bestätigung": "Senha para confirmar",
  "Konto endgültig löschen": "Excluir conta definitivamente",
  "Nicht angemeldet.": "Sessão não iniciada.",
- "Bitte das Passwort eingeben.": "Digite a senha."
+ "Bitte das Passwort eingeben.": "Digite a senha.",
+ "Sync-Server": "Servidor de sincronização",
+ "Standard": "Padrão",
+ "Zum Ändern zuerst abmelden.": "Saia primeiro para alterar."
 }
