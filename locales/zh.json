@@ -492,5 +492,9 @@
  "Direkt (oder Tor, falls aktiv)": "直连（若已启用则经 Tor）",
  "Proxy-Kette (SOCKS)": "代理链（SOCKS）",
  "Ein Proxy je Zeile, in dieser Reihenfolge nacheinander (wie proxychains). Nur SOCKS4/SOCKS5.": "每行一个代理，按此顺序依次经过（类似 proxychains）。仅支持 SOCKS4/SOCKS5。",
- "Host = Cloudflare-Hostname des Tunnels. Braucht das Programm „cloudflared“ auf diesem Rechner; die Anmeldung läuft über Cloudflare Access.": "主机 = 隧道的 Cloudflare 主机名。此电脑上需要 “cloudflared” 程序；登录通过 Cloudflare Access 完成。"
+ "Host = Cloudflare-Hostname des Tunnels. Braucht das Programm „cloudflared“ auf diesem Rechner; die Anmeldung läuft über Cloudflare Access.": "主机 = 隧道的 Cloudflare 主机名。此电脑上需要 “cloudflared” 程序；登录通过 Cloudflare Access 完成。",
+ "Befehlsvorschläge": "命令建议",
+ "Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.": "在终端输入时给出建议：本会话的命令、代码片段和常用命令。按 Ctrl+空格 或点按即可采用。",
+ "Snippet": "片段",
+ "Häufig": "常用"
 }

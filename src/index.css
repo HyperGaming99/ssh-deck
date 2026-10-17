@@ -135,3 +135,4 @@ html[data-mobile] .mrow > .flex-1 { flex-basis: 8rem; }
 html[data-mobile] .mconn { padding-top: 1rem; }
 html[data-mobile] .mconn > div { width: 100%; padding-inline: 1rem; }
 html[data-mobile] .mclose { display: grid; } /* Schließen-Knopf im Terminal-Panel (nur Handy) */
+html[data-mobile] .msug { height: 2.5rem; } /* größere Touch-Ziele bei den Befehlsvorschlägen */

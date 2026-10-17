@@ -492,5 +492,9 @@
  "Direkt (oder Tor, falls aktiv)": "Doğrudan (etkinse Tor)",
  "Proxy-Kette (SOCKS)": "Proxy zinciri (SOCKS)",
  "Ein Proxy je Zeile, in dieser Reihenfolge nacheinander (wie proxychains). Nur SOCKS4/SOCKS5.": "Satır başına bir proxy; bu sırayla art arda kullanılır (proxychains gibi). Yalnızca SOCKS4/SOCKS5.",
- "Host = Cloudflare-Hostname des Tunnels. Braucht das Programm „cloudflared“ auf diesem Rechner; die Anmeldung läuft über Cloudflare Access.": "Ana bilgisayar = tünelin Cloudflare ana bilgisayar adı. Bu bilgisayarda “cloudflared” programı gerekir; oturum açma Cloudflare Access üzerinden yapılır."
+ "Host = Cloudflare-Hostname des Tunnels. Braucht das Programm „cloudflared“ auf diesem Rechner; die Anmeldung läuft über Cloudflare Access.": "Ana bilgisayar = tünelin Cloudflare ana bilgisayar adı. Bu bilgisayarda “cloudflared” programı gerekir; oturum açma Cloudflare Access üzerinden yapılır.",
+ "Befehlsvorschläge": "Komut önerileri",
+ "Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.": "Terminalde yazarken öneriler: bu oturumun komutları, snippet'ler ve yaygın komutlar. Ctrl+Boşluk ile veya dokunarak kabul et.",
+ "Snippet": "Snippet",
+ "Häufig": "Yaygın"
 }

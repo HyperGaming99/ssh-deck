@@ -492,5 +492,9 @@
  "Direkt (oder Tor, falls aktiv)": "直接（Tor が有効な場合は Tor 経由）",
  "Proxy-Kette (SOCKS)": "プロキシチェーン（SOCKS）",
  "Ein Proxy je Zeile, in dieser Reihenfolge nacheinander (wie proxychains). Nur SOCKS4/SOCKS5.": "1 行に 1 つのプロキシ。この順番で順に経由します（proxychains と同様）。SOCKS4/SOCKS5 のみ。",
- "Host = Cloudflare-Hostname des Tunnels. Braucht das Programm „cloudflared“ auf diesem Rechner; die Anmeldung läuft über Cloudflare Access.": "ホスト = トンネルの Cloudflare ホスト名。このコンピューターに「cloudflared」が必要です。サインインは Cloudflare Access 経由で行われます。"
+ "Host = Cloudflare-Hostname des Tunnels. Braucht das Programm „cloudflared“ auf diesem Rechner; die Anmeldung läuft über Cloudflare Access.": "ホスト = トンネルの Cloudflare ホスト名。このコンピューターに「cloudflared」が必要です。サインインは Cloudflare Access 経由で行われます。",
+ "Befehlsvorschläge": "コマンド候補",
+ "Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.": "ターミナルで入力中の候補: このセッションのコマンド、スニペット、よく使うコマンド。Ctrl+Space またはタップで確定します。",
+ "Snippet": "スニペット",
+ "Häufig": "よく使う"
 }

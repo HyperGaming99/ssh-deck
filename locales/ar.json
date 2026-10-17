@@ -492,5 +492,9 @@
  "Direkt (oder Tor, falls aktiv)": "مباشر (أو Tor إذا كان مفعّلًا)",
  "Proxy-Kette (SOCKS)": "سلسلة وكلاء (SOCKS)",
  "Ein Proxy je Zeile, in dieser Reihenfolge nacheinander (wie proxychains). Nur SOCKS4/SOCKS5.": "وكيل واحد في كل سطر، يُستخدمون واحدًا بعد الآخر بهذا الترتيب (مثل proxychains). SOCKS4/SOCKS5 فقط.",
- "Host = Cloudflare-Hostname des Tunnels. Braucht das Programm „cloudflared“ auf diesem Rechner; die Anmeldung läuft über Cloudflare Access.": "المضيف = اسم مضيف Cloudflare للنفق. يتطلب برنامج «cloudflared» على هذا الجهاز؛ يتم تسجيل الدخول عبر Cloudflare Access."
+ "Host = Cloudflare-Hostname des Tunnels. Braucht das Programm „cloudflared“ auf diesem Rechner; die Anmeldung läuft über Cloudflare Access.": "المضيف = اسم مضيف Cloudflare للنفق. يتطلب برنامج «cloudflared» على هذا الجهاز؛ يتم تسجيل الدخول عبر Cloudflare Access.",
+ "Befehlsvorschläge": "اقتراحات الأوامر",
+ "Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.": "اقتراحات أثناء الكتابة في الطرفية: أوامر هذه الجلسة والمقتطفات والأوامر الشائعة. اقبلها بـ Ctrl+Space أو بالنقر.",
+ "Snippet": "مقتطف",
+ "Häufig": "شائع"
 }

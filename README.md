@@ -31,7 +31,7 @@ SSH Deck is a desktop app (Electron + React) to connect to your servers. You kee
 **Terminal**
 - Tabs, **split panes** (up to four per tab) and **broadcast**: type once, send to several sessions
 - A side panel next to every session with **snippets** (with `{{placeholders}}` that are asked for when you run them), **command history**, **port forwarding** and a **server status** tab (load, memory, disk, uptime)
-- **Search** in the output (<kbd>Ctrl</kbd>+<kbd>F</kbd>), **automatic reconnect** after a dropped connection (keepalive, countdown, backoff), and **session recording** to an asciicast `.cast` file
+- **Command suggestions** while you type (commands of the session, your snippets and common commands; accept with <kbd>Ctrl</kbd>+<kbd>Space</kbd> or by tapping; the history stays in memory only), **search** in the output (<kbd>Ctrl</kbd>+<kbd>F</kbd>), **automatic reconnect** after a dropped connection (keepalive, countdown, backoff), and **session recording** to an asciicast `.cast` file
 - **Ten terminal themes** (Dracula, Nord, Tokyo Night, One Dark, Gruvbox, Monokai, Solarized, …) that recolor the whole window; bundled monospace fonts with live size preview
 - Connection screen with a live log, host key check right in the tab, and **smart login**: it asks only for what the server needs (username, password, key from your keychain, one-time code)
 

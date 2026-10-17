@@ -492,5 +492,9 @@
  "Direkt (oder Tor, falls aktiv)": "सीधे (या Tor, यदि चालू हो)",
  "Proxy-Kette (SOCKS)": "प्रॉक्सी श्रृंखला (SOCKS)",
  "Ein Proxy je Zeile, in dieser Reihenfolge nacheinander (wie proxychains). Nur SOCKS4/SOCKS5.": "प्रति पंक्ति एक प्रॉक्सी, इसी क्रम में एक के बाद एक उपयोग होती हैं (proxychains की तरह)। केवल SOCKS4/SOCKS5।",
- "Host = Cloudflare-Hostname des Tunnels. Braucht das Programm „cloudflared“ auf diesem Rechner; die Anmeldung läuft über Cloudflare Access.": "होस्ट = टनल का Cloudflare होस्टनेम। इस कंप्यूटर पर “cloudflared” प्रोग्राम चाहिए; साइन-इन Cloudflare Access से होता है।"
+ "Host = Cloudflare-Hostname des Tunnels. Braucht das Programm „cloudflared“ auf diesem Rechner; die Anmeldung läuft über Cloudflare Access.": "होस्ट = टनल का Cloudflare होस्टनेम। इस कंप्यूटर पर “cloudflared” प्रोग्राम चाहिए; साइन-इन Cloudflare Access से होता है।",
+ "Befehlsvorschläge": "कमांड सुझाव",
+ "Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.": "टर्मिनल में टाइप करते समय सुझाव: इस सत्र की कमांड, स्निपेट और आम कमांड। Ctrl+Space से या टैप करके चुनें।",
+ "Snippet": "स्निपेट",
+ "Häufig": "आम"
 }

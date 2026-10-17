@@ -29,7 +29,7 @@ import KeyImportSheet from '@/components/KeyImportSheet';
 import { maskFingerprint, maskHost } from '@/lib/censor.mjs';
 import { sshCommand, sshConfig } from '@/lib/sshcmd.mjs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { bcast, writers, getPaste, setPaste, startRec, stopRec } from '@/components/Terminal';
+import { bcast, writers, getPaste, setPaste, getSuggest, setSuggest, startRec, stopRec } from '@/components/Terminal';
 import SplitView, { MAX_PANES, SplitTools } from '@/components/SplitView';
 import KeyBar from '@/components/KeyBar';
 import SftpTab from '@/components/SftpTab';
@@ -663,6 +663,8 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
   const [editors, setEditors] = useState([]);
   const [editor, setEditor] = useState('auto');
   useEffect(() => { api.editors.list().then(setEditors); api.settings.get().then((s) => setEditor(s.editor || 'auto')); }, []);
+  const [sg, setSg] = useState(getSuggest);
+  const pickSg = (v) => { setSg(v); setSuggest(v); };
   const [paste, setPasteState] = useState(getPaste);
   const pickPaste = (v) => { setPasteState(v); setPaste(v); };
   const [anim, setAnim] = useState(getAnim);
@@ -705,6 +707,10 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
             <div className={row}>
               <div><p className="text-sm font-medium">{t('Animationen')}</p><p className="text-xs text-muted-foreground">{t('Glow bei Hosts und Gruppen sowie Übergänge')}</p></div>
               {seg([['on', t('An')], ['off', t('Aus')]], anim, pickAnim)}
+            </div>
+            <div className={row}>
+              <div><p className="text-sm font-medium">{t('Befehlsvorschläge')}</p><p className="text-xs text-muted-foreground">{t('Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.')}</p></div>
+              {seg([['on', t('An')], ['off', t('Aus')]], sg, pickSg)}
             </div>
             <div className={row}>
               <div><p className="text-sm font-medium">{t('Einfügen im Terminal')}</p><p className="text-xs text-muted-foreground">{t('Strg+V und Rechtsklick fügen die Zwischenablage ein')}</p></div>

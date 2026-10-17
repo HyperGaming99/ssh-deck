@@ -492,5 +492,9 @@
  "Direkt (oder Tor, falls aktiv)": "Bezpośrednio (lub Tor, jeśli włączony)",
  "Proxy-Kette (SOCKS)": "Łańcuch proxy (SOCKS)",
  "Ein Proxy je Zeile, in dieser Reihenfolge nacheinander (wie proxychains). Nur SOCKS4/SOCKS5.": "Jedno proxy w wierszu, używane po kolei w tej kolejności (jak proxychains). Tylko SOCKS4/SOCKS5.",
- "Host = Cloudflare-Hostname des Tunnels. Braucht das Programm „cloudflared“ auf diesem Rechner; die Anmeldung läuft über Cloudflare Access.": "Host = nazwa hosta tunelu w Cloudflare. Wymaga programu „cloudflared” na tym komputerze; logowanie odbywa się przez Cloudflare Access."
+ "Host = Cloudflare-Hostname des Tunnels. Braucht das Programm „cloudflared“ auf diesem Rechner; die Anmeldung läuft über Cloudflare Access.": "Host = nazwa hosta tunelu w Cloudflare. Wymaga programu „cloudflared” na tym komputerze; logowanie odbywa się przez Cloudflare Access.",
+ "Befehlsvorschläge": "Podpowiedzi poleceń",
+ "Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.": "Podpowiedzi podczas pisania w terminalu: polecenia z tej sesji, snippety i popularne polecenia. Zatwierdź Ctrl+Spacja lub dotknięciem.",
+ "Snippet": "Snippet",
+ "Häufig": "Popularne"
 }

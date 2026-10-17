@@ -492,5 +492,9 @@
  "Direkt (oder Tor, falls aktiv)": "Напряму (або через Tor, якщо ввімкнено)",
  "Proxy-Kette (SOCKS)": "Ланцюжок проксі (SOCKS)",
  "Ein Proxy je Zeile, in dieser Reihenfolge nacheinander (wie proxychains). Nur SOCKS4/SOCKS5.": "Один проксі в рядку, використовуються по черзі в цьому порядку (як proxychains). Лише SOCKS4/SOCKS5.",
- "Host = Cloudflare-Hostname des Tunnels. Braucht das Programm „cloudflared“ auf diesem Rechner; die Anmeldung läuft über Cloudflare Access.": "Хост = ім'я хоста тунелю в Cloudflare. Потрібна програма «cloudflared» на цьому комп'ютері; вхід відбувається через Cloudflare Access."
+ "Host = Cloudflare-Hostname des Tunnels. Braucht das Programm „cloudflared“ auf diesem Rechner; die Anmeldung läuft über Cloudflare Access.": "Хост = ім'я хоста тунелю в Cloudflare. Потрібна програма «cloudflared» на цьому комп'ютері; вхід відбувається через Cloudflare Access.",
+ "Befehlsvorschläge": "Підказки команд",
+ "Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.": "Підказки під час введення в терміналі: команди цієї сесії, сніппети та поширені команди. Прийняти: Ctrl+Пробіл або дотик.",
+ "Snippet": "Сніппет",
+ "Häufig": "Поширене"
 }

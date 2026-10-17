@@ -818,3 +818,14 @@ const mock = {
 
 // Handy-Unterbau (Node-Seite über den electron-Ersatz, Keystore-Schlüssel) in eigenem Prozess
 console.log(require('child_process').execFileSync(process.execPath, [path.join(__dirname, 'mobile', 'test-node.js')], { encoding: 'utf8', timeout: 60000 }).trim());
+
+// Befehlsvorschläge
+import('./src/lib/suggest.mjs').then(({ suggest, COMMON }) => {
+  assert.deepEqual(suggest('g', { history: ['git status'] }), [], 'unter 2 Zeichen keine Vorschläge');
+  const r = suggest('git ', { history: ['git push', 'ls', 'git pull'], snippets: ['git stash pop'], common: ['git status', 'git pull'] });
+  assert.deepEqual(r.map((x) => x.text + ':' + x.src), ['git pull:hist', 'git push:hist', 'git stash pop:snip', 'git status:common'], 'Verlauf neueste zuerst, dann Snippets, dann häufige; ohne Doppelte');
+  assert.equal(suggest('git pull', { history: ['git pull'] }).length, 0, 'identische Zeile wird nicht vorgeschlagen');
+  assert.equal(suggest('ls', { history: Array.from({ length: 9 }, (_, i) => 'ls ' + i) }).length, 5, 'höchstens 5');
+  assert(COMMON.length > 50 && new Set(COMMON).size === COMMON.length, 'häufige Befehle ohne Doppelte');
+  console.log('suggest ok');
+});
