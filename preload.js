@@ -98,5 +98,7 @@ contextBridge.exposeInMainWorld('api', {
   answerCred: (id, a) => ipcRenderer.send('cred:answer', id, a),
   answer: (sid, a) => ipcRenderer.send('ssh:answer', sid, a),
   onStatus: (cb) => ipcRenderer.on('ssh:status', (_, sid, s) => cb(sid, s)),
+  saveRec: (text, name) => ipcRenderer.invoke('rec:save', text, name),
+  onLost: (cb) => ipcRenderer.on('ssh:lost', (_, sid) => cb(sid)),
   onClosed: (cb) => ipcRenderer.on('ssh:closed', (_, sid) => cb(sid)),
 });

@@ -217,7 +217,7 @@ function verifyHostKey(host, port, blob, ask) {
 // auth (aus withAuth): Anmeldung wird dynamisch verhandelt; ohne auth werden die gespeicherten Zugangsdaten direkt benutzt
 function sshConfig(h, auth) {
   // hostVerifier mit 2 Argumenten ist asynchron; bei Fehler/Ablehnung wird die Verbindung abgebrochen
-  const cfg = { host: h.host, port: h.port, username: h.user, readyTimeout: 120000,
+  const cfg = { host: h.host, port: h.port, username: h.user, readyTimeout: 120000, keepaliveInterval: 15000, keepaliveCountMax: 3,
     hostVerifier: (key, cb) => verifyHostKey(h.host, h.port, key, auth?.hostAsk).then(cb, () => cb(false)) };
   if (auth) return { ...cfg, authHandler: auth.authHandler, tryKeyboard: true };
   const k = h.keyId && keys.get(h.keyId);
@@ -354,6 +354,7 @@ function connect(win, sid, h, cols, rows) {
   const fail = (m) => { logs.push(`Connection failed: ${m}`); status('failed'); };
   const ask = (kind, extra) => new Promise((res) => { pending.set(sid, res); status('ask', { ask: { kind, ...extra } }); });
   sessions.set(sid, { conn });
+  let shell = false; // Shell lief schon: ein Ende ohne Nutzer-Aktion ist ein Verbindungsabbruch
   (async () => {
     h = { ...h };
     log(`Starting a new connection to: "${h.host}" port "${h.port}"`);
@@ -377,11 +378,13 @@ function connect(win, sid, h, cols, rows) {
       conn.shell({ term: 'xterm-256color', cols, rows }, (err, stream) => {
         if (err) return fail(err.message);
         sessions.set(sid, { conn, stream });
+        shell = true;
         status('ready');
         stream.on('data', (d) => send('ssh:data', d.toString('utf8')));
-        stream.on('close', () => { conn.end(); sessions.delete(sid); send('ssh:closed'); });
+        stream.on('close', () => { if (!shell) return; shell = false; conn.end(); sessions.delete(sid); send('ssh:closed'); });
       });
-    }).on('error', (e) => fail(e.message));
+    }).on('error', (e) => { if (!shell) fail(e.message); }) // nach dem Start folgt 'close' (z. B. Keepalive-Timeout)
+      .on('close', () => { if (shell && !stale()) { shell = false; sessions.delete(sid); send('ssh:lost'); } });
     sshConnect(conn, sshConfig(h, auth));
   })();
 }
@@ -892,6 +895,12 @@ app.whenReady().then(() => {
       stream.stderr.resume();
     });
   }));
+  ipcMain.handle('rec:save', async (_, text, name) => { // Aufzeichnung (asciicast v2) speichern
+    const { filePath } = await dialog.showSaveDialog(win, { defaultPath: `${name}.cast`, filters: [{ name: 'asciicast', extensions: ['cast'] }] });
+    if (!filePath) return null;
+    fs.writeFileSync(filePath, text);
+    return filePath;
+  });
   ipcMain.on('ssh:input', (_, sid, d) => sessions.get(sid)?.stream?.write(d));
   ipcMain.on('cred:answer', (_, id, a) => { credAsks.get(id)?.(a); credAsks.delete(id); });
   ipcMain.on('ssh:answer', (_, sid, a) => { pending.get(sid)?.(a); pending.delete(sid); });

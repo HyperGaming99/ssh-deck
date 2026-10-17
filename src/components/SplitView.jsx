@@ -18,7 +18,7 @@ export default function SplitView({ tab, active, theme, font, onCommand, setFocu
         return (
           <div key={p.sid} onMouseDownCapture={() => !on && setFocus(p.sid)}
             className={cn('relative min-h-0 min-w-0 flex-1 p-2', multi && 'border-2', multi && (on ? 'border-primary' : 'border-transparent'))} style={{ background: theme.background }}>
-            <Terminal sid={p.sid} hostId={tab.hostId} active={active && on} theme={theme} font={font} attempt={p.attempt} onCommand={onCommand} />
+            <Terminal sid={p.sid} hostId={tab.hostId} active={active && on} theme={theme} font={font} attempt={p.attempt} reconn={p.reconn} onCommand={onCommand} />
             {multi && <button type="button" title={t('Pane schließen')} aria-label={t('Pane schließen')} onClick={() => closePane(p.sid)}
               className="absolute end-1 top-1 z-20 grid size-5 place-items-center rounded bg-background/60 text-muted-foreground opacity-60 hover:opacity-100"><X className="size-3" /></button>}
             {overlay(p)}
