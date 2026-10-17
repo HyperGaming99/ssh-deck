@@ -815,3 +815,6 @@ const mock = {
   assert.equal(hs.list()[0].proxies, ''); assert.equal(hs.list()[0].via, 'cloudflared');
   console.log('transport ok');
 }
+
+// Handy-Unterbau (Node-Seite über den electron-Ersatz, Keystore-Schlüssel) in eigenem Prozess
+console.log(require('child_process').execFileSync(process.execPath, [path.join(__dirname, 'mobile', 'test-node.js')], { encoding: 'utf8', timeout: 60000 }).trim());
