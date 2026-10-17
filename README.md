@@ -86,11 +86,11 @@ The Android app uses the same interface and the same code as the desktop app: No
 There are no store builds or signed releases yet. To try it, build it yourself (JDK 21, Android SDK with platform 35+, NDK 27.2 and CMake 3.22, Node.js 22):
 
 ```bash
-bash mobile/fetch-libnode.sh   # one time: downloads the prebuilt Node.js libraries
+bash mobile/fetch-libnode.sh   # one time: downloads the prebuilt Node.js libraries (16 KB aligned)
 bash mobile/dev.sh             # builds the web bundle, the Node part and the debug APK, installs it over USB and starts it
 ```
 
-For Google Play: `cd android && ./gradlew bundleRelease` builds a signed app bundle. The upload key is read from `~/Android/ssh-deck-keystore.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`) or from the environment variables `SSHDECK_KEYSTORE`, `SSHDECK_STORE_PASSWORD`, `SSHDECK_KEY_ALIAS`, `SSHDECK_KEY_PASSWORD`. `versionName` comes from `package.json`; `versionCode` is computed from it and can be overridden with `ANDROID_VERSION_CODE`. Google Play needs native libraries aligned to 16 KB pages: the prebuilt `libnode.so` from nodejs-mobile 18.20.4 is not, so use a build of the `release18-20-4+16kb-fix` branch (see `mobile/fetch-libnode.sh`).
+For Google Play: `cd android && ./gradlew bundleRelease` builds a signed app bundle. The upload key is read from `~/Android/ssh-deck-keystore.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`) or from the environment variables `SSHDECK_KEYSTORE`, `SSHDECK_STORE_PASSWORD`, `SSHDECK_KEY_ALIAS`, `SSHDECK_KEY_PASSWORD`. `versionName` comes from `package.json`; `versionCode` is computed from it and can be overridden with `ANDROID_VERSION_CODE`. Google Play needs native libraries aligned to 16 KB pages, which the official nodejs-mobile 18.20.4 binaries are not; `mobile/fetch-libnode.sh` therefore downloads a build of nodejs-mobile's `release18-20-4+16kb-fix` branch (published as a release in the project owner's fork).
 
 Not available on the phone: Cloudflare Tunnel (needs `cloudflared`), session recording to a file, the in-app updater and Mosh.
 
