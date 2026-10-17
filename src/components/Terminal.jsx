@@ -87,8 +87,8 @@ export default function Terminal({ sid, hostId, active, theme, font, attempt = 0
       if (!scr) return;
       const r = scr.getBoundingClientRect(), cw = r.width / term.cols, ch = r.height / term.rows;
       const x = r.left - box0.left + term.buffer.active.cursorX * cw, y = r.top - box0.top + term.buffer.active.cursorY * ch;
-      const h = items.length * 28 + 4, top = y - h - 2 >= 0 ? y - h - 2 : y + ch + 2; // über dem Cursor, sonst darunter
-      cur = { items, sel: cur && cur.line === line ? cur.sel : -1, line, x: Math.max(0, Math.min(x, box0.width - 220)), y: top };
+      const above = y > box0.height / 2; // Cursor in der unteren Hälfte: Popup über der Eingabezeile, sonst darunter (verankert, damit es sie nie überdeckt)
+      cur = { items, sel: cur && cur.line === line ? cur.sel : -1, line, x: Math.max(0, Math.min(x, box0.width - 220)), ...(above ? { bottom: box0.height - y + 2 } : { top: y + ch + 2 }) };
       setSug(cur);
     };
     const accept = (it) => { // nur den fehlenden Rest tippen
@@ -163,7 +163,7 @@ export default function Terminal({ sid, hostId, active, theme, font, attempt = 0
     <div className="relative size-full">
       <div ref={box} dir="ltr" className="size-full" />
       {sug && (
-        <div dir="ltr" className="absolute z-20 w-max min-w-40 max-w-[92%] overflow-hidden rounded-lg border bg-card py-0.5 text-foreground shadow-lg" style={{ left: sug.x, top: sug.y }}>
+        <div dir="ltr" className="absolute z-20 w-max min-w-40 max-w-[92%] overflow-hidden rounded-lg border bg-card py-0.5 text-foreground shadow-lg" style={{ left: sug.x, top: sug.top, bottom: sug.bottom }}>
           {sug.items.map((it, i) => (
             <button key={it.text} type="button" onMouseDown={(e) => { e.preventDefault(); ref.current.accept(it); }}
               className={cn('flex h-7 w-full items-center gap-3 px-2 text-start font-mono text-xs hover:bg-accent msug', i === sug.sel && 'bg-accent')}>
