@@ -9,6 +9,8 @@ import '@fontsource/ibm-plex-mono/400.css';
 
 // Schreib-Funktionen der offenen Terminals; App leitet ssh:data hierhin.
 export const writers = new Map();
+// Broadcast: Eingabe des fokussierten Terminals geht zusätzlich an diese Sessions (leer = aus)
+export const bcast = { to: [] };
 
 // Eingegebene Zeilen für den Verlauf; Zeilen nach einer Passwort-/Code-Abfrage werden nie aufgezeichnet
 const SECRET_PROMPT = /(pass(word|phrase|wort)?|kennwort|code|token|pin)[^\n]*:\s*$/i;
@@ -29,6 +31,7 @@ export default function Terminal({ sid, hostId, active, theme, font, attempt = 0
     writers.set(sid, (d) => { tail = (tail + strip(d)).slice(-200); term.write(d); });
     term.onData((d) => {
       api.input(sid, d);
+      for (const o of bcast.to) if (o !== sid) api.input(o, d);
       if (d === '\r') { if (line.trim() && !SECRET_PROMPT.test(tail.split('\n').pop())) onCommand?.(sid, line.trim()); line = ''; }
       else if (d === '\x7f') line = line.slice(0, -1);
       else if (d.length === 1 ? d >= ' ' : !d.startsWith('\x1b')) line += d; // Pfeiltasten/Escape-Folgen ignorieren, Einfügen zählt

@@ -25,7 +25,8 @@ import ImportDialog from '@/components/ImportDialog';
 import KeyImportSheet from '@/components/KeyImportSheet';
 import { maskFingerprint, maskHost } from '@/lib/censor.mjs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import Terminal, { writers } from '@/components/Terminal';
+import { bcast, writers } from '@/components/Terminal';
+import SplitView, { MAX_PANES, SplitTools } from '@/components/SplitView';
 import SftpTab from '@/components/SftpTab';
 import LoginScreen from '@/components/LoginScreen';
 import LanguageSetup from '@/components/LanguageSetup';
@@ -765,7 +766,9 @@ export default function App() {
   const togglePanel = () => { setPanel(!panel); persist('termPanel', !panel); };
   const xtheme = useMemo(() => resolveTheme(termTheme, dark), [termTheme, dark]);
   const onCommand = useCallback((sid, c) => setHistory((h) => ({ ...h, [sid]: [...(h[sid] || []).filter((x) => x !== c), c].slice(-100) })), []);
-  const [tabs, setTabs] = useState([]); // { sid, title, closed }
+  const [tabs, setTabs] = useState([]); // { sid, title, kind, panes: [{ sid, conn, attempt, closed }], focus, dir }
+  const [bc, setBc] = useState({ on: false, ids: [] }); // Broadcast: Eingabe an mehrere Sessions
+  const updPane = (sid, f) => setTabs((prev) => prev.map((x) => (x.panes?.some((p) => p.sid === sid) ? { ...x, panes: x.panes.map((p) => (p.sid === sid ? { ...p, ...f(p) } : p)) } : x)));
   const [active, setActive] = useState('home');
   const [form, setForm] = useState(null);
   const [hostForm, setHostForm] = useState(null); // Host-Details-Panel
@@ -811,10 +814,13 @@ export default function App() {
     api.sync.onStatus(setSt);
     api.onCredAsk((a) => setCredAsks((q) => [...q, a]));
     api.update.onAvailable(setUpd);
-    api.onStatus((sid, conn) => setTabs((prev) => prev.map((x) => (x.sid === sid ? { ...x, conn } : x))));
-    api.onClosed((sid) => setTabs((prev) => prev.map((x) => (x.sid === sid ? { ...x, closed: true } : x))));
+    api.onStatus((sid, conn) => updPane(sid, () => ({ conn })));
+    api.onClosed((sid) => updPane(sid, () => ({ closed: true })));
   }, []);
 
+  const sessions = tabs.flatMap((x) => (x.panes || []).filter((p) => !p.closed).map((p, i) => ({ sid: p.sid, label: x.panes.length > 1 ? `${x.title} (${i + 1})` : x.title })));
+  const bcTargets = bc.on ? bc.ids.filter((id) => sessions.some((s) => s.sid === id)) : [];
+  bcast.to = bcTargets;
   const termActive = tabs.some((x) => x.sid === active && (x.kind === 'ssh' || !x.kind));
   useEffect(() => { // solange ein Terminal offen ist, färbt das gewählte Theme das ganze Fenster (auch Dialoge)
     const vars = termActive && termTheme !== 'auto' ? chromeVars(xtheme) : null;
@@ -839,7 +845,7 @@ export default function App() {
     }
     const sid = `s${seq + 1}`;
     setSeq(seq + 1);
-    setTabs((prev) => [...prev, { sid, hostId: h.id, title: kind === 'sftp' ? t('{name} · SFTP', { name: h.name }) : h.name, kind }]);
+    setTabs((prev) => [...prev, { sid, hostId: h.id, title: kind === 'sftp' ? t('{name} · SFTP', { name: h.name }) : h.name, kind, ...(kind === 'ssh' && { panes: [{ sid }], focus: sid, dir: 'row' }) }]);
     setActive(sid);
   };
   const editHost = async (id) => setHostForm({
@@ -847,6 +853,19 @@ export default function App() {
     onSave: async (o) => { const i = await api.hosts.save(o); setRev((r) => r + 1); return i; },
     onConnect: connect, onDelete: async (i) => { await api.hosts.remove(i); setRev((r) => r + 1); },
   });
+  // Terminal teilen: neue SSH-Session zum selben Host als weiteres Pane (2 bis 4)
+  const split = (dir) => {
+    const tab = tabsRef.current.find((x) => x.sid === active);
+    if (!tab?.panes || tab.panes.length >= MAX_PANES) return;
+    const sid = `p${Date.now()}`;
+    setTabs((prev) => prev.map((x) => (x.sid === tab.sid ? { ...x, dir, panes: [...x.panes, { sid }], focus: sid } : x)));
+  };
+  const setFocus = (tabSid, sid) => setTabs((prev) => prev.map((x) => (x.sid === tabSid ? { ...x, focus: sid } : x)));
+  const closePane = (tabSid, sid) => setTabs((prev) => prev.map((x) => {
+    if (x.sid !== tabSid || x.panes.length < 2) return x;
+    const panes = x.panes.filter((p) => p.sid !== sid);
+    return { ...x, panes, focus: x.focus === sid ? panes.at(-1).sid : x.focus };
+  }));
   const closeTab = (sid) => {
     setTabs((prev) => prev.filter((x) => x.sid !== sid));
     setActive((a) => (a === sid ? 'home' : a));
@@ -862,15 +881,20 @@ export default function App() {
     setActive(sid);
   };
   const readyRef = useRef(false);
+  const splitRef = useRef();
+  splitRef.current = split;
   useEffect(() => {
     const onKey = (e) => {
+      if (e.key === 'Escape') setBc((b) => (b.on ? { ...b, on: false } : b));
+      if (e.ctrlKey && e.shiftKey && (e.key === 'D' || e.key === 'E')) { e.preventDefault(); splitRef.current(e.key === 'D' ? 'row' : 'col'); }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && readyRef.current) { e.preventDefault(); openNewTab(); }
     };
     addEventListener('keydown', onKey);
     return () => removeEventListener('keydown', onKey);
   }, []);
   const runSnippet = (cmd) => {
-    const sid = tabs.some((x) => x.sid === active) ? active : tabs.at(-1)?.sid;
+    const tb = tabs.find((x) => x.sid === active) || tabs.at(-1);
+    const sid = tb?.focus || tb?.sid;
     if (!sid) return toast(t('Erst ein Terminal öffnen.'));
     api.input(sid, cmd + '\n');
     setActive(sid);
@@ -900,13 +924,15 @@ export default function App() {
               {tabs.map((tab) => (
                 <Pill key={tab.sid} active={active === tab.sid} onClick={() => setActive(tab.sid)} onClose={() => closeTab(tab.sid)}>
                   {tab.kind === 'sftp' ? <FolderOpen className="size-4 shrink-0" /> : tab.kind === 'new' ? <Search className="size-4 shrink-0" /> : <TermIcon className="size-4 shrink-0" />}
-                  <span className="truncate">{tab.kind === 'new' ? t('Neuer Tab') : tab.title}</span>{tab.closed && <span className="text-xs opacity-60">{t('(getrennt)')}</span>}
+                  <span className="truncate">{tab.kind === 'new' ? t('Neuer Tab') : tab.title}</span>{tab.panes?.every((p) => p.closed) && <span className="text-xs opacity-60">{t('(getrennt)')}</span>}
                 </Pill>
               ))}
             </div>
             <IconButton label={t('Neue Verbindung')} onClick={openNewTab}><Plus className="size-4" /></IconButton>
           </div>}
           <div className="ml-auto flex h-full items-center [-webkit-app-region:no-drag]">
+            {bc.on && <span className="mr-2 rounded-md bg-orange-500 px-2 py-1 text-xs font-semibold text-white">{t('Broadcast an {n}', { n: bcTargets.length })}</span>}
+            {tabs.find((x) => x.sid === active && x.panes) && <SplitTools tab={tabs.find((x) => x.sid === active)} split={split} bc={bc} setBc={setBc} sessions={sessions} />}
             {tabs.find((x) => x.sid === active && (x.kind === 'ssh' || !x.kind)) && <Button variant="ghost" size="icon" className={cn('mr-1 size-8', panel && 'text-primary')} onClick={togglePanel} aria-label={t('Seitenleiste ein-/ausblenden')}><PanelRight className="size-4" /></Button>}
             <Button variant="ghost" size="icon" className="mr-1 size-8" onClick={() => setDark(!dark)} aria-label={t('Theme wechseln')}>
               {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
@@ -938,7 +964,7 @@ export default function App() {
           </nav>
         )}
 
-        <main className="flex min-w-0 flex-1 flex-col">
+        <main className={cn('flex min-w-0 flex-1 flex-col', bc.on && 'ring-4 ring-inset ring-orange-500')}>
           <div className="relative min-h-0 flex-1">
             <div className={cn('absolute inset-0 overflow-auto p-8', active !== 'home' && 'hidden')}>
               <h1 className="mb-6 text-2xl font-semibold">
@@ -955,16 +981,14 @@ export default function App() {
                   ? <NewTab active={active === tab.sid} tabs={tabs} recent={recent} onConnect={(h) => { closeTab(tab.sid); connect(h); }} onSwitch={(sid) => { closeTab(tab.sid); setActive(sid); }} />
                   : tab.kind === 'sftp'
                     ? <SftpTab sid={tab.sid} hostId={tab.hostId} toast={toast} openForm={setForm} />
-                    : (() => { const ready = tab.conn?.state === 'ready' || !tab.conn; return (
+                    : (() => { const fp = tab.panes.find((p) => p.sid === tab.focus) || tab.panes[0]; const ready = fp.conn?.state === 'ready' || !fp.conn; return (
                       <div className="flex size-full">
-                        <div className="relative min-w-0 flex-1 p-2" style={{ background: xtheme.background }}>
-                          <Terminal sid={tab.sid} hostId={tab.hostId} active={active === tab.sid} theme={xtheme} font={font} attempt={tab.attempt} onCommand={onCommand} />
-                          {tab.conn && tab.conn.state !== 'ready' && <ConnectScreen conn={tab.conn} onClose={() => closeTab(tab.sid)}
-                            onAnswer={(a) => { api.answer(tab.sid, a); setTabs((p) => p.map((x) => (x.sid === tab.sid ? { ...x, conn: { ...x.conn, state: 'connecting' } } : x))); }}
+                        <SplitView tab={tab} active={active === tab.sid} theme={xtheme} font={font} onCommand={onCommand} setFocus={(sid) => setFocus(tab.sid, sid)} closePane={(sid) => closePane(tab.sid, sid)}
+                          overlay={(p) => p.conn && p.conn.state !== 'ready' && <ConnectScreen conn={p.conn} onClose={() => (tab.panes.length > 1 ? closePane(tab.sid, p.sid) : closeTab(tab.sid))}
+                            onAnswer={(a) => { api.answer(p.sid, a); updPane(p.sid, (q) => ({ conn: { ...q.conn, state: 'connecting' } })); }}
                             onEdit={() => editHost(tab.hostId)}
-                            onRetry={() => setTabs((p) => p.map((x) => (x.sid === tab.sid ? { ...x, conn: null, attempt: (x.attempt || 0) + 1 } : x)))} />}
-                        </div>
-                        {panel && ready && tab.conn && <TermPanel sid={tab.sid} hostId={tab.hostId} dark={dark} history={history[tab.sid] || []} themeId={termTheme} setThemeId={setTheme} font={font} setFont={setFont} toast={toast} rev={rev} />}
+                            onRetry={() => updPane(p.sid, (q) => ({ conn: null, attempt: (q.attempt || 0) + 1 }))} />} />
+                        {panel && ready && fp.conn && <TermPanel sid={fp.sid} hostId={tab.hostId} dark={dark} history={history[fp.sid] || []} themeId={termTheme} setThemeId={setTheme} font={font} setFont={setFont} toast={toast} rev={rev} />}
                       </div>); })()}
               </div>
             ))}
