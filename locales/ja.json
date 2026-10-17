@@ -487,5 +487,10 @@
  "Bei unerwartet getrennter Verbindung erneut versuchen": "予期せず切断された場合に再試行",
  "Verbindung getrennt – neu verbinden in {n} s": "切断されました – {n}秒後に再接続",
  "Verbindung getrennt": "切断されました",
- "Jetzt verbinden": "今すぐ接続"
+ "Jetzt verbinden": "今すぐ接続",
+ "Verbindungsweg": "接続経路",
+ "Direkt (oder Tor, falls aktiv)": "直接（Tor が有効な場合は Tor 経由）",
+ "Proxy-Kette (SOCKS)": "プロキシチェーン（SOCKS）",
+ "Ein Proxy je Zeile, in dieser Reihenfolge nacheinander (wie proxychains). Nur SOCKS4/SOCKS5.": "1 行に 1 つのプロキシ。この順番で順に経由します（proxychains と同様）。SOCKS4/SOCKS5 のみ。",
+ "Host = Cloudflare-Hostname des Tunnels. Braucht das Programm „cloudflared“ auf diesem Rechner; die Anmeldung läuft über Cloudflare Access.": "ホスト = トンネルの Cloudflare ホスト名。このコンピューターに「cloudflared」が必要です。サインインは Cloudflare Access 経由で行われます。"
 }

@@ -487,5 +487,10 @@
  "Bei unerwartet getrennter Verbindung erneut versuchen": "Bağlantı beklenmedik şekilde kesilirse yeniden dene",
  "Verbindung getrennt – neu verbinden in {n} s": "Bağlantı kesildi – {n} sn içinde yeniden bağlanılıyor",
  "Verbindung getrennt": "Bağlantı kesildi",
- "Jetzt verbinden": "Şimdi bağlan"
+ "Jetzt verbinden": "Şimdi bağlan",
+ "Verbindungsweg": "Bağlantı yolu",
+ "Direkt (oder Tor, falls aktiv)": "Doğrudan (etkinse Tor)",
+ "Proxy-Kette (SOCKS)": "Proxy zinciri (SOCKS)",
+ "Ein Proxy je Zeile, in dieser Reihenfolge nacheinander (wie proxychains). Nur SOCKS4/SOCKS5.": "Satır başına bir proxy; bu sırayla art arda kullanılır (proxychains gibi). Yalnızca SOCKS4/SOCKS5.",
+ "Host = Cloudflare-Hostname des Tunnels. Braucht das Programm „cloudflared“ auf diesem Rechner; die Anmeldung läuft über Cloudflare Access.": "Ana bilgisayar = tünelin Cloudflare ana bilgisayar adı. Bu bilgisayarda “cloudflared” programı gerekir; oturum açma Cloudflare Access üzerinden yapılır."
 }

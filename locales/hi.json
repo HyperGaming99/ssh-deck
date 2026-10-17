@@ -487,5 +487,10 @@
  "Bei unerwartet getrennter Verbindung erneut versuchen": "कनेक्शन अचानक टूटने पर दोबारा कोशिश करें",
  "Verbindung getrennt – neu verbinden in {n} s": "कनेक्शन टूट गया – {n} सेकंड में दोबारा कनेक्ट",
  "Verbindung getrennt": "कनेक्शन टूट गया",
- "Jetzt verbinden": "अभी कनेक्ट करें"
+ "Jetzt verbinden": "अभी कनेक्ट करें",
+ "Verbindungsweg": "कनेक्शन मार्ग",
+ "Direkt (oder Tor, falls aktiv)": "सीधे (या Tor, यदि चालू हो)",
+ "Proxy-Kette (SOCKS)": "प्रॉक्सी श्रृंखला (SOCKS)",
+ "Ein Proxy je Zeile, in dieser Reihenfolge nacheinander (wie proxychains). Nur SOCKS4/SOCKS5.": "प्रति पंक्ति एक प्रॉक्सी, इसी क्रम में एक के बाद एक उपयोग होती हैं (proxychains की तरह)। केवल SOCKS4/SOCKS5।",
+ "Host = Cloudflare-Hostname des Tunnels. Braucht das Programm „cloudflared“ auf diesem Rechner; die Anmeldung läuft über Cloudflare Access.": "होस्ट = टनल का Cloudflare होस्टनेम। इस कंप्यूटर पर “cloudflared” प्रोग्राम चाहिए; साइन-इन Cloudflare Access से होता है।"
 }

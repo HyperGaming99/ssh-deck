@@ -487,5 +487,10 @@
  "Bei unerwartet getrennter Verbindung erneut versuchen": "Повторять при неожиданном разрыве соединения",
  "Verbindung getrennt – neu verbinden in {n} s": "Соединение разорвано – переподключение через {n} с",
  "Verbindung getrennt": "Соединение разорвано",
- "Jetzt verbinden": "Подключить сейчас"
+ "Jetzt verbinden": "Подключить сейчас",
+ "Verbindungsweg": "Маршрут подключения",
+ "Direkt (oder Tor, falls aktiv)": "Напрямую (или через Tor, если включён)",
+ "Proxy-Kette (SOCKS)": "Цепочка прокси (SOCKS)",
+ "Ein Proxy je Zeile, in dieser Reihenfolge nacheinander (wie proxychains). Nur SOCKS4/SOCKS5.": "Один прокси на строку, используются по очереди в этом порядке (как proxychains). Только SOCKS4/SOCKS5.",
+ "Host = Cloudflare-Hostname des Tunnels. Braucht das Programm „cloudflared“ auf diesem Rechner; die Anmeldung läuft über Cloudflare Access.": "Хост = имя хоста туннеля в Cloudflare. Нужна программа «cloudflared» на этом компьютере; вход выполняется через Cloudflare Access."
 }

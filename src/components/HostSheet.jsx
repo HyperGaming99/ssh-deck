@@ -147,6 +147,23 @@ export default function HostSheet({ spec, onClose }) {
                   </SelectContent>
                 </Select>
               </Field>
+              {!v.jumpId && <>
+                <Field icon={Server}>
+                  <Select value={v.via || '__none'} onValueChange={pick('via')}>
+                    <SelectTrigger className={triggerCls}><SelectValue placeholder={t('Verbindungsweg')} /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none">{t('Direkt (oder Tor, falls aktiv)')}</SelectItem>
+                      <SelectItem value="proxy">{t('Proxy-Kette (SOCKS)')}</SelectItem>
+                      <SelectItem value="cloudflared">Cloudflare Tunnel</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                {v.via === 'proxy' && <>
+                  <textarea className="min-h-20 w-full rounded-xl border bg-transparent p-3 font-mono text-xs" spellCheck={false} placeholder={'socks5://user:pass@proxy1:1080\nsocks4://proxy2:1080'} value={v.proxies ?? ''} onChange={set('proxies')} />
+                  <p className="text-xs text-muted-foreground">{t('Ein Proxy je Zeile, in dieser Reihenfolge nacheinander (wie proxychains). Nur SOCKS4/SOCKS5.')}</p>
+                </>}
+                {v.via === 'cloudflared' && <p className="text-xs text-muted-foreground">{t('Host = Cloudflare-Hostname des Tunnels. Braucht das Programm „cloudflared“ auf diesem Rechner; die Anmeldung läuft über Cloudflare Access.')}</p>}
+              </>}
               {!telnet && <>
               <div className="border-t" />
               <h3 className="text-sm font-semibold">{t('Zugangsdaten')}</h3>

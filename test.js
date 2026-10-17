@@ -797,3 +797,21 @@ const mock = {
   assert.deepEqual([...telnet.nawsFrame(255, 24)], [IAC, 250, 31, 0, 255, 255, 0, 24, IAC, 240], '255 in NAWS wird verdoppelt');
   console.log('jump/telnet ok');
 })();
+
+// Proxy-Kette / Cloudflare Tunnel
+{
+  const tp = require('./transport');
+  const p = tp.parseProxies('# Kommentar\nsocks5://u:p%40w@a.example:9050\nsocks4://[::1]:1081\nb.example\n');
+  assert.deepEqual(p[0], { host: 'a.example', port: 9050, type: 5, userId: 'u', password: 'p@w' });
+  assert.deepEqual(p[1], { host: '::1', port: 1081, type: 4 });
+  assert.deepEqual(p[2], { host: 'b.example', port: 1080, type: 5 });
+  assert.throws(() => tp.parseProxies('http://x:8080'), /nicht unterstützt/);
+  assert.deepEqual(tp.parseProxies(''), []);
+  tp.cloudflared('x.example', '/nonexistent/cloudflared').then(() => assert.fail('sollte scheitern'), (e) => assert(/cloudflared nicht gefunden/.test(e.message)));
+  const hs = hosts(path.join(dir, 'via.json'), { encrypt: (x) => x, decrypt: (x) => x });
+  const vid = hs.save({ name: 'v', host: 'h', user: 'u', via: 'proxy', proxies: 'socks5://p:1' });
+  assert.equal(hs.list()[0].via, 'proxy'); assert.equal(hs.list()[0].proxies, 'socks5://p:1');
+  hs.save({ id: vid, name: 'v', host: 'h', user: 'u', via: 'cloudflared', proxies: 'x' });
+  assert.equal(hs.list()[0].proxies, ''); assert.equal(hs.list()[0].via, 'cloudflared');
+  console.log('transport ok');
+}

@@ -16,6 +16,7 @@ const { osIcon } = require('./osicon');
 const serverStats = require('./serverstats');
 const syncTools = require('./sync');
 const torTools = require('./tor');
+const transportTools = require('./transport');
 const knownTools = require('./known');
 const importerTools = require('./importers');
 const { createAuth } = require('./auth');
@@ -41,14 +42,23 @@ const readSettings = () => { try { return JSON.parse(fs.readFileSync(settingsFil
 // Kein Rückfall auf direkt: ist Tor an und nicht erreichbar, schlägt die Verbindung fehl. Lokale/private Ziele gehen direkt.
 const torCfg = () => { const s = readSettings().tor || {}; return { sync: !!s.sync, servers: !!s.servers, host: s.host || '127.0.0.1', port: +s.port || 9050 }; };
 
-// SSH-Verbindung; mit Tor über SOCKS5 (Hostname geht unaufgelöst an Tor)
-function sshConnect(conn, cfg, sock) {
+// Verbindungsweg zu host:port: Cloudflare Tunnel, sonst Proxy-Kette (Tor davor, wenn für Server aktiv); null = direkt
+async function dialVia(host, port, tp = {}) {
+  if (tp.cf) return transportTools.cloudflared(host);
   const tor = torCfg();
+  const chain = [...(tor.servers && !torTools.isPrivateHost(host) ? [{ host: tor.host, port: tor.port, type: 5 }] : []), ...transportTools.parseProxies(tp.proxies)];
+  return chain.length ? transportTools.chainSocket(chain, host, port) : null;
+}
+const transportOf = (h) => ({ cf: h.via === 'cloudflared', proxies: h.via === 'proxy' ? h.proxies : '' });
+
+// SSH-Verbindung; über Tor/Proxy-Kette/Cloudflare Tunnel (Hostname geht unaufgelöst an den Proxy)
+function sshConnect(conn, cfg, sock) {
   if (sock) return conn.connect({ ...cfg, sock }); // Kanal durch einen Jump-Host
-  if (!tor.servers || torTools.isPrivateHost(cfg.host)) return conn.connect(cfg);
-  torTools.socksSocket(tor, cfg.host, cfg.port)
-    .then((sock) => conn.connect({ ...cfg, sock }))
-    .catch((e) => conn.emit('error', new Error(`Tor: ${e.message}`)));
+  const { transport: tp, ...c } = cfg;
+  if (!tp?.cf && !tp?.proxies && !(torCfg().servers && !torTools.isPrivateHost(c.host))) return conn.connect(c);
+  dialVia(c.host, c.port, tp)
+    .then((s) => conn.connect(s ? { ...c, sock: s } : c))
+    .catch((e) => conn.emit('error', new Error(`Proxy: ${e.message}`)));
 }
 
 // HTTP über Tor: eigene Sitzung mit festem SOCKS5-Proxy (Chromium löst Hostnamen beim Proxy auf)
@@ -220,7 +230,7 @@ function verifyHostKey(host, port, blob, ask) {
 // auth (aus withAuth): Anmeldung wird dynamisch verhandelt; ohne auth werden die gespeicherten Zugangsdaten direkt benutzt
 function sshConfig(h, auth) {
   // hostVerifier mit 2 Argumenten ist asynchron; bei Fehler/Ablehnung wird die Verbindung abgebrochen
-  const cfg = { host: h.host, port: h.port, username: h.user, readyTimeout: 120000, keepaliveInterval: 15000, keepaliveCountMax: 3,
+  const cfg = { host: h.host, port: h.port, transport: transportOf(h), username: h.user, readyTimeout: 120000, keepaliveInterval: 15000, keepaliveCountMax: 3,
     hostVerifier: (key, cb) => verifyHostKey(h.host, h.port, key, auth?.hostAsk).then(cb, () => cb(false)) };
   if (auth) return { ...cfg, authHandler: auth.authHandler, tryKeyboard: true };
   const k = h.keyId && keys.get(h.keyId);
@@ -385,8 +395,8 @@ function sshConnectJump(conn, h, cfg, ask, log, inline) {
 // TCP-Verbindung für Telnet: über Jump-Hosts, Tor oder direkt
 async function dialTcp(conn, h, ask, log) {
   if (h.jumpId) return viaJumps(conn, h, ask, log, true);
-  const tor = torCfg();
-  if (tor.servers && !torTools.isPrivateHost(h.host)) return torTools.socksSocket(tor, h.host, h.port);
+  const via = await dialVia(h.host, h.port, transportOf(h));
+  if (via) return via;
   return new Promise((res, rej) => { const s = net.connect(h.port, h.host); s.once('connect', () => res(s)).once('error', rej); });
 }
 
@@ -742,7 +752,7 @@ app.whenReady().then(() => {
     if (!h) return { error: 'Host nicht gefunden' };
     const same = vOf(h) === vault;
     ensureGroup(h.group, vault);
-    const nid = hosts.save({ name: name || h.name, group: h.group, host: h.host, port: h.port, protocol: h.protocol, jumpId: same ? h.jumpId : '', user: h.user, keyPath: h.keyPath, keyId: same ? h.keyId : '', icon: h.icon, tags: h.tags, secret: h.secret || undefined, ...(vault !== 'personal' && { vault }) });
+    const nid = hosts.save({ name: name || h.name, group: h.group, host: h.host, port: h.port, protocol: h.protocol, via: h.via, proxies: h.proxies, jumpId: same ? h.jumpId : '', user: h.user, keyPath: h.keyPath, keyId: same ? h.keyId : '', icon: h.icon, tags: h.tags, secret: h.secret || undefined, ...(vault !== 'personal' && { vault }) });
     if (move) hosts.remove(id);
     return { id: nid, keyDropped: !!h.keyId && !same };
   });

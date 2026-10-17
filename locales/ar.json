@@ -487,5 +487,10 @@
  "Bei unerwartet getrennter Verbindung erneut versuchen": "إعادة المحاولة عند انقطاع الاتصال بشكل غير متوقع",
  "Verbindung getrennt – neu verbinden in {n} s": "انقطع الاتصال – إعادة الاتصال خلال {n} ث",
  "Verbindung getrennt": "انقطع الاتصال",
- "Jetzt verbinden": "اتصل الآن"
+ "Jetzt verbinden": "اتصل الآن",
+ "Verbindungsweg": "مسار الاتصال",
+ "Direkt (oder Tor, falls aktiv)": "مباشر (أو Tor إذا كان مفعّلًا)",
+ "Proxy-Kette (SOCKS)": "سلسلة وكلاء (SOCKS)",
+ "Ein Proxy je Zeile, in dieser Reihenfolge nacheinander (wie proxychains). Nur SOCKS4/SOCKS5.": "وكيل واحد في كل سطر، يُستخدمون واحدًا بعد الآخر بهذا الترتيب (مثل proxychains). SOCKS4/SOCKS5 فقط.",
+ "Host = Cloudflare-Hostname des Tunnels. Braucht das Programm „cloudflared“ auf diesem Rechner; die Anmeldung läuft über Cloudflare Access.": "المضيف = اسم مضيف Cloudflare للنفق. يتطلب برنامج «cloudflared» على هذا الجهاز؛ يتم تسجيل الدخول عبر Cloudflare Access."
 }

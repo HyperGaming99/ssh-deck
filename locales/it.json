@@ -487,5 +487,10 @@
  "Bei unerwartet getrennter Verbindung erneut versuchen": "Riprova se la connessione cade inaspettatamente",
  "Verbindung getrennt – neu verbinden in {n} s": "Disconnesso – riconnessione tra {n} s",
  "Verbindung getrennt": "Disconnesso",
- "Jetzt verbinden": "Connetti ora"
+ "Jetzt verbinden": "Connetti ora",
+ "Verbindungsweg": "Percorso di connessione",
+ "Direkt (oder Tor, falls aktiv)": "Diretto (o Tor, se attivo)",
+ "Proxy-Kette (SOCKS)": "Catena di proxy (SOCKS)",
+ "Ein Proxy je Zeile, in dieser Reihenfolge nacheinander (wie proxychains). Nur SOCKS4/SOCKS5.": "Un proxy per riga, usati uno dopo l'altro in quest'ordine (come proxychains). Solo SOCKS4/SOCKS5.",
+ "Host = Cloudflare-Hostname des Tunnels. Braucht das Programm „cloudflared“ auf diesem Rechner; die Anmeldung läuft über Cloudflare Access.": "Host = hostname Cloudflare del tunnel. Richiede il programma «cloudflared» su questo computer; l'accesso passa da Cloudflare Access."
 }
