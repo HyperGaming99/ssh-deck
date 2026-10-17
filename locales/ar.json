@@ -496,5 +496,11 @@
  "Befehlsvorschläge": "اقتراحات الأوامر",
  "Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.": "اقتراحات أثناء الكتابة في الطرفية: أوامر هذه الجلسة والمقتطفات والأوامر الشائعة. اقبلها بـ Ctrl+Space أو بالنقر.",
  "Snippet": "مقتطف",
- "Häufig": "شائع"
+ "Häufig": "شائع",
+ "Konto löschen": "حذف الحساب",
+ "Dein Konto und alle Daten auf dem Sync-Server werden gelöscht (Hosts, Tresor, Cloud-Schlüsselbund, Team-Mitgliedschaften). Die Daten auf diesem Gerät bleiben. Das lässt sich nicht rückgängig machen.": "سيتم حذف حسابك وجميع البيانات على خادم المزامنة (المضيفون، الخزنة، سلسلة المفاتيح السحابية، عضويات الفرق). تبقى البيانات على هذا الجهاز. لا يمكن التراجع عن ذلك.",
+ "Passwort zur Bestätigung": "كلمة المرور للتأكيد",
+ "Konto endgültig löschen": "حذف الحساب نهائيًا",
+ "Nicht angemeldet.": "لم يتم تسجيل الدخول.",
+ "Bitte das Passwort eingeben.": "الرجاء إدخال كلمة المرور."
 }

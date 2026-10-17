@@ -496,5 +496,11 @@
  "Befehlsvorschläge": "명령어 제안",
  "Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.": "터미널에서 입력할 때 제안: 이 세션의 명령어, 스니펫, 자주 쓰는 명령어. Ctrl+Space 또는 탭으로 적용합니다.",
  "Snippet": "스니펫",
- "Häufig": "자주 쓰는"
+ "Häufig": "자주 쓰는",
+ "Konto löschen": "계정 삭제",
+ "Dein Konto und alle Daten auf dem Sync-Server werden gelöscht (Hosts, Tresor, Cloud-Schlüsselbund, Team-Mitgliedschaften). Die Daten auf diesem Gerät bleiben. Das lässt sich nicht rückgängig machen.": "계정과 동기화 서버의 모든 데이터(호스트, 보관함, 클라우드 키체인, 팀 멤버십)가 삭제됩니다. 이 기기의 데이터는 유지됩니다. 되돌릴 수 없습니다.",
+ "Passwort zur Bestätigung": "확인용 비밀번호",
+ "Konto endgültig löschen": "계정 영구 삭제",
+ "Nicht angemeldet.": "로그인되어 있지 않습니다.",
+ "Bitte das Passwort eingeben.": "비밀번호를 입력하세요."
 }

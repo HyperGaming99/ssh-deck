@@ -496,5 +496,11 @@
  "Befehlsvorschläge": "कमांड सुझाव",
  "Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.": "टर्मिनल में टाइप करते समय सुझाव: इस सत्र की कमांड, स्निपेट और आम कमांड। Ctrl+Space से या टैप करके चुनें।",
  "Snippet": "स्निपेट",
- "Häufig": "आम"
+ "Häufig": "आम",
+ "Konto löschen": "खाता हटाएँ",
+ "Dein Konto und alle Daten auf dem Sync-Server werden gelöscht (Hosts, Tresor, Cloud-Schlüsselbund, Team-Mitgliedschaften). Die Daten auf diesem Gerät bleiben. Das lässt sich nicht rückgängig machen.": "आपका खाता और सिंक सर्वर पर सारा डेटा हटा दिया जाएगा (होस्ट, वॉल्ट, क्लाउड कीचेन, टीम सदस्यताएँ)। इस डिवाइस का डेटा बना रहेगा। इसे वापस नहीं किया जा सकता।",
+ "Passwort zur Bestätigung": "पुष्टि के लिए पासवर्ड",
+ "Konto endgültig löschen": "खाता हमेशा के लिए हटाएँ",
+ "Nicht angemeldet.": "साइन इन नहीं है।",
+ "Bitte das Passwort eingeben.": "कृपया पासवर्ड दर्ज करें।"
 }

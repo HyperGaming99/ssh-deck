@@ -703,6 +703,20 @@ app.whenReady().then(() => {
     Object.assign(syncState, { status: 'off', lastSync: null, error: '' });
     send('sync:status', syncStatus());
   });
+  // Konto auf dem Server löschen (mit Passwort bestätigt) und danach lokal abmelden; die Daten auf diesem Gerät bleiben. Rückgabe: { ok } | { error }
+  handle('sync:deleteAccount', async (_, password) => {
+    const c = loadSyncCfg();
+    if (!c) return { error: 'Nicht angemeldet.' };
+    if (!password) return { error: 'Bitte das Passwort eingeben.' };
+    try {
+      await new syncTools.Backend({ url: c.server }, backendOpts(c.server)).deleteAccount(c.email, syncTools.deriveKeys(c.email, password).auth);
+    } catch (e) { return { error: /fetch failed/.test(e.message) ? 'Server nicht erreichbar.' : e.message }; }
+    fs.rmSync(syncCfgFile, { force: true });
+    try { clearCloudFlags(); kcSave({}); fs.rmSync(teamsFile, { force: true }); } catch { /* lokal egal */ }
+    Object.assign(syncState, { status: 'off', lastSync: null, error: '' });
+    send('sync:status', syncStatus());
+    return { ok: true };
+  });
   // Anmelden / Registrieren / Code bestätigen. Rückgabe: { ok } | { needsCode } | { error }
   handle('auth:submit', async (_, o) => {
     try {

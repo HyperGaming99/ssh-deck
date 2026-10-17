@@ -496,5 +496,11 @@
  "Befehlsvorschläge": "Komut önerileri",
  "Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.": "Terminalde yazarken öneriler: bu oturumun komutları, snippet'ler ve yaygın komutlar. Ctrl+Boşluk ile veya dokunarak kabul et.",
  "Snippet": "Snippet",
- "Häufig": "Yaygın"
+ "Häufig": "Yaygın",
+ "Konto löschen": "Hesabı sil",
+ "Dein Konto und alle Daten auf dem Sync-Server werden gelöscht (Hosts, Tresor, Cloud-Schlüsselbund, Team-Mitgliedschaften). Die Daten auf diesem Gerät bleiben. Das lässt sich nicht rückgängig machen.": "Hesabınız ve eşitleme sunucusundaki tüm veriler silinecek (ana bilgisayarlar, kasa, bulut anahtarlığı, ekip üyelikleri). Bu cihazdaki veriler kalır. Bu işlem geri alınamaz.",
+ "Passwort zur Bestätigung": "Onay için parola",
+ "Konto endgültig löschen": "Hesabı kalıcı olarak sil",
+ "Nicht angemeldet.": "Oturum açılmadı.",
+ "Bitte das Passwort eingeben.": "Lütfen parolayı girin."
 }

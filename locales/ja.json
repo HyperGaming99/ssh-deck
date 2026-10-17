@@ -496,5 +496,11 @@
  "Befehlsvorschläge": "コマンド候補",
  "Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.": "ターミナルで入力中の候補: このセッションのコマンド、スニペット、よく使うコマンド。Ctrl+Space またはタップで確定します。",
  "Snippet": "スニペット",
- "Häufig": "よく使う"
+ "Häufig": "よく使う",
+ "Konto löschen": "アカウントを削除",
+ "Dein Konto und alle Daten auf dem Sync-Server werden gelöscht (Hosts, Tresor, Cloud-Schlüsselbund, Team-Mitgliedschaften). Die Daten auf diesem Gerät bleiben. Das lässt sich nicht rückgängig machen.": "アカウントと同期サーバー上のすべてのデータ（ホスト、保管庫、クラウドキーチェーン、チームの所属）が削除されます。この端末のデータは残ります。この操作は元に戻せません。",
+ "Passwort zur Bestätigung": "確認用パスワード",
+ "Konto endgültig löschen": "アカウントを完全に削除",
+ "Nicht angemeldet.": "サインインしていません。",
+ "Bitte das Passwort eingeben.": "パスワードを入力してください。"
 }

@@ -496,5 +496,11 @@
  "Befehlsvorschläge": "Suggestions de commandes",
  "Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.": "Suggestions pendant la saisie dans le terminal : commandes de cette session, snippets et commandes courantes. Valider avec Ctrl+Espace ou en touchant.",
  "Snippet": "Snippet",
- "Häufig": "Courant"
+ "Häufig": "Courant",
+ "Konto löschen": "Supprimer le compte",
+ "Dein Konto und alle Daten auf dem Sync-Server werden gelöscht (Hosts, Tresor, Cloud-Schlüsselbund, Team-Mitgliedschaften). Die Daten auf diesem Gerät bleiben. Das lässt sich nicht rückgängig machen.": "Votre compte et toutes les données sur le serveur de synchronisation seront supprimés (hôtes, coffre, trousseau cloud, appartenances aux équipes). Les données de cet appareil sont conservées. Cette action est irréversible.",
+ "Passwort zur Bestätigung": "Mot de passe pour confirmer",
+ "Konto endgültig löschen": "Supprimer définitivement le compte",
+ "Nicht angemeldet.": "Non connecté.",
+ "Bitte das Passwort eingeben.": "Veuillez saisir le mot de passe."
 }

@@ -98,6 +98,27 @@ const listen = (opts) => new Promise((res) => { const srv = createServer({ db: o
   await assert.rejects(new sync.Backend({ url }).login('a@x.de', kBad.auth), /falsch/);
   await assert.rejects(new sync.Backend({ url }).login('niemand@x.de', kA.auth), /falsch/);
   await assert.rejects(new sync.Backend({ url, token: 'nope' }).getVault(), (e) => e.status === 401);
+  { // Konto löschen: falsches Passwort, Team-Besitzer mit Mitgliedern blockiert, dann alles weg
+    const db2 = openDb(':memory:'); const s2 = await listen({ db: db2 }); const bk = () => new sync.Backend({ url: s2.url });
+    const kD = sync.deriveKeys('d@x.de', 'pw-d'), kE = sync.deriveKeys('e@x.de', 'pw-e');
+    const tD = await bk().register('d@x.de', kD.auth); const tE = await bk().register('e@x.de', kE.auth);
+    await new sync.Backend({ url: s2.url, token: tD.token }).putVault('blob', null);
+    await assert.rejects(bk().deleteAccount('d@x.de', kE.auth), /falsch/);
+    const dId = db2.prepare('select id from users where email = ?').get('d@x.de').id, eId = db2.prepare('select id from users where email = ?').get('e@x.de').id;
+    db2.prepare("insert into teams (id, name, updated, created) values ('t1', 'Team', 1, 1)").run();
+    db2.prepare("insert into team_members values ('t1', ?, 'owner', 'k', ?, 1, 1)").run(dId, dId);
+    db2.prepare("insert into team_members values ('t1', ?, 'member', 'k', ?, 1, 1)").run(eId, dId);
+    await assert.rejects(bk().deleteAccount('d@x.de', kD.auth), /Besitzer/);
+    db2.prepare('delete from team_members where user_id = ?').run(eId);
+    await bk().deleteAccount('d@x.de', kD.auth);
+    for (const q of ['users', 'sessions', 'vault', 'team_members']) assert.equal(db2.prepare(`select count(*) c from ${q} where ${q === 'users' ? 'id' : 'user_id'} = ?`).get(dId).c, 0, q + ' geleert');
+    assert.equal(db2.prepare('select count(*) c from teams where id = ?').get('t1').c, 0, 'eigenes Ein-Personen-Team gelöscht');
+    await assert.rejects(new sync.Backend({ url: s2.url, token: tD.token }).getVault(), (e) => e.status === 401);
+    await assert.rejects(bk().login('d@x.de', kD.auth), /falsch/);
+    assert((await bk().login('e@x.de', kE.auth)), 'andere Konten bleiben');
+    s2.srv.close();
+  }
+
 
   // Zwei Geräte gleichen ab: beide loggen sich mit denselben Daten ein
   const token = await new sync.Backend({ url }).login('a@x.de', kA.auth);

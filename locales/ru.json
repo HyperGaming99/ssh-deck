@@ -496,5 +496,11 @@
  "Befehlsvorschläge": "Подсказки команд",
  "Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.": "Подсказки при вводе в терминале: команды этой сессии, сниппеты и частые команды. Принять: Ctrl+Пробел или касание.",
  "Snippet": "Сниппет",
- "Häufig": "Частое"
+ "Häufig": "Частое",
+ "Konto löschen": "Удалить аккаунт",
+ "Dein Konto und alle Daten auf dem Sync-Server werden gelöscht (Hosts, Tresor, Cloud-Schlüsselbund, Team-Mitgliedschaften). Die Daten auf diesem Gerät bleiben. Das lässt sich nicht rückgängig machen.": "Ваш аккаунт и все данные на сервере синхронизации будут удалены (хосты, хранилище, облачная связка ключей, членство в командах). Данные на этом устройстве сохранятся. Это нельзя отменить.",
+ "Passwort zur Bestätigung": "Пароль для подтверждения",
+ "Konto endgültig löschen": "Удалить аккаунт навсегда",
+ "Nicht angemeldet.": "Вход не выполнен.",
+ "Bitte das Passwort eingeben.": "Введите пароль."
 }

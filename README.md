@@ -50,7 +50,7 @@ SSH Deck is a desktop app (Electron + React) to connect to your servers. You kee
 
 **Teams** – shared vaults for hosts (with passwords), snippets, forwarding rules and SSH keys. Switch between *Personal* and team vaults in the title bar; owners and admins invite people by email and give them a role (admin, member, viewer). Everything is end-to-end encrypted, removing a member renews the team key, and every member's key fingerprint is shown so invitations can be verified in person. Needs the cloud-sync server (`node server/server.js`) and an account.
 
-**Privacy &amp; sync** – optional cloud sync with end-to-end encryption (the server stores only ciphertext), secrets encrypted with the OS keystore, **Tor routing** for sync and/or servers
+**Privacy &amp; sync** – optional cloud sync with end-to-end encryption (the server stores only ciphertext), **delete your account and its data** from the app, secrets encrypted with the OS keystore, **Tor routing** for sync and/or servers
 
 **More** – 16 languages (incl. right-to-left), light and dark UI, in-app updater, **Android app** (see below)
 
@@ -89,6 +89,8 @@ There are no store builds or signed releases yet. To try it, build it yourself (
 bash mobile/fetch-libnode.sh   # one time: downloads the prebuilt Node.js libraries
 bash mobile/dev.sh             # builds the web bundle, the Node part and the debug APK, installs it over USB and starts it
 ```
+
+For Google Play: `cd android && ./gradlew bundleRelease` builds a signed app bundle. The upload key is read from `~/Android/ssh-deck-keystore.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`) or from the environment variables `SSHDECK_KEYSTORE`, `SSHDECK_STORE_PASSWORD`, `SSHDECK_KEY_ALIAS`, `SSHDECK_KEY_PASSWORD`. `versionName` comes from `package.json`; `versionCode` is computed from it and can be overridden with `ANDROID_VERSION_CODE`. Google Play needs native libraries aligned to 16 KB pages: the prebuilt `libnode.so` from nodejs-mobile 18.20.4 is not, so use a build of the `release18-20-4+16kb-fix` branch (see `mobile/fetch-libnode.sh`).
 
 Not available on the phone: Cloudflare Tunnel (needs `cloudflared`), session recording to a file, the in-app updater and Mosh.
 

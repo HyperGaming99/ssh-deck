@@ -101,6 +101,26 @@ function createServer({ db, verify = false, sendMail = async () => {}, allowRegi
       if (!u.verified) throw fail(403, 'E-Mail noch nicht bestätigt', { needsVerification: true });
       return { token: issue(u.id) };
     },
+    // Konto samt aller Daten löschen (Google Play verlangt das). Bestätigung mit E-Mail + Passwort-Beweis wie beim Login, auch ohne Sitzung (Web-Anfrage).
+    // Besitzer eines Teams mit weiteren Mitgliedern müssen das Team zuerst löschen (es gibt keine Übergabe, die Schlüssel gehören den Mitgliedern).
+    'POST /api/account/delete': async (req, b) => {
+      const { email, auth } = credentials(b);
+      if (limited(`d:${ip(req)}:${email}`)) throw fail(429, 'Zu viele Versuche, bitte später erneut');
+      const u = db.prepare('select id, salt, hash from users where email = ?').get(email);
+      const ok = same(hashAuth(auth, u ? u.salt : Buffer.alloc(16)), u ? Buffer.from(u.hash) : Buffer.alloc(32, 1));
+      if (!u || !ok) throw fail(401, 'E-Mail oder Passwort falsch');
+      const owned = db.prepare("select t.id, t.name, (select count(*) from team_members x where x.team_id = t.id) as n from team_members m join teams t on t.id = m.team_id where m.user_id = ? and m.role = 'owner'").all(u.id);
+      const shared = owned.find((t) => t.n > 1);
+      if (shared) throw fail(409, `Du bist Besitzer des Teams „${shared.name}“ mit weiteren Mitgliedern. Lösche das Team zuerst.`);
+      db.exec('begin');
+      try {
+        for (const t of owned) { db.prepare('delete from team_members where team_id = ?').run(t.id); db.prepare('delete from teams where id = ?').run(t.id); }
+        for (const q of ['team_members', 'sessions', 'vault', 'keyvault']) db.prepare(`delete from ${q} where user_id = ?`).run(u.id);
+        db.prepare('delete from users where id = ?').run(u.id);
+        db.exec('commit');
+      } catch (e) { db.exec('rollback'); throw e; }
+      return {};
+    },
     'POST /api/logout': async (req) => {
       db.prepare('delete from sessions where token_hash = ?').run(userOf(req).tokenHash);
       return {};

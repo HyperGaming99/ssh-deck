@@ -496,5 +496,11 @@
  "Befehlsvorschläge": "Підказки команд",
  "Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.": "Підказки під час введення в терміналі: команди цієї сесії, сніппети та поширені команди. Прийняти: Ctrl+Пробіл або дотик.",
  "Snippet": "Сніппет",
- "Häufig": "Поширене"
+ "Häufig": "Поширене",
+ "Konto löschen": "Видалити обліковий запис",
+ "Dein Konto und alle Daten auf dem Sync-Server werden gelöscht (Hosts, Tresor, Cloud-Schlüsselbund, Team-Mitgliedschaften). Die Daten auf diesem Gerät bleiben. Das lässt sich nicht rückgängig machen.": "Ваш обліковий запис і всі дані на сервері синхронізації буде видалено (хости, сховище, хмарна в'язка ключів, членство в командах). Дані на цьому пристрої залишаться. Це неможливо скасувати.",
+ "Passwort zur Bestätigung": "Пароль для підтвердження",
+ "Konto endgültig löschen": "Остаточно видалити обліковий запис",
+ "Nicht angemeldet.": "Вхід не виконано.",
+ "Bitte das Passwort eingeben.": "Введіть пароль."
 }

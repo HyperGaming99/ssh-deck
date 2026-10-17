@@ -496,5 +496,11 @@
  "Befehlsvorschläge": "命令建议",
  "Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.": "在终端输入时给出建议：本会话的命令、代码片段和常用命令。按 Ctrl+空格 或点按即可采用。",
  "Snippet": "片段",
- "Häufig": "常用"
+ "Häufig": "常用",
+ "Konto löschen": "删除账户",
+ "Dein Konto und alle Daten auf dem Sync-Server werden gelöscht (Hosts, Tresor, Cloud-Schlüsselbund, Team-Mitgliedschaften). Die Daten auf diesem Gerät bleiben. Das lässt sich nicht rückgängig machen.": "您的账户及同步服务器上的所有数据（主机、保险库、云钥匙串、团队成员身份）将被删除。此设备上的数据会保留。此操作无法撤销。",
+ "Passwort zur Bestätigung": "确认密码",
+ "Konto endgültig löschen": "永久删除账户",
+ "Nicht angemeldet.": "未登录。",
+ "Bitte das Passwort eingeben.": "请输入密码。"
 }

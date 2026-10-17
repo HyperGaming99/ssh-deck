@@ -496,5 +496,11 @@
  "Befehlsvorschläge": "Sugerencias de comandos",
  "Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.": "Sugerencias al escribir en el terminal: comandos de esta sesión, snippets y comandos habituales. Acepta con Ctrl+Espacio o tocando.",
  "Snippet": "Snippet",
- "Häufig": "Habitual"
+ "Häufig": "Habitual",
+ "Konto löschen": "Eliminar cuenta",
+ "Dein Konto und alle Daten auf dem Sync-Server werden gelöscht (Hosts, Tresor, Cloud-Schlüsselbund, Team-Mitgliedschaften). Die Daten auf diesem Gerät bleiben. Das lässt sich nicht rückgängig machen.": "Tu cuenta y todos los datos del servidor de sincronización se eliminarán (hosts, almacén, llavero en la nube, pertenencias a equipos). Los datos de este dispositivo se conservan. Esta acción no se puede deshacer.",
+ "Passwort zur Bestätigung": "Contraseña para confirmar",
+ "Konto endgültig löschen": "Eliminar cuenta definitivamente",
+ "Nicht angemeldet.": "No has iniciado sesión.",
+ "Bitte das Passwort eingeben.": "Introduce la contraseña."
 }

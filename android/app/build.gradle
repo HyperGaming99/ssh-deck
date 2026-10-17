@@ -1,5 +1,17 @@
 apply plugin: 'com.android.application'
 
+// Version aus package.json: versionName = Version, versionCode = major*1000000 + minor*10000 + patch*100 (+ Build, siehe ANDROID_VERSION_CODE).
+// Für Google Play muss versionCode bei jedem Upload steigen: ANDROID_VERSION_CODE=<Zahl> überschreibt die Berechnung.
+def pkg = new groovy.json.JsonSlurper().parse(file('../../package.json'))
+def semver = (pkg.version =~ /^(\d+)\.(\d+)\.(\d+)/)[0]
+def computedCode = semver[1].toInteger() * 1000000 + semver[2].toInteger() * 10000 + semver[3].toInteger() * 100
+
+// Release-Signierung: ~/Android/ssh-deck-keystore.properties (storeFile, storePassword, keyAlias, keyPassword) oder die Umgebungsvariablen SSHDECK_KEYSTORE, SSHDECK_STORE_PASSWORD, SSHDECK_KEY_ALIAS, SSHDECK_KEY_PASSWORD (CI)
+def ksProps = new Properties()
+def ksFile = file(System.getProperty('user.home') + '/Android/ssh-deck-keystore.properties')
+if (ksFile.exists()) ksFile.withInputStream { ksProps.load(it) }
+def ks = { k, e -> System.getenv(e) ?: ksProps.getProperty(k) }
+
 android {
     namespace = "io.github.hypergaming99.sshdeck"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +19,8 @@ android {
         applicationId "io.github.hypergaming99.sshdeck"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode(((System.getenv('ANDROID_VERSION_CODE') ?: computedCode) as String) as int)
+        versionName pkg.version
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters 'arm64-v8a', 'x86_64' }
         externalNativeBuild { cmake { cppFlags "-std=c++17"; arguments "-DANDROID_STL=c++_shared" } }
@@ -22,8 +34,19 @@ android {
     externalNativeBuild { cmake { path "CMakeLists.txt"; version "3.22.1" } }
     sourceSets { main { jniLibs.srcDirs = ['libnode/bin/'] } }
     packagingOptions { jniLibs { useLegacyPackaging = true } }
+    signingConfigs {
+        release {
+            if (ks('storeFile', 'SSHDECK_KEYSTORE')) {
+                storeFile file(ks('storeFile', 'SSHDECK_KEYSTORE'))
+                storePassword ks('storePassword', 'SSHDECK_STORE_PASSWORD')
+                keyAlias ks('keyAlias', 'SSHDECK_KEY_ALIAS')
+                keyPassword ks('keyPassword', 'SSHDECK_KEY_PASSWORD')
+            }
+        }
+    }
     buildTypes {
         release {
+            if (ks('storeFile', 'SSHDECK_KEYSTORE')) signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

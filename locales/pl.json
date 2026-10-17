@@ -496,5 +496,11 @@
  "Befehlsvorschläge": "Podpowiedzi poleceń",
  "Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.": "Podpowiedzi podczas pisania w terminalu: polecenia z tej sesji, snippety i popularne polecenia. Zatwierdź Ctrl+Spacja lub dotknięciem.",
  "Snippet": "Snippet",
- "Häufig": "Popularne"
+ "Häufig": "Popularne",
+ "Konto löschen": "Usuń konto",
+ "Dein Konto und alle Daten auf dem Sync-Server werden gelöscht (Hosts, Tresor, Cloud-Schlüsselbund, Team-Mitgliedschaften). Die Daten auf diesem Gerät bleiben. Das lässt sich nicht rückgängig machen.": "Twoje konto i wszystkie dane na serwerze synchronizacji zostaną usunięte (hosty, sejf, chmurowy pęk kluczy, członkostwa w zespołach). Dane na tym urządzeniu pozostaną. Tej operacji nie można cofnąć.",
+ "Passwort zur Bestätigung": "Hasło potwierdzające",
+ "Konto endgültig löschen": "Usuń konto na stałe",
+ "Nicht angemeldet.": "Nie zalogowano.",
+ "Bitte das Passwort eingeben.": "Wpisz hasło."
 }

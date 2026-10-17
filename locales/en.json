@@ -496,5 +496,11 @@
  "Befehlsvorschläge": "Command suggestions",
  "Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.": "Suggestions while typing in the terminal: commands of this session, snippets and common commands. Accept with Ctrl+Space or by tapping.",
  "Snippet": "Snippet",
- "Häufig": "Common"
+ "Häufig": "Common",
+ "Konto löschen": "Delete account",
+ "Dein Konto und alle Daten auf dem Sync-Server werden gelöscht (Hosts, Tresor, Cloud-Schlüsselbund, Team-Mitgliedschaften). Die Daten auf diesem Gerät bleiben. Das lässt sich nicht rückgängig machen.": "Your account and all data on the sync server will be deleted (hosts, vault, cloud keychain, team memberships). The data on this device stays. This cannot be undone.",
+ "Passwort zur Bestätigung": "Password to confirm",
+ "Konto endgültig löschen": "Delete account permanently",
+ "Nicht angemeldet.": "Not signed in.",
+ "Bitte das Passwort eingeben.": "Please enter the password."
 }

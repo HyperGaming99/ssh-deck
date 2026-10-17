@@ -448,6 +448,7 @@ function KnownHostsView({ dark, toast, rev }) {
 function SyncView({ st, onLogin, onLogout }) {
   const t = useT();
   const lang = useLang();
+  const [del, setDel] = useState(null); // null = zu, sonst { pw, busy, error }
   if (!st.configured) {
     return (
       <div className="flex max-w-2xl items-start gap-4 rounded-xl border bg-card p-5">
@@ -479,6 +480,25 @@ function SyncView({ st, onLogin, onLogout }) {
       <p className="mt-4 border-t pt-4 text-xs text-muted-foreground">{t('Gesynct werden Hosts (mit Passwörtern), Gruppen, Snippets und Forwarding-Regeln – Ende-zu-Ende verschlüsselt. Private Schlüssel bleiben auf dem Gerät. Der Abgleich läuft automatisch.')}</p>
       <div className="mt-3 flex justify-end">
         <Button variant="ghost" className="text-destructive" onClick={() => { if (confirm(t('Abmelden? Die lokalen Daten bleiben erhalten, der Sync stoppt auf diesem Gerät.'))) { api.sync.logout(); onLogout(); } }}>{t('Abmelden')}</Button>
+      </div>
+      <div className="mt-3 border-t pt-3">
+        {!del ? (
+          <Button variant="ghost" className="text-destructive" onClick={() => setDel({ pw: '' })}>{t('Konto löschen')}</Button>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-sm text-destructive">{t('Dein Konto und alle Daten auf dem Sync-Server werden gelöscht (Hosts, Tresor, Cloud-Schlüsselbund, Team-Mitgliedschaften). Die Daten auf diesem Gerät bleiben. Das lässt sich nicht rückgängig machen.')}</p>
+            <Input type="password" autoComplete="current-password" placeholder={t('Passwort zur Bestätigung')} value={del.pw} onChange={(e) => setDel({ ...del, pw: e.target.value, error: '' })} />
+            {del.error && <p className="text-sm text-destructive">{t(del.error)}</p>}
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setDel(null)}>{t('Abbrechen')}</Button>
+              <Button variant="destructive" disabled={!del.pw || del.busy} onClick={async () => {
+                setDel({ ...del, busy: true });
+                const r = await api.sync.deleteAccount(del.pw);
+                if (r.error) setDel({ ...del, busy: false, error: r.error }); else { setDel(null); onLogout(); }
+              }}>{t('Konto endgültig löschen')}</Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

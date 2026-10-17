@@ -496,5 +496,11 @@
  "Befehlsvorschläge": "Opdrachtsuggesties",
  "Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.": "Suggesties tijdens het typen in de terminal: opdrachten van deze sessie, snippets en veelgebruikte opdrachten. Overnemen met Ctrl+Spatie of door te tikken.",
  "Snippet": "Snippet",
- "Häufig": "Veelgebruikt"
+ "Häufig": "Veelgebruikt",
+ "Konto löschen": "Account verwijderen",
+ "Dein Konto und alle Daten auf dem Sync-Server werden gelöscht (Hosts, Tresor, Cloud-Schlüsselbund, Team-Mitgliedschaften). Die Daten auf diesem Gerät bleiben. Das lässt sich nicht rückgängig machen.": "Je account en alle gegevens op de synchronisatieserver worden verwijderd (hosts, kluis, cloudsleutelhanger, teamlidmaatschappen). De gegevens op dit apparaat blijven. Dit kan niet ongedaan worden gemaakt.",
+ "Passwort zur Bestätigung": "Wachtwoord ter bevestiging",
+ "Konto endgültig löschen": "Account definitief verwijderen",
+ "Nicht angemeldet.": "Niet ingelogd.",
+ "Bitte das Passwort eingeben.": "Voer het wachtwoord in."
 }

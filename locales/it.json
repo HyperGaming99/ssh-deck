@@ -496,5 +496,11 @@
  "Befehlsvorschläge": "Suggerimenti di comandi",
  "Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.": "Suggerimenti durante la digitazione nel terminale: comandi di questa sessione, snippet e comandi comuni. Accetta con Ctrl+Spazio o toccando.",
  "Snippet": "Snippet",
- "Häufig": "Comune"
+ "Häufig": "Comune",
+ "Konto löschen": "Elimina account",
+ "Dein Konto und alle Daten auf dem Sync-Server werden gelöscht (Hosts, Tresor, Cloud-Schlüsselbund, Team-Mitgliedschaften). Die Daten auf diesem Gerät bleiben. Das lässt sich nicht rückgängig machen.": "Il tuo account e tutti i dati sul server di sincronizzazione verranno eliminati (host, archivio, portachiavi cloud, appartenenze ai team). I dati su questo dispositivo restano. L'operazione non può essere annullata.",
+ "Passwort zur Bestätigung": "Password per confermare",
+ "Konto endgültig löschen": "Elimina account definitivamente",
+ "Nicht angemeldet.": "Accesso non effettuato.",
+ "Bitte das Passwort eingeben.": "Inserisci la password."
 }
