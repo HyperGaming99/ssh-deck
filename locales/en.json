@@ -502,5 +502,8 @@
  "Passwort zur Bestätigung": "Password to confirm",
  "Konto endgültig löschen": "Delete account permanently",
  "Nicht angemeldet.": "Not signed in.",
- "Bitte das Passwort eingeben.": "Please enter the password."
+ "Bitte das Passwort eingeben.": "Please enter the password.",
+ "Sync-Server": "Sync server",
+ "Standard": "Default",
+ "Zum Ändern zuerst abmelden.": "Sign out first to change it."
 }

@@ -502,5 +502,8 @@
  "Passwort zur Bestätigung": "確認用パスワード",
  "Konto endgültig löschen": "アカウントを完全に削除",
  "Nicht angemeldet.": "サインインしていません。",
- "Bitte das Passwort eingeben.": "パスワードを入力してください。"
+ "Bitte das Passwort eingeben.": "パスワードを入力してください。",
+ "Sync-Server": "同期サーバー",
+ "Standard": "既定",
+ "Zum Ändern zuerst abmelden.": "変更するには先にサインアウトしてください。"
 }

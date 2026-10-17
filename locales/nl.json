@@ -502,5 +502,8 @@
  "Passwort zur Bestätigung": "Wachtwoord ter bevestiging",
  "Konto endgültig löschen": "Account definitief verwijderen",
  "Nicht angemeldet.": "Niet ingelogd.",
- "Bitte das Passwort eingeben.": "Voer het wachtwoord in."
+ "Bitte das Passwort eingeben.": "Voer het wachtwoord in.",
+ "Sync-Server": "Synchronisatieserver",
+ "Standard": "Standaard",
+ "Zum Ändern zuerst abmelden.": "Meld je eerst af om dit te wijzigen."
 }

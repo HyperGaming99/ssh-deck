@@ -502,5 +502,8 @@
  "Passwort zur Bestätigung": "كلمة المرور للتأكيد",
  "Konto endgültig löschen": "حذف الحساب نهائيًا",
  "Nicht angemeldet.": "لم يتم تسجيل الدخول.",
- "Bitte das Passwort eingeben.": "الرجاء إدخال كلمة المرور."
+ "Bitte das Passwort eingeben.": "الرجاء إدخال كلمة المرور.",
+ "Sync-Server": "خادم المزامنة",
+ "Standard": "الافتراضي",
+ "Zum Ändern zuerst abmelden.": "سجّل الخروج أولًا لتغييره."
 }

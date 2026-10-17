@@ -77,8 +77,10 @@ let settingsFile, syncCfgFile, syncTimer, syncing = false, again = false;
 
 const loadSyncCfg = () => { try { return JSON.parse(fs.readFileSync(syncCfgFile, 'utf8')); } catch { return null; } };
 const saveSyncCfg = (c) => fs.writeFileSync(syncCfgFile, JSON.stringify(c), { mode: 0o600 });
-const DEFAULT_SERVER = process.env.DECK_SERVER || 'http://localhost:8787';
-const syncStatus = () => { const c = loadSyncCfg(); return { configured: !!c, email: c?.email, server: c?.server || DEFAULT_SERVER, ...syncState }; };
+const DEFAULT_SERVER = process.env.DECK_SERVER || 'https://ssh.arolg.dev';
+// Erlaubt: https, außerdem http nur für localhost und .onion (Klartext ins Netz soll nicht aus Versehen passieren)
+const validServer = (url) => /^https:\/\//.test(url) || /^http:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(url) || /^http:\/\/[a-z2-7]{16,56}\.onion(:|\/|$)/.test(url);
+const syncStatus = () => { const c = loadSyncCfg(); return { configured: !!c, email: c?.email, server: c?.server || readSettings().syncServer || DEFAULT_SERVER, defaultServer: DEFAULT_SERVER, ...syncState }; };
 const send = (ch, ...a) => mainWin && !mainWin.isDestroyed() && mainWin.webContents.send(ch, ...a);
 // Tresore: "personal" (Einträge ohne vault) und je Team ein eigener. Jeder Tresor wird für sich gesynct.
 const stores = () => ({ hosts, groups, snippets, forwards, keys, known, overrides });
@@ -599,7 +601,15 @@ app.whenReady().then(() => {
     } catch { return { state: 'down' }; }
   });
   handle('settings:get', () => readSettings());
-  handle('settings:set', (_, patch) => { fs.writeFileSync(settingsFile, JSON.stringify({ ...readSettings(), ...patch })); });
+  handle('settings:set', (_, patch) => {
+    if ('syncServer' in patch) { // eigener Sync-Server; leer = Standard
+      const url = String(patch.syncServer || '').trim().replace(/\/+$/, '');
+      if (url && !validServer(url)) return { error: 'Die Server-Adresse muss mit https:// beginnen.' };
+      patch = { ...patch, syncServer: url };
+    }
+    fs.writeFileSync(settingsFile, JSON.stringify({ ...readSettings(), ...patch }));
+    if ('syncServer' in patch) send('sync:status', syncStatus());
+  });
   handle('update:check', async () => { const u = await checkUpdate(); return u.error ? u : publicUpd(u); });
   let relCache = []; // Veröffentlichungen für die Versionswahl (auch ältere)
   handle('update:list', async () => {
@@ -721,7 +731,7 @@ app.whenReady().then(() => {
   handle('auth:submit', async (_, o) => {
     try {
       const url = String(o.server).trim().replace(/\/+$/, '');
-      if (!/^https:\/\//.test(url) && !/^http:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(url) && !/^http:\/\/[a-z2-7]{16,56}\.onion(:|\/|$)/.test(url)) return { error: 'Die Server-Adresse muss mit https:// beginnen.' };
+      if (!validServer(url)) return { error: 'Die Server-Adresse muss mit https:// beginnen.' };
       const email = String(o.email).trim().toLowerCase();
       if (!email || !o.password) return { error: 'Bitte E-Mail und Passwort eingeben.' };
       if (o.mode === 'register' && o.password.length < 8) return { error: 'Das Passwort braucht mindestens 8 Zeichen.' };
