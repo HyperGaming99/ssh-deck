@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeftRight, Check, ChevronRight, Clock, Activity, Code2, Palette, Plus, Minus } from 'lucide-react';
+import { ArrowLeftRight, Check, ChevronRight, Clock, Activity, Code2, Palette, Plus, Minus, X } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ForwardSheet from '@/components/ForwardSheet';
@@ -46,7 +46,7 @@ function StatusTab({ sid }) {
 }
 
 // Seitenleiste neben dem Terminal: Forwarding dieses Hosts, Snippets, Verlauf, Themes + Schrift
-export default function TermPanel({ sid, hostId, dark, history, themeId, setThemeId, font, setFont, toast, rev }) {
+export default function TermPanel({ sid, hostId, dark, history, themeId, setThemeId, font, setFont, toast, rev, onClose }) {
   const t = useT();
   const [tab, setTab] = useState(() => { try { return localStorage.getItem('termPanelTab') || 'themes'; } catch { return 'themes'; } });
   const [fontOpen, setFontOpen] = useState(false);
@@ -76,6 +76,7 @@ export default function TermPanel({ sid, hostId, dark, history, themeId, setThem
           <button key={id} type="button" title={title} aria-label={title} onClick={() => pick(id)}
             className={cn('grid size-8 place-items-center rounded-lg text-muted-foreground hover:bg-accent', tab === id && 'bg-primary/15 text-primary')}><Icon className="size-4" /></button>
         ))}
+        {onClose && <button type="button" aria-label={t('Schließen')} onClick={onClose} className="mclose ms-auto hidden size-8 place-items-center rounded-lg text-muted-foreground hover:bg-accent"><X className="size-4" /></button>}
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
         {tab === 'themes' && (

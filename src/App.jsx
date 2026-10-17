@@ -821,12 +821,12 @@ export default function App() {
   const store = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
   const [termTheme, setTermTheme] = useState(() => store('termTheme', 'auto'));
   const [font, setFontState] = useState(() => store('termFont', { family: FONTS[0][0], size: mobile ? 12 : 14 }));
-  const [panel, setPanel] = useState(() => store('termPanel', !mobile));
+  const [panel, setPanel] = useState(() => !mobile && store('termPanel', true)); // Handy: Panel startet zu (es liegt über dem Terminal)
   const [history, setHistory] = useState({}); // sid -> eingegebene Befehle (nur im Speicher, nie gespeichert)
   const persist = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* egal */ } };
   const setTheme = (v) => { setTermTheme(v); persist('termTheme', v); };
   const setFont = (v) => { setFontState(v); persist('termFont', v); };
-  const togglePanel = () => { setPanel(!panel); persist('termPanel', !panel); };
+  const togglePanel = () => { setPanel(!panel); if (!mobile) persist('termPanel', !panel); };
   const xtheme = useMemo(() => resolveTheme(termTheme, dark), [termTheme, dark]);
   const onCommand = useCallback((sid, c) => setHistory((h) => ({ ...h, [sid]: [...(h[sid] || []).filter((x) => x !== c), c].slice(-100) })), []);
   const [tabs, setTabs] = useState([]); // { sid, title, kind, panes: [{ sid, conn, attempt, closed }], focus, dir }
@@ -1069,7 +1069,8 @@ export default function App() {
                             onRetry={() => updPane(p.sid, (q) => ({ conn: null, attempt: (q.attempt || 0) + 1 }))} />}</>} />
                         {mobile && <KeyBar sid={fp.sid} />}
                         </Wrap>
-                        {panel && ready && fp.conn && <TermPanel sid={fp.sid} hostId={tab.hostId} dark={dark} history={history[fp.sid] || []} themeId={termTheme} setThemeId={setTheme} font={font} setFont={setFont} toast={toast} rev={rev} />}
+                        {panel && ready && fp.conn && mobile && <div className="fixed inset-0 z-30 bg-black/40" onClick={togglePanel} />}
+                        {panel && ready && fp.conn && <TermPanel onClose={togglePanel} sid={fp.sid} hostId={tab.hostId} dark={dark} history={history[fp.sid] || []} themeId={termTheme} setThemeId={setTheme} font={font} setFont={setFont} toast={toast} rev={rev} />}
                       </div>); })()}
               </div>
             ))}
