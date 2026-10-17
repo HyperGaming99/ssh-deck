@@ -12,7 +12,7 @@ export default function SplitView({ tab, active, theme, font, onCommand, setFocu
   const t = useT();
   const multi = tab.panes.length > 1;
   return (
-    <div className={cn('flex min-w-0 flex-1', tab.dir === 'col' ? 'flex-col' : 'flex-row')}>
+    <div className={cn('msplit flex min-h-0 min-w-0 flex-1', tab.dir === 'col' ? 'flex-col' : 'flex-row')}>
       {tab.panes.map((p) => {
         const on = tab.focus === p.sid;
         return (

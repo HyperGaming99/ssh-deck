@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronLeft, Eye, EyeOff, LayoutGrid, List, Cloud, CloudOff, Fingerprint, Languages, ShieldCheck, Check, FileText, Palette, Settings as SettingsIcon, User, Folder, FolderPlus, Menu, Minus, Square, ArrowLeftRight, Code2, Copy, Star, Download, Ellipsis, FileUp, FolderOpen, KeyRound, Lock, Moon, Pencil, Circle, Plus, RefreshCw, Search, Send, Server, Sun, PanelRight, Terminal as TermIcon, Trash2, Users, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -31,12 +31,16 @@ import { sshCommand, sshConfig } from '@/lib/sshcmd.mjs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { bcast, writers, getPaste, setPaste, startRec, stopRec } from '@/components/Terminal';
 import SplitView, { MAX_PANES, SplitTools } from '@/components/SplitView';
+import KeyBar from '@/components/KeyBar';
 import SftpTab from '@/components/SftpTab';
 import LoginScreen from '@/components/LoginScreen';
 import LanguageSetup from '@/components/LanguageSetup';
 import { I18nContext, LANGS, RTL, T, makeT, useLang, useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { hideSplash } from '@/splash';
+
+const mobile = !!window.api?.mobile; // Android-App: Touch-Layout (CSS: html[data-mobile]); .mhide blendet Desktop-Funktionen dort aus
+const Wrap = mobile ? 'div' : Fragment; // Handy: Terminal und Tastenleiste untereinander
 
 const SECTIONS = [
   ['hosts', T('Hosts'), Server],
@@ -68,14 +72,14 @@ function IconButton({ label, onClick, children }) {
 function Item({ icon, title, sub, onClick, actions, dark, compact }) {
   return (
     <SpotlightCard theme={dark ? 'dark' : 'light'} className="cursor-pointer p-0!" onClick={onClick} style={{ borderRadius: 18 }}>
-      <div className={cn('group relative flex items-center', compact ? 'gap-3 p-3' : 'gap-4 p-5')}>
+      <div className={cn('group relative flex items-center mcard', compact ? 'gap-3 p-3' : 'gap-4 p-5')}>
         <div className={cn('grid shrink-0 place-items-center', compact ? 'size-11 rounded-lg bg-primary/10 text-primary' : 'size-14 rounded-xl bg-secondary [&>img]:size-9 [&>svg]:size-7')}>{icon}</div>
         <div className={cn('min-w-0 flex-1', compact ? 'space-y-0.5' : 'space-y-1')}>
           <div className={cn('truncate font-semibold', compact ? 'text-sm' : 'text-base')}>{title}</div>
           <div className={cn('truncate text-muted-foreground', compact ? 'text-xs' : 'text-sm')}>{sub}</div>
         </div>
         {/* Aktionen schweben über der Karte statt Platz zu belegen: so bleibt der Text voll lesbar */}
-        <div className="absolute end-3 top-1/2 flex -translate-y-1/2 rounded-xl border bg-card/95 p-0.5 opacity-0 shadow-sm backdrop-blur transition-opacity group-hover:opacity-100">{actions}</div>
+        <div className="mact absolute end-3 top-1/2 flex -translate-y-1/2 rounded-xl border bg-card/95 p-0.5 opacity-0 shadow-sm backdrop-blur transition-opacity group-hover:opacity-100">{actions}</div>
       </div>
     </SpotlightCard>
   );
@@ -209,7 +213,7 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
 
   return (
     <>
-      <div className="mb-6 flex gap-3">
+      <div className="mtool mb-6 flex gap-3">
         <div className="relative max-w-md flex-1">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input className="pl-9" placeholder={t('Suchen …')} value={q} onChange={(e) => setQ(e.target.value)} />
@@ -460,7 +464,7 @@ function SyncView({ st, onLogin, onLogout }) {
   const label = { off: t('Nicht verbunden'), syncing: t('Synchronisiere …'), ok: t('Synchronisiert'), error: t('Fehler') }[st.status];
   return (
     <div className="max-w-2xl rounded-xl border bg-card p-5">
-      <div className="flex items-center gap-3">
+      <div className="mrow flex items-center gap-3">
         <span className={cn('grid size-10 place-items-center rounded-lg bg-secondary', st.status === 'error' && 'text-destructive', st.status === 'ok' && 'text-success')}>
           {st.status === 'syncing' ? <RefreshCw className="size-5 animate-spin" /> : st.status === 'error' ? <CloudOff className="size-5" /> : <Check className="size-5" />}
         </span>
@@ -495,7 +499,7 @@ function TorSettings() {
     setRes(r.state === 'ok' ? { ok: true, text: t('Tor-Verbindung funktioniert. Ausgangs-IP: {ip}', { ip: r.ip }) }
       : { text: r.state === 'notor' ? t('Der Proxy antwortet, aber die Verbindung läuft nicht über Tor.') : t('Tor-Proxy nicht erreichbar. Läuft Tor unter {address}?', { address: `${c.host}:${c.port}` }) });
   };
-  const row = 'flex items-center justify-between gap-4 rounded-xl border bg-card p-4';
+  const row = 'mrow flex items-center justify-between gap-4 rounded-xl border bg-card p-4';
   return (
     <>
       <div className={row}>
@@ -508,7 +512,7 @@ function TorSettings() {
       </div>
       <div className="space-y-3 rounded-xl border bg-card p-4">
         <p className="text-sm font-medium">{t('Tor-Proxy (SOCKS5)')}</p>
-        <div className="flex gap-2" dir="ltr">
+        <div className="mrow flex gap-2" dir="ltr">
           <Input className="flex-1 font-mono" aria-label={t('Adresse')} value={c.host} onChange={(e) => save({ host: e.target.value })} />
           <Input className="w-24 font-mono" type="number" min="1" max="65535" aria-label={t('Port')} value={c.port} onChange={(e) => save({ port: +e.target.value })} />
           <Button variant="outline" onClick={test} disabled={busy}>{busy ? t('Bitte warten …') : t('Verbindung testen')}</Button>
@@ -520,16 +524,16 @@ function TorSettings() {
   );
 }
 
-const SETTINGS_TABS = [
+const SETTINGS_TABS = [ // Updates/Editor gibt es nur am Desktop
   ['account', T('Konto & Sync'), User],
   ['appearance', T('Darstellung'), Palette],
   ['language', T('Sprache'), Languages],
   ['privacy', T('Datenschutz'), ShieldCheck],
   ['keychain', T('Cloud-Schlüsselbund'), KeyRound],
   ['teams', T('Teams'), Users],
-  ['updates', T('Updates'), Download],
-  ['files', T('Dateien öffnen'), FileText],
-];
+  ['updates', T('Updates'), Download, true],
+  ['files', T('Dateien öffnen'), FileText, true],
+].filter((x) => !(mobile && x[3]));
 
 // Update-Einstellungen: Version, Prüfen, automatisch prüfen, Quelle, Installieren
 function UpdatesSettings() {
@@ -665,7 +669,7 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
   const pickAnim = (v) => { setAnim(v); applyAnim(v); };
   const [autoRe, setAutoRe] = useState(() => { try { return localStorage.getItem('autoReconnect') !== '0'; } catch { return true; } });
   const pickEditor = (v) => { setEditor(v); api.settings.set({ editor: v }); };
-  const row = 'flex items-center justify-between gap-4 rounded-xl border bg-card p-4';
+  const row = 'mrow flex items-center justify-between gap-4 rounded-xl border bg-card p-4';
   const seg = (opts, value, onChange) => (
     <div className={cn('grid rounded-lg bg-muted p-1 text-sm', opts.length === 3 ? 'grid-cols-3' : 'grid-cols-2')}>
       {opts.map(([v, l, Icon]) => (
@@ -676,7 +680,7 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
     </div>
   );
   return (
-    <div className="flex gap-8">
+    <div className="mset flex gap-8">
       <aside className="w-48 shrink-0 space-y-1">
         {SETTINGS_TABS.map(([id, label, Icon]) => (
           <button key={id} onClick={() => setTab(id)}
@@ -694,7 +698,7 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
               <div><p className="text-sm font-medium">{t('Design')}</p><p className="text-xs text-muted-foreground">{t('Hell oder dunkel')}</p></div>
               {seg([[false, t('Hell'), Sun], [true, t('Dunkel'), Moon]], dark, setDark)}
             </div>
-            <div className={row}>
+            <div className={cn(row, 'mhide')}>
               <div><p className="text-sm font-medium">{t('Seitenleiste')}</p><p className="text-xs text-muted-foreground">{t('Stil der linken Navigation')}</p></div>
               {seg([['compact', t('Kompakt')], ['wide', t('Breit')], ['float', t('Schwebend')]], side, setSide)}
             </div>
@@ -816,8 +820,8 @@ export default function App() {
   const [section, setSection] = useState('hosts');
   const store = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
   const [termTheme, setTermTheme] = useState(() => store('termTheme', 'auto'));
-  const [font, setFontState] = useState(() => store('termFont', { family: FONTS[0][0], size: 14 }));
-  const [panel, setPanel] = useState(() => store('termPanel', true));
+  const [font, setFontState] = useState(() => store('termFont', { family: FONTS[0][0], size: mobile ? 12 : 14 }));
+  const [panel, setPanel] = useState(() => store('termPanel', !mobile));
   const [history, setHistory] = useState({}); // sid -> eingegebene Befehle (nur im Speicher, nie gespeichert)
   const persist = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* egal */ } };
   const setTheme = (v) => { setTermTheme(v); persist('termTheme', v); };
@@ -983,11 +987,11 @@ export default function App() {
     <TooltipProvider delayDuration={300}>
     <VaultCtx.Provider value={vctx}>
       <div className="flex h-full flex-col">
-        <header dir="ltr" className={cn('flex h-12 shrink-0 items-center gap-2 border-b bg-sidebar [-webkit-app-region:drag]', mac ? 'pl-[88px]' : 'pl-2')}>
+        <header dir="ltr" className={cn('mhead flex h-12 shrink-0 items-center gap-2 border-b bg-sidebar [-webkit-app-region:drag]', mac ? 'pl-[88px]' : 'pl-2')}>
           {gate && <Logo className="ml-2 h-6 w-[19px]" />}
-          {!gate && <div className="flex min-w-0 items-center gap-1.5 [-webkit-app-region:no-drag]">
-            <Button variant="ghost" size="icon" className="size-8 shrink-0" onClick={() => setNavOpen(!navOpen)} aria-label={t('Navigation')}><Menu className="size-4" /></Button>
-            <Logo className="mx-1 h-6 w-[19px] shrink-0" />
+          {!gate && <div className="mtabs flex min-w-0 items-center gap-1.5 [-webkit-app-region:no-drag]">
+            <Button variant="ghost" size="icon" className="mhide size-8 shrink-0" onClick={() => setNavOpen(!navOpen)} aria-label={t('Navigation')}><Menu className="size-4" /></Button>
+            <Logo className="mhide mx-1 h-6 w-[19px] shrink-0" />
             <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto [scrollbar-width:none]">
               <VaultSwitcher vaults={vaults} vault={activeV.id} setVault={setVault} signedIn={!!st?.configured}
                 onNew={() => setForm({ title: t('Neues Team'), fields: [{ name: 'name', label: t('Name'), required: true }], submitLabel: t('Team erstellen'), onSubmit: async (v) => { const r = await api.team.create(v.name); if (r.error) return toast(r.error); await refreshTeams(); setVault(r.id); } })}
@@ -1006,12 +1010,12 @@ export default function App() {
           <div className="ml-auto flex h-full items-center [-webkit-app-region:no-drag]">
             {bc.on && <span className="mr-2 rounded-md bg-orange-500 px-2 py-1 text-xs font-semibold text-white">{t('Broadcast an {n}', { n: bcTargets.length })}</span>}
             {tabs.find((x) => x.sid === active && x.panes) && <SplitTools tab={tabs.find((x) => x.sid === active)} split={split} bc={bc} setBc={setBc} sessions={sessions} />}
-            {tabs.find((x) => x.sid === active && (x.kind === 'ssh' || !x.kind)) && (() => { const tb = tabs.find((x) => x.sid === active); const on = recs[tb.focus || tb.panes[0].sid]; return <Button variant="ghost" size="icon" className={cn('mr-1 size-8', on && 'text-red-500')} onClick={() => toggleRec(tb)} aria-label={on ? t('Aufzeichnung beenden') : t('Aufzeichnen')} title={on ? t('Aufzeichnung beenden') : t('Aufzeichnen')}><Circle className={cn('size-4', on && 'fill-current')} /></Button>; })()}
+            {tabs.find((x) => x.sid === active && (x.kind === 'ssh' || !x.kind)) && (() => { const tb = tabs.find((x) => x.sid === active); const on = recs[tb.focus || tb.panes[0].sid]; return <Button variant="ghost" size="icon" className={cn('mhide mr-1 size-8', on && 'text-red-500')} onClick={() => toggleRec(tb)} aria-label={on ? t('Aufzeichnung beenden') : t('Aufzeichnen')} title={on ? t('Aufzeichnung beenden') : t('Aufzeichnen')}><Circle className={cn('size-4', on && 'fill-current')} /></Button>; })()}
             {tabs.find((x) => x.sid === active && (x.kind === 'ssh' || !x.kind)) && <Button variant="ghost" size="icon" className={cn('mr-1 size-8', panel && 'text-primary')} onClick={togglePanel} aria-label={t('Seitenleiste ein-/ausblenden')}><PanelRight className="size-4" /></Button>}
             <Button variant="ghost" size="icon" className="mr-1 size-8" onClick={() => setDark(!dark)} aria-label={t('Theme wechseln')}>
               {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
             </Button>
-            {!mac && <>
+            {!mac && !mobile && <>
             <button className="grid h-full w-11 place-items-center text-muted-foreground hover:bg-accent" onClick={api.win.minimize} aria-label={t('Minimieren')}><Minus className="size-4" /></button>
             <button className="grid h-full w-11 place-items-center text-muted-foreground hover:bg-accent" onClick={api.win.toggleMax} aria-label={t('Maximieren')}><Square className="size-3.5" /></button>
             <button className="grid h-full w-11 place-items-center text-muted-foreground hover:bg-destructive hover:text-white" onClick={api.win.close} aria-label={t('Schließen')}><X className="size-4" /></button>
@@ -1020,9 +1024,9 @@ export default function App() {
         </header>
 
         {upd && !gate && <UpdateBanner upd={upd} onClose={() => setUpd(null)} />}
-        {st === null ? <div className="flex-1" /> : lang === null ? <LanguageSetup onPick={setLang} /> : gate ? <LoginScreen status={st} dark={dark} onSkip={() => chooseSkip(true)} /> : <div className="flex min-h-0 flex-1">
-        {navOpen && !termActive && (
-          <nav className={cn('flex shrink-0 flex-col gap-1 py-3', side === 'wide' ? 'w-56 items-stretch border-r bg-sidebar px-3' : 'items-stretch px-2',
+        {st === null ? <div className="flex-1" /> : lang === null ? <LanguageSetup onPick={setLang} /> : gate ? <LoginScreen status={st} dark={dark} onSkip={() => chooseSkip(true)} /> : <div className="mroot flex min-h-0 flex-1">
+        {(navOpen || mobile) && !termActive && (
+          <nav className={cn('mnav flex shrink-0 flex-col gap-1 py-3', side === 'wide' ? 'w-56 items-stretch border-r bg-sidebar px-3' : 'items-stretch px-2',
             side === 'compact' && 'w-[84px] border-r bg-sidebar', side === 'float' && 'm-2 mr-0 w-[92px] rounded-2xl border bg-card shadow-sm')}>
             {SECTIONS.map(([id, label, Icon]) => {
               const on = active === 'home' && section === id;
@@ -1030,7 +1034,7 @@ export default function App() {
                 <button key={id} style={id === 'settings' ? { marginTop: 'auto' } : undefined} onClick={() => { setSection(id); setActive('home'); }}
                   className={cn('relative flex rounded-lg text-muted-foreground transition-colors hover:bg-accent',
                     side === 'wide' ? 'flex-row items-center gap-3 px-3 py-2 text-sm' : 'flex-col items-center gap-1 px-1 py-2 text-[10px] leading-none', on && 'bg-accent text-foreground')}>
-                  {on && <span className="absolute inset-y-2 -left-1 w-0.5 rounded-full bg-primary" />}
+                  {on && <span className="mhide absolute inset-y-2 -left-1 w-0.5 rounded-full bg-primary" />}
                   <Icon className={side === 'wide' ? 'size-4' : 'size-5'} />{t(label)}
                 </button>
               );
@@ -1040,7 +1044,7 @@ export default function App() {
 
         <main className={cn('flex min-w-0 flex-1 flex-col', bc.on && 'ring-4 ring-inset ring-orange-500')}>
           <div className="relative min-h-0 flex-1">
-            <div className={cn('absolute inset-0 overflow-auto p-8', active !== 'home' && 'hidden')}>
+            <div className={cn('mpad absolute inset-0 overflow-auto p-8', active !== 'home' && 'hidden')}>
               <h1 className="mb-6 text-2xl font-semibold">
                 <ShinyText text={t(SECTIONS.find(([id]) => id === section)[1])} color={dark ? '#8a8a8a' : '#52525b'} shineColor={dark ? '#ffffff' : '#2563eb'} speed={4} />
               </h1>
@@ -1057,11 +1061,14 @@ export default function App() {
                     ? <SftpTab sid={tab.sid} hostId={tab.hostId} toast={toast} openForm={setForm} />
                     : (() => { const fp = tab.panes.find((p) => p.sid === tab.focus) || tab.panes[0]; const ready = fp.conn?.state === 'ready' || !fp.conn; return (
                       <div className="flex size-full">
+                        <Wrap {...(mobile && { className: 'flex min-h-0 min-w-0 flex-1 flex-col' })}>
                         <SplitView tab={tab} active={active === tab.sid} theme={xtheme} font={font} onCommand={onCommand} setFocus={(sid) => setFocus(tab.sid, sid)} closePane={(sid) => closePane(tab.sid, sid)}
                           overlay={(p) => <>{p.lost && !p.conn && <ReconnectBar key={p.tries || 0} tries={p.tries || 0} onNow={() => reconnect(p.sid)} onCancel={() => updPane(p.sid, () => ({ lost: false, closed: true }))} />}{p.conn && p.conn.state !== 'ready' && <ConnectScreen conn={p.conn} onClose={() => (tab.panes.length > 1 ? closePane(tab.sid, p.sid) : closeTab(tab.sid))}
                             onAnswer={(a) => { api.answer(p.sid, a); updPane(p.sid, (q) => ({ conn: { ...q.conn, state: 'connecting' } })); }}
                             onEdit={() => editHost(tab.hostId)}
                             onRetry={() => updPane(p.sid, (q) => ({ conn: null, attempt: (q.attempt || 0) + 1 }))} />}</>} />
+                        {mobile && <KeyBar sid={fp.sid} />}
+                        </Wrap>
                         {panel && ready && fp.conn && <TermPanel sid={fp.sid} hostId={tab.hostId} dark={dark} history={history[fp.sid] || []} themeId={termTheme} setThemeId={setTheme} font={font} setFont={setFont} toast={toast} rev={rev} />}
                       </div>); })()}
               </div>

@@ -70,7 +70,7 @@ export default function TermPanel({ sid, hostId, dark, history, themeId, setThem
   const Row = ({ onClick, children }) => <button type="button" onClick={onClick} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-start text-sm hover:bg-accent">{children}</button>;
 
   return (
-    <aside className="flex w-[300px] shrink-0 flex-col overflow-hidden border-s bg-sidebar">
+    <aside className="mpanel flex w-[300px] shrink-0 flex-col overflow-hidden border-s bg-sidebar">
       <div className="flex gap-1 p-3">
         {TABS.map(([id, title, Icon]) => (
           <button key={id} type="button" title={title} aria-label={title} onClick={() => pick(id)}

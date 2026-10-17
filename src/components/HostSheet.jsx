@@ -154,7 +154,7 @@ export default function HostSheet({ spec, onClose }) {
                     <SelectContent>
                       <SelectItem value="__none">{t('Direkt (oder Tor, falls aktiv)')}</SelectItem>
                       <SelectItem value="proxy">{t('Proxy-Kette (SOCKS)')}</SelectItem>
-                      <SelectItem value="cloudflared">Cloudflare Tunnel</SelectItem>
+                      <SelectItem value="cloudflared" className="mhide">Cloudflare Tunnel</SelectItem>
                     </SelectContent>
                   </Select>
                 </Field>

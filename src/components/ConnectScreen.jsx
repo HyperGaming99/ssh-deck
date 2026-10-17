@@ -19,7 +19,7 @@ export default function ConnectScreen({ conn, onAnswer, onClose, onEdit, onRetry
   const k = hk && conn.ask, changed = hk && !!k.old;
   const Fp = ({ label, value }) => <div className="space-y-1">{label && <p className="text-xs text-muted-foreground">{label}</p>}<p dir="ltr" className="break-all font-mono text-sm">{value}</p></div>;
   return (
-    <div className="absolute inset-0 z-10 flex justify-center overflow-y-auto bg-background pt-[120px]">
+    <div className="mconn absolute inset-0 z-10 flex justify-center overflow-y-auto bg-background pt-[120px]">
       <div className="w-[396px] space-y-6 pb-10">
         <div className="flex items-center gap-3">
           <div className="grid size-10 place-items-center rounded-xl bg-primary/15 [&>img]:size-6">{info.icon || info.autoIcon ? <HostIcon slug={info.icon || info.autoIcon} /> : <Server className="size-5 text-primary" />}</div>

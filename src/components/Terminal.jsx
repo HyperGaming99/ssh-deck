@@ -15,6 +15,19 @@ export const writers = new Map();
 // Broadcast: Eingabe des fokussierten Terminals geht zusätzlich an diese Sessions (leer = aus)
 export const bcast = { to: [] };
 
+// Einrastende Strg/Alt-Tasten der Handy-Leiste (KeyBar): gelten für die nächste getippte Taste
+export const mods = { ctrl: false, alt: false, ls: new Set() };
+export const setMod = (k, v) => { mods[k] = v; mods.ls.forEach((f) => f()); };
+const withMods = (d) => {
+  if (!mods.ctrl && !mods.alt) return d;
+  if (d.length === 1) {
+    if (mods.ctrl) { const c = d.toUpperCase().charCodeAt(0); if (c >= 64 && c <= 95) d = String.fromCharCode(c - 64); else if (d === ' ') d = '\0'; }
+    if (mods.alt) d = '\x1b' + d;
+  }
+  setMod('ctrl', false); setMod('alt', false);
+  return d;
+};
+
 // Offene xterm-Instanzen (für Größe der Aufzeichnung) und laufende Aufzeichnungen sid -> { t0, size, ev }
 const terms = new Map();
 const recs = new Map();
@@ -84,6 +97,7 @@ export default function Terminal({ sid, hostId, active, theme, font, attempt = 0
     const onCtx = (e) => { e.preventDefault(); term.focus(); if (term.hasSelection()) { copy(); term.clearSelection(); } else paste(); };
     el.addEventListener('contextmenu', onCtx);
     term.onData((d) => {
+      d = withMods(d);
       api.input(sid, d);
       for (const o of bcast.to) if (o !== sid) api.input(o, d);
       if (d === '\r') { if (line.trim() && !SECRET_PROMPT.test(tail.split('\n').pop())) onCommand?.(sid, line.trim()); line = ''; }
