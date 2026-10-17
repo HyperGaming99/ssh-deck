@@ -268,8 +268,9 @@ assert(f1.fav === true && f1.lastUsed > 0, 'fav/lastUsed gesetzt');
 const upd = JSON.parse(fs.readFileSync(file, 'utf8')).find((x) => x.id === fid).updatedAt;
 s.touch(fid);
 assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).find((x) => x.id === fid).updatedAt, upd, 'touch löst keinen Sync aus');
+const lu = s.list().find((x) => x.id === fid).lastUsed; // nach dem zweiten touch
 s.save({ id: fid, name: 'f2', host: 'h', user: 'u' }); // ohne fav/lastUsed
-assert(s.list().find((x) => x.id === fid).fav && s.list().find((x) => x.id === fid).lastUsed === f1.lastUsed, 'überleben save');
+assert(s.list().find((x) => x.id === fid).fav && s.list().find((x) => x.id === fid).lastUsed === lu, 'überleben save');
 s.save({ id: fid, name: 'f2', host: 'h', user: 'u', fav: false });
 assert.equal(s.list().find((x) => x.id === fid).fav, false);
 
