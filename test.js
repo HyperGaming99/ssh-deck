@@ -98,6 +98,15 @@ const listen = (opts) => new Promise((res) => { const srv = createServer({ db: o
   await assert.rejects(new sync.Backend({ url }).login('a@x.de', kBad.auth), /falsch/);
   await assert.rejects(new sync.Backend({ url }).login('niemand@x.de', kA.auth), /falsch/);
   await assert.rejects(new sync.Backend({ url, token: 'nope' }).getVault(), (e) => e.status === 401);
+  { // Info-Seiten aus PAGES_DIR; fehlende Seite = 404, kein Zugriff außerhalb der Liste
+    const pd = fs.mkdtempSync(path.join(os.tmpdir(), 'pages-')); fs.writeFileSync(path.join(pd, 'privacy.html'), '<p>Mail: {{CONTACT_EMAIL}}</p>');
+    const sp = await listen({ pagesDir: pd, contactEmail: 'a<b>@x.de' });
+    const r = await fetch(sp.url + '/privacy'); const h = await r.text();
+    assert.equal(r.status, 200); assert(/text\/html/.test(r.headers.get('content-type'))); assert(h.includes('a&lt;b&gt;@x.de'), 'E-Mail wird escaped eingesetzt');
+    assert.equal((await fetch(sp.url + '/delete-account')).status, 404, 'Seite ohne Datei');
+    assert.equal((await fetch(sp.url + '/../../etc/passwd')).status, 404);
+    sp.srv.close();
+  }
   { // Konto löschen: falsches Passwort, Team-Besitzer mit Mitgliedern blockiert, dann alles weg
     const db2 = openDb(':memory:'); const s2 = await listen({ db: db2 }); const bk = () => new sync.Backend({ url: s2.url });
     const kD = sync.deriveKeys('d@x.de', 'pw-d'), kE = sync.deriveKeys('e@x.de', 'pw-e');
