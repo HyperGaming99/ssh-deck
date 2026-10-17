@@ -5,6 +5,23 @@ const os = require('os');
 const path = require('path');
 const { hosts, plain, keys } = require('./store');
 const keyTools = require('./keys');
+const serverStats = require('./serverstats');
+{
+  const out = '0.50 0.40 0.30 1/200 999\n---\n4\n---\nMemTotal:       8000000 kB\nMemFree: 1 kB\nMemAvailable:   2000000 kB\n---\nFilesystem 1024-blocks Used Available Capacity Mounted on\n/dev/sda1 10000000 4000000 6000000 40% /\n---\n90061.5 1000.0\n';
+  const r = serverStats.parse(out);
+  assert.deepEqual(r.load, [0.5, 0.4, 0.3]);
+  assert.equal(r.cores, 4);
+  assert.equal(r.memUsed, 6000000 * 1024);
+  assert.equal(r.diskPct, 40);
+  assert.equal(r.uptime, 90061.5);
+  assert.equal(serverStats.parse('Darwin'), null, 'kein Linux -> null');
+  assert.equal(serverStats.parse(''), null);
+}
+import('./src/lib/snippetVars.mjs').then(({ vars, fill }) => {
+  assert.deepEqual(vars('echo {{a}} {{ b:x y }} {{a:z}}'), [{ name: 'a', def: '' }, { name: 'b', def: 'x y ' }]);
+  assert.equal(fill('ls {{d:/tmp}} {{d}} {{n}}', { d: '/v' }), 'ls /v /v ');
+  assert.deepEqual(vars('ls -la'), []);
+}).catch((e) => { console.error(e); process.exit(1); });
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'deck-'));
 const file = path.join(dir, 'hosts.json');
 const s = hosts(file, { encrypt: (x) => 'ENC:' + x, decrypt: (x) => x.slice(4) });

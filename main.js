@@ -11,6 +11,7 @@ const keyTools = require('./keys');
 const sftpTools = require('./sftp');
 const editors = require('./editors');
 const { osIcon } = require('./osicon');
+const serverStats = require('./serverstats');
 const syncTools = require('./sync');
 const torTools = require('./tor');
 const knownTools = require('./known');
@@ -872,6 +873,19 @@ app.whenReady().then(() => {
   localOp('open', (p, cmd) => launch(p, cmd));
   localOp('remove', (p) => shell.trashItem(p)); // Papierkorb statt endgültig löschen
   ipcMain.on('ssh:open', (_, sid, id, cols, rows) => { const h = hosts.get(id); if (h) connect(win, sid, h, cols, rows); });
+  // Server-Status über einen eigenen exec-Kanal der bestehenden Verbindung (nicht das Terminal)
+  ipcMain.handle('stats:get', (_, sid) => new Promise((res) => {
+    const conn = sessions.get(sid)?.conn;
+    if (!conn) return res(null);
+    const timer = setTimeout(() => res(null), 4000);
+    const end = (v) => { clearTimeout(timer); res(v); };
+    conn.exec(serverStats.CMD, (err, stream) => {
+      if (err) return end(null);
+      let out = '';
+      stream.on('data', (d) => { if (out.length < 65536) out += d; }).on('close', () => end(serverStats.parse(out)));
+      stream.stderr.resume();
+    });
+  }));
   ipcMain.on('ssh:input', (_, sid, d) => sessions.get(sid)?.stream?.write(d));
   ipcMain.on('cred:answer', (_, id, a) => { credAsks.get(id)?.(a); credAsks.delete(id); });
   ipcMain.on('ssh:answer', (_, sid, a) => { pending.get(sid)?.(a); pending.delete(sid); });
