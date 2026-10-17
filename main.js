@@ -9,10 +9,14 @@ const os = require('os');
 const { hosts: makeHosts, keys: makeKeys, plain } = require('./store');
 const keyTools = require('./keys');
 const sftpTools = require('./sftp');
+const jumpTools = require('./jump');
+const telnetTools = require('./telnet');
 const editors = require('./editors');
 const { osIcon } = require('./osicon');
+const serverStats = require('./serverstats');
 const syncTools = require('./sync');
 const torTools = require('./tor');
+const transportTools = require('./transport');
 const knownTools = require('./known');
 const importerTools = require('./importers');
 const { createAuth } = require('./auth');
@@ -38,13 +42,23 @@ const readSettings = () => { try { return JSON.parse(fs.readFileSync(settingsFil
 // Kein Rückfall auf direkt: ist Tor an und nicht erreichbar, schlägt die Verbindung fehl. Lokale/private Ziele gehen direkt.
 const torCfg = () => { const s = readSettings().tor || {}; return { sync: !!s.sync, servers: !!s.servers, host: s.host || '127.0.0.1', port: +s.port || 9050 }; };
 
-// SSH-Verbindung; mit Tor über SOCKS5 (Hostname geht unaufgelöst an Tor)
-function sshConnect(conn, cfg) {
+// Verbindungsweg zu host:port: Cloudflare Tunnel, sonst Proxy-Kette (Tor davor, wenn für Server aktiv); null = direkt
+async function dialVia(host, port, tp = {}) {
+  if (tp.cf) return transportTools.cloudflared(host);
   const tor = torCfg();
-  if (!tor.servers || torTools.isPrivateHost(cfg.host)) return conn.connect(cfg);
-  torTools.socksSocket(tor, cfg.host, cfg.port)
-    .then((sock) => conn.connect({ ...cfg, sock }))
-    .catch((e) => conn.emit('error', new Error(`Tor: ${e.message}`)));
+  const chain = [...(tor.servers && !torTools.isPrivateHost(host) ? [{ host: tor.host, port: tor.port, type: 5 }] : []), ...transportTools.parseProxies(tp.proxies)];
+  return chain.length ? transportTools.chainSocket(chain, host, port) : null;
+}
+const transportOf = (h) => ({ cf: h.via === 'cloudflared', proxies: h.via === 'proxy' ? h.proxies : '' });
+
+// SSH-Verbindung; über Tor/Proxy-Kette/Cloudflare Tunnel (Hostname geht unaufgelöst an den Proxy)
+function sshConnect(conn, cfg, sock) {
+  if (sock) return conn.connect({ ...cfg, sock }); // Kanal durch einen Jump-Host
+  const { transport: tp, ...c } = cfg;
+  if (!tp?.cf && !tp?.proxies && !(torCfg().servers && !torTools.isPrivateHost(c.host))) return conn.connect(c);
+  dialVia(c.host, c.port, tp)
+    .then((s) => conn.connect(s ? { ...c, sock: s } : c))
+    .catch((e) => conn.emit('error', new Error(`Proxy: ${e.message}`)));
 }
 
 // HTTP über Tor: eigene Sitzung mit festem SOCKS5-Proxy (Chromium löst Hostnamen beim Proxy auf)
@@ -63,8 +77,10 @@ let settingsFile, syncCfgFile, syncTimer, syncing = false, again = false;
 
 const loadSyncCfg = () => { try { return JSON.parse(fs.readFileSync(syncCfgFile, 'utf8')); } catch { return null; } };
 const saveSyncCfg = (c) => fs.writeFileSync(syncCfgFile, JSON.stringify(c), { mode: 0o600 });
-const DEFAULT_SERVER = process.env.DECK_SERVER || 'http://localhost:8787';
-const syncStatus = () => { const c = loadSyncCfg(); return { configured: !!c, email: c?.email, server: c?.server || DEFAULT_SERVER, ...syncState }; };
+const DEFAULT_SERVER = process.env.DECK_SERVER || 'https://ssh.arolg.dev';
+// Erlaubt: https, außerdem http nur für localhost und .onion (Klartext ins Netz soll nicht aus Versehen passieren)
+const validServer = (url) => /^https:\/\//.test(url) || /^http:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(url) || /^http:\/\/[a-z2-7]{16,56}\.onion(:|\/|$)/.test(url);
+const syncStatus = () => { const c = loadSyncCfg(); return { configured: !!c, email: c?.email, server: c?.server || readSettings().syncServer || DEFAULT_SERVER, defaultServer: DEFAULT_SERVER, ...syncState }; };
 const send = (ch, ...a) => mainWin && !mainWin.isDestroyed() && mainWin.webContents.send(ch, ...a);
 // Tresore: "personal" (Einträge ohne vault) und je Team ein eigener. Jeder Tresor wird für sich gesynct.
 const stores = () => ({ hosts, groups, snippets, forwards, keys, known, overrides });
@@ -104,7 +120,7 @@ const kcCtx = () => {
 const kcErr = (e) => {
   if (e.code === 'SK') return 'Geheimschlüssel ungültig';
   if (e.code === 'WRONG') return 'Passwort oder Geheimschlüssel falsch';
-  if (e.message === 'fetch failed') return 'Server nicht erreichbar.';
+  if (/decrypting the ciphertext|fetch failed/.test(e.message)) return syncMsg(e);
   if (e.status === 404 && e.message === 'Nicht gefunden') return 'Der Server kennt noch keinen Cloud-Schlüsselbund. Bitte den Server aktualisieren.';
   return e.status ? e.message : 'Aktion fehlgeschlagen';
 };
@@ -145,6 +161,10 @@ async function syncTeams(ctx) {
   return errors.join(' · ');
 }
 
+// Lesbarer Fehlertext statt der rohen Electron-/Netzwerkmeldung
+const syncMsg = (e) => /decrypting the ciphertext/.test(e.message) ? 'Gespeicherte Anmeldedaten lassen sich nicht entschlüsseln (Schlüsselbund des Systems geändert). Bitte abmelden und neu anmelden.'
+  : /fetch failed/.test(e.message) ? 'Server nicht erreichbar.' : e.message;
+
 async function runSync() {
   const c = loadSyncCfg();
   if (!c) return;
@@ -156,8 +176,8 @@ async function runSync() {
     const cloud = new syncTools.Backend({ url: c.server, token: crypt.decrypt(c.token) }, backendOpts(c.server));
     await syncTools.syncOnce({ cloud, key: Buffer.from(crypt.decrypt(c.key), 'base64'), local: { get: snapshot, set: applySnapshot } });
     syncState.status = 'ok'; syncState.lastSync = Date.now();
-    try { const ctx = teamCtx(); await ctx.api.setPubkey(ctx.ident.pub); syncState.teamError = await syncTeams(ctx); } catch (e) { syncState.teamError = e.message === 'fetch failed' ? 'Server nicht erreichbar.' : e.message; }
-    try { syncState.keychainError = await syncKeychain(kcCtx()); } catch (e) { syncState.keychainError = e.message; }
+    try { const ctx = teamCtx(); await ctx.api.setPubkey(ctx.ident.pub); syncState.teamError = await syncTeams(ctx); } catch (e) { syncState.teamError = syncMsg(e); }
+    try { syncState.keychainError = await syncKeychain(kcCtx()); } catch (e) { syncState.keychainError = syncMsg(e); }
     if (allSig() !== before) send('hosts:changed'); // andere Geräte haben etwas geändert
   } catch (e) {
     if (e.status === 401) { // Sitzung ungültig: zurück zum Login
@@ -165,7 +185,7 @@ async function runSync() {
       syncState.status = 'off'; syncState.error = 'Sitzung abgelaufen – bitte neu anmelden.';
     } else {
       syncState.status = 'error';
-      syncState.error = e.message === 'Unsupported state or unable to authenticate data' ? 'Die Cloud-Daten lassen sich mit diesem Passwort nicht entschlüsseln.' : /fetch failed/.test(e.message) ? 'Server nicht erreichbar.' : e.message;
+      syncState.error = e.message === 'Unsupported state or unable to authenticate data' ? 'Die Cloud-Daten lassen sich mit diesem Passwort nicht entschlüsseln.' : syncMsg(e);
     }
   }
   syncing = false;
@@ -212,7 +232,7 @@ function verifyHostKey(host, port, blob, ask) {
 // auth (aus withAuth): Anmeldung wird dynamisch verhandelt; ohne auth werden die gespeicherten Zugangsdaten direkt benutzt
 function sshConfig(h, auth) {
   // hostVerifier mit 2 Argumenten ist asynchron; bei Fehler/Ablehnung wird die Verbindung abgebrochen
-  const cfg = { host: h.host, port: h.port, username: h.user, readyTimeout: 120000,
+  const cfg = { host: h.host, port: h.port, transport: transportOf(h), username: h.user, readyTimeout: 120000, keepaliveInterval: 15000, keepaliveCountMax: 3,
     hostVerifier: (key, cb) => verifyHostKey(h.host, h.port, key, auth?.hostAsk).then(cb, () => cb(false)) };
   if (auth) return { ...cfg, authHandler: auth.authHandler, tryKeyboard: true };
   const k = h.keyId && keys.get(h.keyId);
@@ -258,7 +278,7 @@ function installKey(k, h) {
       if (err) { conn.end(); return resolve(err.message); }
       stream.on('close', (code) => { conn.end(); resolve(code === 0 ? null : `Befehl endete mit Code ${code}`); }).resume();
     })).on('error', (e) => resolve(e.message));
-    sshConnect(conn, sshConfig(h));
+    sshConnectJump(conn, h, sshConfig(h), dialogAsk(h.name), () => {}, false);
   });
 }
 
@@ -335,11 +355,59 @@ const credAsks = new Map();
 let credSeq = 0;
 const dialogAsk = (name) => (kind, extra) => new Promise((res) => { const id = ++credSeq; credAsks.set(id, res); send('cred:ask', { id, kind, name, ...extra }); });
 
+// ---- Jump-Hosts: Verbindung zu h über eine Kette von SSH-Hosts (forwardOut), Host-Key-Prüfung und Anmeldung wie bei jedem Hop ----
+// Beendet die Verbindung samt aller Zwischenverbindungen
+const endAll = (conn) => { conn.closed = true; conn.end(); (conn.jumps || []).forEach((c) => c.end()); };
+// Baut die Hops auf und liefert den Kanal zu h.host:h.port. Zwischenverbindungen hängen an conn.jumps. Wirft bei Abbruch/Fehler (dann sind alle Hops zu).
+async function viaJumps(conn, h, ask, log, inline) {
+  const hops = jumpTools.chain((id) => hosts.get(id), h);
+  conn.jumps = [];
+  let sock;
+  try {
+    for (let i = 0; i < hops.length; i++) {
+      const done = await completeCreds(hops[i], ask);
+      if (!done || conn.closed) throw new Error('Abgebrochen');
+      const hop = done.h, c = new Client();
+      conn.jumps.push(c);
+      log(`Connecting via jump host "${hop.name}" (${hop.host}:${hop.port})`);
+      const auth = withAuth(c, hop, ask, log, inline);
+      await new Promise((res, rej) => { c.once('ready', res).once('error', rej); sshConnect(c, sshConfig(hop, auth), sock); });
+      c.on('error', () => {}); // spätere Fehler beendet der Zielkanal
+      auth.persist();
+      const next = hops[i + 1] || h;
+      sock = await new Promise((res, rej) => c.forwardOut('127.0.0.1', 0, next.host, next.port, (e, s) => (e ? rej(e) : res(s))));
+    }
+  } catch (e) {
+    conn.jumps.forEach((c) => c.end());
+    throw e;
+  }
+  return sock;
+}
+// Wie sshConnect, aber mit Jump-Hosts falls h.jumpId gesetzt ist; Fehler kommen als 'error' an conn
+function sshConnectJump(conn, h, cfg, ask, log, inline) {
+  if (!h.jumpId) return sshConnect(conn, cfg);
+  viaJumps(conn, h, ask, log, inline)
+    .then((sock) => {
+      if (conn.closed) return conn.jumps.forEach((c) => c.end());
+      for (const ev of ['close', 'error']) conn.once(ev, () => conn.jumps.forEach((c) => c.end()));
+      sshConnect(conn, cfg, sock);
+    })
+    .catch((e) => conn.emit('error', e));
+}
+// TCP-Verbindung für Telnet: über Jump-Hosts, Tor oder direkt
+async function dialTcp(conn, h, ask, log) {
+  if (h.jumpId) return viaJumps(conn, h, ask, log, true);
+  const via = await dialVia(h.host, h.port, transportOf(h));
+  if (via) return via;
+  return new Promise((res, rej) => { const s = net.connect(h.port, h.host); s.once('connect', () => res(s)).once('error', rej); });
+}
+
 // Verbindungsaufbau mit Protokoll: die Oberfläche bekommt je Schritt ssh:status { state: connecting|ask|failed|ready, log, ask? }.
 // Fehlen Benutzer oder Passwort/Schlüssel am Host, fragt die Oberfläche beim Verbinden nach (ssh:answer).
 const pending = new Map(); // sid -> resolve(Antwort | null)
 function connect(win, sid, h, cols, rows) {
-  const conn = new Client();
+  const telnet = h.protocol === 'telnet';
+  const conn = telnet ? { end() { this.sock?.destroy(); } } : new Client(); // Telnet hat keine ssh2-Verbindung, nur Socket (conn.sock)
   const logs = [];
   const info = { name: h.name, host: h.host, port: h.port, icon: h.icon, autoIcon: h.autoIcon };
   const send = (ch, ...a) => !win.isDestroyed() && win.webContents.send(ch, sid, ...a);
@@ -349,14 +417,29 @@ function connect(win, sid, h, cols, rows) {
   const fail = (m) => { logs.push(`Connection failed: ${m}`); status('failed'); };
   const ask = (kind, extra) => new Promise((res) => { pending.set(sid, res); status('ask', { ask: { kind, ...extra } }); });
   sessions.set(sid, { conn });
+  let shell = false; // Shell lief schon: ein Ende ohne Nutzer-Aktion ist ein Verbindungsabbruch
   (async () => {
     h = { ...h };
     log(`Starting a new connection to: "${h.host}" port "${h.port}"`);
     const tor = torCfg();
-    if (tor.servers && !torTools.isPrivateHost(h.host)) log(`Routing through Tor (${tor.host}:${tor.port})`);
+    if (h.jumpId) log('Routing through jump host(s)'); // Auflösung und Tor übernimmt der erste Jump-Host
+    else if (tor.servers && !torTools.isPrivateHost(h.host)) log(`Routing through Tor (${tor.host}:${tor.port})`);
     else if (!net.isIP(h.host)) {
       log(`Starting address resolution of "${h.host}"`);
       try { log(`Address resolved to ${(await dns.promises.lookup(h.host)).address}`); } catch (e) { return fail(`Address resolution finished with error: ${e.message}`); }
+    }
+    if (telnet) { // Anmeldung läuft im Terminal selbst
+      log('Warning: Telnet is unencrypted');
+      let sock;
+      try { sock = await dialTcp(conn, h, ask, log); } catch (e) { return stale() ? undefined : fail(e.message); }
+      if (stale()) { sock.destroy(); return endAll(conn); }
+      conn.sock = sock;
+      const stream = telnetTools.session(sock, { cols, rows });
+      sessions.set(sid, { conn, stream });
+      status('ready');
+      stream.on('data', (d) => send('ssh:data', d.toString('utf8')));
+      stream.on('close', () => { endAll(conn); if (!stale()) { sessions.delete(sid); send('ssh:closed'); } });
+      return;
     }
     const done = await completeCreds(h, ask);
     if (!done) return;
@@ -372,12 +455,14 @@ function connect(win, sid, h, cols, rows) {
       conn.shell({ term: 'xterm-256color', cols, rows }, (err, stream) => {
         if (err) return fail(err.message);
         sessions.set(sid, { conn, stream });
+        shell = true;
         status('ready');
         stream.on('data', (d) => send('ssh:data', d.toString('utf8')));
-        stream.on('close', () => { conn.end(); sessions.delete(sid); send('ssh:closed'); });
+        stream.on('close', () => { if (!shell) return; shell = false; endAll(conn); sessions.delete(sid); send('ssh:closed'); });
       });
-    }).on('error', (e) => fail(e.message));
-    sshConnect(conn, sshConfig(h, auth));
+    }).on('error', (e) => { if (!shell) fail(e.message); }) // nach dem Start folgt 'close' (z. B. Keepalive-Timeout)
+      .on('close', () => { if (shell && !stale()) { shell = false; sessions.delete(sid); send('ssh:lost'); } });
+    sshConnectJump(conn, h, sshConfig(h, auth), ask, log, true);
   })();
 }
 
@@ -414,6 +499,7 @@ function startForward(r) {
   r = normFwd(r);
   const found = hosts.get(r.hostId);
   if (!found) return Promise.reject(new Error('Host nicht gefunden'));
+  if (found.protocol === 'telnet') return Promise.reject(new Error('Forwarding gibt es nicht für Telnet.'));
   return completeCreds(found, dialogAsk(found.name)).then((done) => new Promise((resolve, reject) => {
     if (!done) return reject(new Error('Abgebrochen'));
     const h = done.h;
@@ -435,12 +521,12 @@ function startForward(r) {
       server.on('error', (e) => { conn.end(); reject(e); });
       server.listen(+r.bindPort, r.bindAddr || '127.0.0.1', () => live({ server }));
     }).on('error', reject);
-    sshConnect(conn, sshConfig(h, auth));
+    sshConnectJump(conn, h, sshConfig(h, auth), dialogAsk(h.name), () => {}, false);
   }));
 }
 function stopForward(id) {
   const f = running.get(id);
-  if (f) { f.server?.close(); f.conn.end(); running.delete(id); }
+  if (f) { f.server?.close(); endAll(f.conn); running.delete(id); }
 }
 
 // ---- Auto-Update ---------------------------------------------------------------------------------------
@@ -465,7 +551,7 @@ async function checkUpdate() {
   const cur = curVersion(), c = updCfg();
   try {
     const l = await updater.latest({ repo: c.repo, url: c.url, channel: c.channel, fetch: updFetch });
-    updInfo = { current: cur, latest: l.version, channel: c.channel, prerelease: l.prerelease, available: updater.isNewer(l.version, cur), notes: l.notes, page: l.page, tarball: l.tarball, canInstall: !app.isPackaged };
+    updInfo = { current: cur, latest: l.version, channel: c.channel, prerelease: l.prerelease, available: updater.available(l.version, cur, l.prerelease), notes: l.notes, page: l.page, tarball: l.tarball, canInstall: !app.isPackaged };
   } catch (e) { return { current: cur, error: updErr(e) }; }
   if (updInfo.available) send('update:available', { latest: updInfo.latest, canInstall: updInfo.canInstall });
   return updInfo;
@@ -515,16 +601,31 @@ app.whenReady().then(() => {
     } catch { return { state: 'down' }; }
   });
   handle('settings:get', () => readSettings());
-  handle('settings:set', (_, patch) => { fs.writeFileSync(settingsFile, JSON.stringify({ ...readSettings(), ...patch })); });
+  handle('settings:set', (_, patch) => {
+    if ('syncServer' in patch) { // eigener Sync-Server; leer = Standard
+      const url = String(patch.syncServer || '').trim().replace(/\/+$/, '');
+      if (url && !validServer(url)) return { error: 'Die Server-Adresse muss mit https:// beginnen.' };
+      patch = { ...patch, syncServer: url };
+    }
+    fs.writeFileSync(settingsFile, JSON.stringify({ ...readSettings(), ...patch }));
+    if ('syncServer' in patch) send('sync:status', syncStatus());
+  });
   handle('update:check', async () => { const u = await checkUpdate(); return u.error ? u : publicUpd(u); });
-  handle('update:openPage', () => { const u = updInfo; if (u && /^https:\/\/github\.com\//.test(u.page)) shell.openExternal(u.page); });
-  handle('update:install', async () => {
+  let relCache = []; // Veröffentlichungen für die Versionswahl (auch ältere)
+  handle('update:list', async () => {
+    try { relCache = await updater.releases({ repo: updCfg().repo, fetch: updFetch }); } catch (e) { return { error: updErr(e) }; }
+    return { current: curVersion(), list: relCache.map(({ tarball, ...r }) => r) };
+  });
+  const pickRelease = (ver) => (ver ? relCache.find((r) => r.version === ver) : updInfo && updInfo.available && { version: updInfo.latest, tarball: updInfo.tarball, page: updInfo.page });
+  handle('update:openPage', (_, ver) => { const u = pickRelease(ver) || updInfo; if (u && /^https:\/\/github\.com\//.test(u.page)) shell.openExternal(u.page); });
+  handle('update:install', async (_, ver) => {
     if (app.isPackaged) return { error: 'Update fehlgeschlagen' }; // installierte Pakete aktualisiert die Release-Seite
-    if (!updInfo || !updInfo.available || updBusy) return { error: 'Update fehlgeschlagen' };
+    const pick = pickRelease(ver);
+    if (!pick || updBusy) return { error: 'Update fehlgeschlagen' };
     updBusy = true;
     try {
-      const base = await updater.install({ tarball: updInfo.tarball, dir: __dirname, fetch: updFetch, onStep: (step) => send('update:step', step) });
-      fs.writeFileSync(installedFile(), JSON.stringify({ version: updInfo.latest, base })); // merkt sich z. B. den Dev-Build
+      const base = await updater.install({ tarball: pick.tarball, dir: __dirname, fetch: updFetch, onStep: (step) => send('update:step', step) });
+      fs.writeFileSync(installedFile(), JSON.stringify({ version: pick.version, base })); // merkt sich z. B. den Dev-Build
     }
     catch (e) { updBusy = false; return { error: updErr(e) }; }
     setTimeout(() => { app.relaunch(); app.exit(0); }, 600);
@@ -532,15 +633,16 @@ app.whenReady().then(() => {
   });
   if (updCfg().auto) { setTimeout(checkUpdate, 8000); setInterval(() => updCfg().auto && checkUpdate(), 6 * 36e5); }
   // ---- Teams: Rückgabe { ... } oder { error } ----
-  const teamErr = (e) => (e.message === 'fetch failed' ? 'Server nicht erreichbar.' : e.status === 404 && e.message === 'Nicht gefunden' ? 'Der Server kennt noch keine Teams. Bitte den Server aktualisieren.' : e.status ? e.message : 'Team-Aktion fehlgeschlagen');
+  const teamErr = (e) => (/decrypting the ciphertext|fetch failed/.test(e.message) ? syncMsg(e) : e.status === 404 && e.message === 'Nicht gefunden' ? 'Der Server kennt noch keine Teams. Bitte den Server aktualisieren.' : e.status ? e.message : 'Team-Aktion fehlgeschlagen');
   const teamKey = async (ctx, id) => { if (!teamKeys.has(id)) await refreshTeams(ctx); const k = teamKeys.get(id); if (!k) throw Object.assign(new Error('Schlüssel fehlt'), { status: 400 }); return k; };
   const teamDo = (fn, { sync = true } = {}) => async (_, ...a) => {
-    const ctx = teamCtx();
-    if (!ctx) return { error: 'Nicht angemeldet' };
-    try { const r = await fn(ctx, ...a); if (sync) { send('teams:changed'); scheduleSync(); } return r ?? {}; } catch (e) { return { error: teamErr(e) }; }
+    try {
+      const ctx = teamCtx();
+      if (!ctx) return { error: 'Nicht angemeldet' };
+      const r = await fn(ctx, ...a); if (sync) { send('teams:changed'); scheduleSync(); } return r ?? {}; } catch (e) { return { error: teamErr(e) }; }
   };
   ipcMain.handle('team:list', async () => {
-    const ctx = teamCtx();
+    let ctx; try { ctx = teamCtx(); } catch (e) { return { teams: loadTeams(), error: teamErr(e) }; } // z. B. Schlüsselbund des Systems geändert
     if (!ctx) return { teams: loadTeams(), signedOut: true };
     try { await ctx.api.setPubkey(ctx.ident.pub); return { teams: await refreshTeams(ctx) }; } catch (e) { return { teams: loadTeams(), error: teamErr(e) }; }
   });
@@ -558,14 +660,17 @@ app.whenReady().then(() => {
   }));
   ipcMain.handle('team:delete', teamDo(async (ctx, id) => { await ctx.api.remove(id); await refreshTeams(ctx); send('hosts:changed'); }));
   // ---- Cloud-Schlüsselbund: Rückgabe { ... } oder { error } ----
-  const kcDo = (fn) => async (_, ...a) => { const ctx = kcCtx(); if (!ctx) return { error: 'Nicht angemeldet' }; try { return (await fn(ctx, ...a)) ?? {}; } catch (e) { return { error: kcErr(e) }; } };
+  const kcDo = (fn) => async (_, ...a) => { try { const ctx = kcCtx(); if (!ctx) return { error: 'Nicht angemeldet' }; return (await fn(ctx, ...a)) ?? {}; } catch (e) { return { error: kcErr(e) }; } };
   const kcPassword = (ctx, password) => { if (!syncTools.deriveKeys(ctx.c.email, String(password || '')).enc.equals(ctx.enc)) throw Object.assign(new Error('Passwort falsch'), { status: 400 }); };
   const kcStore = (vk, sk) => kcSave({ vk: crypt.encrypt(vk.toString('base64')), sk: crypt.encrypt(sk), tomb: [] });
   ipcMain.handle('kc:status', async () => {
-    const ctx = kcCtx(), cfg = kcLoad();
+    let ctx, cfg;
+    try { ctx = kcCtx(); cfg = kcLoad(); } catch (e) { return { signedIn: true, error: syncMsg(e) }; } // z. B. Schlüsselbund des Systems geändert
     if (!ctx) return { signedIn: false };
-    let remote = false; try { remote = !!(await ctx.api.request('GET', 'keyvault')).vault; } catch { /* Server alt oder offline */ }
-    return { signedIn: true, enabled: !!cfg.vk, remote, keys: keys.raw().filter((k) => k.cloud && !k.deleted).length };
+    const keysN = keys.raw().filter((k) => k.cloud && !k.deleted).length;
+    let remote = false;
+    try { remote = !!(await ctx.api.request('GET', 'keyvault')).vault; } catch (e) { if (!e.status) return { signedIn: true, enabled: !!cfg.vk, keys: keysN, error: syncMsg(e) }; /* Server alt */ }
+    return { signedIn: true, enabled: !!cfg.vk, remote, keys: keysN };
   });
   ipcMain.handle('kc:enable', kcDo(async (ctx, password) => {
     kcPassword(ctx, password);
@@ -599,16 +704,34 @@ app.whenReady().then(() => {
   handle('sync:now', () => { runSync(); });
   handle('sync:logout', async () => {
     const c = loadSyncCfg();
-    if (c) await new syncTools.Backend({ url: c.server, token: crypt.decrypt(c.token) }, backendOpts(c.server)).logout().catch(() => {}); // Sitzung auch serverseitig beenden
+    // Sitzung auch serverseitig beenden – aber nie am Server oder am Schlüsselbund scheitern: Abmelden muss immer gehen
+    if (c) await Promise.race([
+      (async () => new syncTools.Backend({ url: c.server, token: crypt.decrypt(c.token) }, backendOpts(c.server)).logout())().catch(() => {}),
+      new Promise((r) => setTimeout(r, 4000)),
+    ]);
     fs.rmSync(syncCfgFile, { force: true });
     Object.assign(syncState, { status: 'off', lastSync: null, error: '' });
     send('sync:status', syncStatus());
+  });
+  // Konto auf dem Server löschen (mit Passwort bestätigt) und danach lokal abmelden; die Daten auf diesem Gerät bleiben. Rückgabe: { ok } | { error }
+  handle('sync:deleteAccount', async (_, password) => {
+    const c = loadSyncCfg();
+    if (!c) return { error: 'Nicht angemeldet.' };
+    if (!password) return { error: 'Bitte das Passwort eingeben.' };
+    try {
+      await new syncTools.Backend({ url: c.server }, backendOpts(c.server)).deleteAccount(c.email, syncTools.deriveKeys(c.email, password).auth);
+    } catch (e) { return { error: /fetch failed/.test(e.message) ? 'Server nicht erreichbar.' : e.message }; }
+    fs.rmSync(syncCfgFile, { force: true });
+    try { clearCloudFlags(); kcSave({}); fs.rmSync(teamsFile, { force: true }); } catch { /* lokal egal */ }
+    Object.assign(syncState, { status: 'off', lastSync: null, error: '' });
+    send('sync:status', syncStatus());
+    return { ok: true };
   });
   // Anmelden / Registrieren / Code bestätigen. Rückgabe: { ok } | { needsCode } | { error }
   handle('auth:submit', async (_, o) => {
     try {
       const url = String(o.server).trim().replace(/\/+$/, '');
-      if (!/^https:\/\//.test(url) && !/^http:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(url) && !/^http:\/\/[a-z2-7]{16,56}\.onion(:|\/|$)/.test(url)) return { error: 'Die Server-Adresse muss mit https:// beginnen.' };
+      if (!validServer(url)) return { error: 'Die Server-Adresse muss mit https:// beginnen.' };
       const email = String(o.email).trim().toLowerCase();
       if (!email || !o.password) return { error: 'Bitte E-Mail und Passwort eingeben.' };
       if (o.mode === 'register' && o.password.length < 8) return { error: 'Das Passwort braucht mindestens 8 Zeichen.' };
@@ -633,6 +756,8 @@ app.whenReady().then(() => {
   handle('hosts:list', () => hosts.list());
   handle('hosts:get', (_, id) => { const h = hosts.get(id); return h && { ...h, secret: undefined, hasSecret: !!h.secret }; });
   const vOf = (r) => (r && r.vault) || 'personal';
+  // mögliche Jump-Hosts für Host id: gleicher Tresor, keine Schleife, Tiefe höchstens 3
+  handle('hosts:jumpCandidates', (_, id, vault = 'personal') => jumpTools.candidates(hosts.list().filter((x) => vOf(x) === vault), id).map(({ id, name, host }) => ({ id, name, host })));
   const ensureGroup = (name, vault) => { if (name && !groups.list().some((g) => g.name === name && vOf(g) === vault)) groups.save({ name, ...(vault !== 'personal' && { vault }) }); };
   // Wechselt ein Host den Tresor, entsteht er im neuen Tresor neu (neue id) und der alte bekommt einen Löschmarker; sonst würden zwei Tresore dieselbe id beanspruchen.
   handle('hosts:save', (_, h) => {
@@ -651,12 +776,18 @@ app.whenReady().then(() => {
     if (!h) return { error: 'Host nicht gefunden' };
     const same = vOf(h) === vault;
     ensureGroup(h.group, vault);
-    const nid = hosts.save({ name: name || h.name, group: h.group, host: h.host, port: h.port, user: h.user, keyPath: h.keyPath, keyId: same ? h.keyId : '', icon: h.icon, tags: h.tags, secret: h.secret || undefined, ...(vault !== 'personal' && { vault }) });
+    const nid = hosts.save({ name: name || h.name, group: h.group, host: h.host, port: h.port, protocol: h.protocol, via: h.via, proxies: h.proxies, jumpId: same ? h.jumpId : '', user: h.user, keyPath: h.keyPath, keyId: same ? h.keyId : '', icon: h.icon, tags: h.tags, secret: h.secret || undefined, ...(vault !== 'personal' && { vault }) });
     if (move) hosts.remove(id);
     return { id: nid, keyDropped: !!h.keyId && !same };
   });
   handle('override:get', (_, id) => { const o = ownAccess(id); return { keyId: o.keyId || '', user: o.user || '' }; });
   handle('override:set', (_, id, o) => { overrides.save({ id, keyId: o?.keyId || '', user: String(o?.user || '').trim() }); });
+  // Text über den Speichern-Dialog ablegen (SSH-Config-Export); Rückgabe null oder Fehlertext
+  handle('saveText', async (_, name, text) => {
+    const { filePath } = await dialog.showSaveDialog(win, { defaultPath: name });
+    if (!filePath) return null;
+    try { fs.writeFileSync(filePath, text); return null; } catch (e) { return e.message; }
+  });
   handle('hosts:remove', (_, id) => hosts.remove(id));
   // Gruppen: Rückgabe null oder Fehlertext. Namen sind je Tresor eindeutig.
   const reGroup = (from, to, vault) => hosts.list().filter((h) => h.group === from && vOf(h) === vault).forEach((h) => hosts.save({ ...h, group: to }));
@@ -810,6 +941,7 @@ app.whenReady().then(() => {
   handle('sftp:open', async (_, sid, hostId) => {
     const found = hosts.get(hostId);
     if (!found) return { error: 'Host nicht gefunden' };
+    if (found.protocol === 'telnet') return { error: 'SFTP gibt es nicht für Telnet.' };
     const done = await completeCreds(found, dialogAsk(found.name));
     if (!done) return { error: 'Abgebrochen' };
     const h = done.h;
@@ -822,7 +954,7 @@ app.whenReady().then(() => {
       sftps.set(sid, { conn, sftp });
       resolve({ data: null });
     })).on('error', (e) => resolve({ error: e.message }));
-    sshConnect(conn, sshConfig(h, auth));
+    sshConnectJump(conn, h, sshConfig(h, auth), dialogAsk(h.name), () => {}, false);
     });
   });
   const sftpOp = (name, fn) => handle(`sftp:${name}`, async (_, sid, ...a) => {
@@ -836,7 +968,7 @@ app.whenReady().then(() => {
   sftpOp('remove', sftpTools.remove);
   sftpOp('upload', sftpTools.upload);
   sftpOp('download', sftpTools.download);
-  ipcMain.on('sftp:close', (_, sid) => { stopEdits(sid); sftps.get(sid)?.conn.end(); sftps.delete(sid); });
+  ipcMain.on('sftp:close', (_, sid) => { stopEdits(sid); const s = sftps.get(sid); if (s) endAll(s.conn); sftps.delete(sid); });
   handle('sftp:edit', async (_, sid, p, cmd) => { try { await editRemote(win, sid, p, cmd); return { data: null }; } catch (e) { return { error: e.message }; } });
   handle('editors:list', () => editors.detect().map(({ cmd, name }) => ({ cmd, name })));
   handle('sftp:copy', async (_, a, pa, b, db) => {
@@ -852,12 +984,31 @@ app.whenReady().then(() => {
   localOp('rename', (a, b) => fs.renameSync(a, b));
   localOp('open', (p, cmd) => launch(p, cmd));
   localOp('remove', (p) => shell.trashItem(p)); // Papierkorb statt endgültig löschen
-  ipcMain.on('ssh:open', (_, sid, id, cols, rows) => { const h = hosts.get(id); if (h) connect(win, sid, h, cols, rows); });
+  ipcMain.on('ssh:open', (_, sid, id, cols, rows) => { const h = hosts.get(id); if (h) hosts.touch(id); if (h) connect(win, sid, h, cols, rows); });
+  // Server-Status über einen eigenen exec-Kanal der bestehenden Verbindung (nicht das Terminal)
+  ipcMain.handle('stats:get', (_, sid) => new Promise((res) => {
+    const conn = sessions.get(sid)?.conn;
+    if (!conn) return res(null);
+    const timer = setTimeout(() => res(null), 4000);
+    const end = (v) => { clearTimeout(timer); res(v); };
+    conn.exec(serverStats.CMD, (err, stream) => {
+      if (err) return end(null);
+      let out = '';
+      stream.on('data', (d) => { if (out.length < 65536) out += d; }).on('close', () => end(serverStats.parse(out)));
+      stream.stderr.resume();
+    });
+  }));
+  ipcMain.handle('rec:save', async (_, text, name) => { // Aufzeichnung (asciicast v2) speichern
+    const { filePath } = await dialog.showSaveDialog(win, { defaultPath: `${name}.cast`, filters: [{ name: 'asciicast', extensions: ['cast'] }] });
+    if (!filePath) return null;
+    fs.writeFileSync(filePath, text);
+    return filePath;
+  });
   ipcMain.on('ssh:input', (_, sid, d) => sessions.get(sid)?.stream?.write(d));
   ipcMain.on('cred:answer', (_, id, a) => { credAsks.get(id)?.(a); credAsks.delete(id); });
   ipcMain.on('ssh:answer', (_, sid, a) => { pending.get(sid)?.(a); pending.delete(sid); });
   ipcMain.on('ssh:resize', (_, sid, cols, rows) => sessions.get(sid)?.stream?.setWindow(rows, cols, 0, 0));
-  ipcMain.on('ssh:close', (_, sid) => { pending.get(sid)?.(null); pending.delete(sid); sessions.get(sid)?.conn.end(); sessions.delete(sid); });
+  ipcMain.on('ssh:close', (_, sid) => { pending.get(sid)?.(null); pending.delete(sid); const s = sessions.get(sid); if (s) endAll(s.conn); sessions.delete(sid); });
 });
 
 app.whenReady().then(() => {

@@ -26,6 +26,8 @@ function cmp(a, b) {
   return 0;
 }
 const isNewer = (a, b) => cmp(a, b) > 0;
+// Verfügbar? Eine Quellcode-Installation trägt nur die Basis "0.1.4" (Entwicklung auf dem Weg zu 0.1.4); gibt es dazu erst Dev-Builds, sind die neuer
+const available = (latest, cur, prerelease) => isNewer(latest, cur) || (prerelease && !split(cur).pre && cmp(latest.replace(/-.*/, ''), cur) === 0);
 
 // { version, tarball, notes, page } der neuesten Veröffentlichung; Fehler: NOTFOUND | NET
 async function latest({ repo, url, channel = 'stable', fetch = globalThis.fetch }) {
@@ -45,6 +47,22 @@ async function latest({ repo, url, channel = 'stable', fetch = globalThis.fetch 
   if (!/^\d+\.\d+/.test(version)) throw err('NOTFOUND');
   const asset = (j.assets || []).find((a) => /\.(tar\.gz|tgz)$/i.test(a.name));
   return { version, prerelease: !!j.prerelease, tarball: (asset && asset.browser_download_url) || j.tarball_url || j.tarball || '', notes: j.body || '', page: j.html_url || '' };
+}
+
+// Alle Veröffentlichungen (stabil und Dev), neueste zuerst: zum gezielten Wechseln auf eine andere, auch ältere Version
+async function releases({ repo, fetch = globalThis.fetch }) {
+  if (!(repo && /^[\w.-]+\/[\w.-]+$/.test(repo))) throw err('NOTFOUND');
+  let r;
+  try { r = await fetch(`https://api.github.com/repos/${repo}/releases?per_page=50`, { headers: { accept: 'application/vnd.github+json', 'user-agent': 'ssh-deck' } }); } catch { throw err('NET'); }
+  if (r.status === 404) throw err('NOTFOUND');
+  if (!r.ok) throw err('NET');
+  const j = await r.json();
+  const ver = (x) => String(x.tag_name || '').replace(/^v/i, '');
+  return (Array.isArray(j) ? j : []).filter((x) => !x.draft && /^\d+\.\d+/.test(ver(x))).sort((a, b) => cmp(ver(b), ver(a)))
+    .map((x) => {
+      const asset = (x.assets || []).find((a) => /\.(tar\.gz|tgz)$/i.test(a.name));
+      return { version: ver(x), prerelease: !!x.prerelease, tarball: (asset && asset.browser_download_url) || x.tarball_url || '', page: x.html_url || '' };
+    });
 }
 
 const run = (cmd, args, cwd) => new Promise((resolve, reject) => {
@@ -88,4 +106,4 @@ async function install({ tarball, dir, fetch = globalThis.fetch, exec = run, onS
     return pkg.version;
   } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }
-module.exports = { latest, install, isNewer, cmp };
+module.exports = { latest, releases, install, isNewer, available, cmp };

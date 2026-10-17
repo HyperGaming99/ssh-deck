@@ -60,7 +60,7 @@ export default function ForwardSheet({ spec, onClose }) {
   const hostField = (
     <Select value={v.hostId ?? ''} onValueChange={(x) => set('hostId', x)}>
       <SelectTrigger><SelectValue placeholder={t('Auswählen …')} /></SelectTrigger>
-      <SelectContent>{spec.hosts.map((h) => <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>)}</SelectContent>
+      <SelectContent>{spec.hosts.filter((h) => h.protocol !== 'telnet').map((h) => <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>)}</SelectContent>
     </Select>
   );
   const destFields = (

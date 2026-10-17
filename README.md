@@ -6,18 +6,18 @@
 
 <p align="center">
   <b>An SSH client for people who live in the terminal.</b><br>
-  Tabs, ten terminal themes, SFTP with drag &amp; drop, keychain, port forwarding, end-to-end encrypted sync, optional Tor. 16 languages.
+  Tabs and split panes, ten terminal themes, SFTP with drag &amp; drop, keychain, port forwarding, jump hosts, proxy chains, end-to-end encrypted sync, optional Tor. Desktop and Android. 16 languages.
 </p>
 
 <p align="center">
   <a href="https://github.com/HyperGaming99/ssh-deck/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/HyperGaming99/ssh-deck?label=release"></a>
   <a href="https://github.com/HyperGaming99/ssh-deck/actions/workflows/release.yml"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/HyperGaming99/ssh-deck/release.yml?branch=main&label=build"></a>
-  <img alt="Platforms" src="https://img.shields.io/badge/platforms-Linux%20%7C%20Windows%20%7C%20macOS-5b6cff">
+  <img alt="Platforms" src="https://img.shields.io/badge/platforms-Linux%20%7C%20Windows%20%7C%20macOS%20%7C%20Android-5b6cff">
 </p>
 
 <p align="center">
   <a href="docs/trailer.mp4"><img src="docs/trailer-poster.jpg" alt="Watch the trailer" width="760"></a><br>
-  <sub>▶ Watch the 54-second trailer · <a href="#about-the-trailer">how it is made</a></sub>
+  <sub>▶ Watch the 64-second trailer · <a href="#about-the-trailer">how it is made</a></sub>
 </p>
 
 ## What is SSH Deck?
@@ -29,13 +29,18 @@ SSH Deck is a desktop app (Electron + React) to connect to your servers. You kee
 ## Features
 
 **Terminal**
-- Tabs, a side panel next to every session with **snippets**, **command history** and **port forwarding**
+- Tabs, **split panes** (up to four per tab) and **broadcast**: type once, send to several sessions
+- A side panel next to every session with **snippets** (with `{{placeholders}}` that are asked for when you run them), **command history**, **port forwarding** and a **server status** tab (load, memory, disk, uptime)
+- **Command suggestions** while you type (commands of the session, your snippets and common commands; accept with <kbd>Ctrl</kbd>+<kbd>Space</kbd> or by tapping; the history stays in memory only), **search** in the output (<kbd>Ctrl</kbd>+<kbd>F</kbd>), **automatic reconnect** after a dropped connection (keepalive, countdown, backoff), and **session recording** to an asciicast `.cast` file
 - **Ten terminal themes** (Dracula, Nord, Tokyo Night, One Dark, Gruvbox, Monokai, Solarized, …) that recolor the whole window; bundled monospace fonts with live size preview
 - Connection screen with a live log, host key check right in the tab, and **smart login**: it asks only for what the server needs (username, password, key from your keychain, one-time code)
 
 **Hosts**
-- Groups, tags, search, OS icons that are detected automatically
+- Groups, tags, search, **favorites** and a *recently used* section, OS icons that are detected automatically
 - Import from `~/.ssh/config`, CSV, PuTTY, MobaXterm and SecureCRT; quick connect with <kbd>Ctrl</kbd>+<kbd>K</kbd>
+- **Copy the `ssh` command** of a host or **export hosts as `~/.ssh/config`** entries (no passwords)
+
+**Connection routes** – per host: **jump hosts** (chains of up to three, also for SFTP and forwarding), **proxy chains** (SOCKS4/SOCKS5 one after another, like proxychains; Tor goes first when it is on), **Cloudflare Tunnel** (needs `cloudflared` on your computer) and **Telnet** for old devices
 
 **SFTP** – two panes, drag &amp; drop, server to server, open with your editor and upload edits automatically
 
@@ -45,9 +50,9 @@ SSH Deck is a desktop app (Electron + React) to connect to your servers. You kee
 
 **Teams** – shared vaults for hosts (with passwords), snippets, forwarding rules and SSH keys. Switch between *Personal* and team vaults in the title bar; owners and admins invite people by email and give them a role (admin, member, viewer). Everything is end-to-end encrypted, removing a member renews the team key, and every member's key fingerprint is shown so invitations can be verified in person. Needs the cloud-sync server (`node server/server.js`) and an account.
 
-**Privacy &amp; sync** – optional cloud sync with end-to-end encryption (the server stores only ciphertext), secrets encrypted with the OS keystore, **Tor routing** for sync and/or servers
+**Privacy &amp; sync** – optional cloud sync with end-to-end encryption (the server stores only ciphertext), **delete your account and its data** from the app, secrets encrypted with the OS keystore, **Tor routing** for sync and/or servers
 
-**More** – 16 languages (incl. right-to-left), light and dark UI, in-app updater
+**More** – 16 languages (incl. right-to-left), light and dark UI, in-app updater, **Android app** (see below)
 
 ## Screenshots
 
@@ -59,6 +64,17 @@ SSH Deck is a desktop app (Electron + React) to connect to your servers. You kee
 | Light themes work too | SFTP, drag &amp; drop between panes and servers |
 | ![Keychain](docs/keychain.jpg) | ![Languages](docs/languages.jpg) |
 | Keychain with masked fingerprints | 16 languages |
+| ![Teams](docs/teams.jpg) | ![Team vaults](docs/vaults.jpg) |
+| Teams with roles and verifiable key fingerprints | Switch between *Personal* and team vaults in the title bar |
+| ![Cloud keychain](docs/cloud-keychain.jpg) | ![Port forwarding](docs/forwarding.jpg) |
+| Cloud keychain, end-to-end encrypted | Port forwarding with a guided wizard |
+
+**Android**
+
+| | | | |
+|---|---|---|---|
+| ![Hosts on Android](docs/android-hosts.jpg) | ![Terminal on Android](docs/android-terminal.jpg) | ![Command suggestions on Android](docs/android-suggestions.jpg) | ![SFTP on Android](docs/android-sftp.jpg) |
+| Hosts and groups | Terminal with key bar | Command suggestions | SFTP |
 
 ## Install
 
@@ -74,6 +90,21 @@ File names look like `ssh-deck-<version>-<last commit>-<system>-<architecture>.<
 
 > The installers are **not code-signed yet**: Windows SmartScreen and macOS Gatekeeper will warn on the first start (macOS: right-click → Open).
 
+### Android (preview)
+
+The Android app uses the same interface and the same code as the desktop app: Node.js runs inside the app ([nodejs-mobile](https://github.com/nodejs-mobile/nodejs-mobile)) and talks to a [Capacitor](https://capacitorjs.com) shell. On the phone you get a bottom navigation bar, a key bar for <kbd>Esc</kbd>, <kbd>Tab</kbd>, <kbd>Ctrl</kbd>, <kbd>Alt</kbd> and the arrow keys, and the terminal side panel as an overlay. Sync, teams and the keychain work as on the desktop. The key that protects your secrets is wrapped by the **Android Keystore**; it never lies on the disk in plain form, and Android's auto backup is turned off for the app.
+
+There are no store builds or signed releases yet. To try it, build it yourself (JDK 21, Android SDK with platform 35+, NDK 27.2 and CMake 3.22, Node.js 22):
+
+```bash
+bash mobile/fetch-libnode.sh   # one time: downloads the prebuilt Node.js libraries (16 KB aligned)
+bash mobile/dev.sh             # builds the web bundle, the Node part and the debug APK, installs it over USB and starts it
+```
+
+For Google Play: `cd android && ./gradlew bundleRelease` builds a signed app bundle. The upload key is read from `~/Android/ssh-deck-keystore.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`) or from the environment variables `SSHDECK_KEYSTORE`, `SSHDECK_STORE_PASSWORD`, `SSHDECK_KEY_ALIAS`, `SSHDECK_KEY_PASSWORD`. `versionName` comes from `package.json`; `versionCode` is computed from it and can be overridden with `ANDROID_VERSION_CODE`. Google Play needs native libraries aligned to 16 KB pages, which the official nodejs-mobile 18.20.4 binaries are not; `mobile/fetch-libnode.sh` therefore downloads a build of nodejs-mobile's `release18-20-4+16kb-fix` branch (published as a release in the project owner's fork).
+
+Not available on the phone: Cloudflare Tunnel (needs `cloudflared`), session recording to a file, the in-app updater and Mosh.
+
 **Run from source** (Node.js 22 or newer):
 
 ```bash
@@ -86,6 +117,10 @@ npm test
 
 On Linux you can add SSH Deck with its logo to your application menu: `bash assets/install-linux.sh`.
 
+## Sync server
+
+`node server/server.js` (Node.js 22+) runs the account and sync server (`PORT`, `DB_PATH`, `ALLOW_REGISTRATION`, …). For Kubernetes see [`server/k8s`](server/k8s): `bash deploy.sh` creates the namespace `ssh-deck`, a Deployment with a persistent hostPath volume and a NodePort service (30787). Put a TLS-terminating proxy in front of it before exposing it to the internet.
+
 ## Updates
 
 *Settings → Updates* checks the newest stable release. For a source install it downloads, checks, installs and restarts the app (with an automatic rollback if something fails); for an installed package it opens the release page. Under *Update channel* you can switch to **Dev**: then pre-releases built from the `dev` branch (a new one with every push) are offered too. The default is **Stable**.
@@ -93,6 +128,7 @@ On Linux you can add SSH Deck with its logo to your application menu: `bash asse
 ## Development
 
 - Work happens on **`dev`** (or feature branches with a pull request into `dev`). Every push builds installers for Linux, Windows and macOS, bumps the version automatically and publishes a pre-release `v<version>-dev.<run>`.
+- The Android part lives in [`mobile/`](mobile) (Node.js side, bridge, build scripts) and [`android/`](android) (Capacitor project, JNI glue under MIT from nodejs-mobile-react-native). `node mobile/test-node.js` checks the phone's Node side on the desktop; it runs as part of `npm test`.
 - **`main`** is stable and protected: only pull requests from `dev` can change it, and merging publishes the stable release.
 - Release notes list every commit since the previous release and name the last commit. Details: [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -100,7 +136,7 @@ Found a bug or have an idea? [Open an issue](https://github.com/HyperGaming99/ss
 
 ## About the trailer
 
-The trailer ([`docs/trailer.mp4`](docs/trailer.mp4), 54 s) is **not a screen recording and not an AI video**. Every frame is rendered from the real app with demo data, so it always matches what the app looks like — and it can be re-rendered whenever the UI changes. The pipeline lives in [`trailer/`](trailer):
+The trailer ([`docs/trailer.mp4`](docs/trailer.mp4), 64 s) is **not a screen recording and not an AI video**. Every frame is rendered from the real app with demo data, so it always matches what the app looks like — and it can be re-rendered whenever the UI changes. The pipeline lives in [`trailer/`](trailer):
 
 1. **Capture** – `capture2.js` starts the built UI in an invisible Electron window with a stub backend (fake hosts, keys and a fake server — never real data), clicks through the app and saves a screenshot of every state, plus the positions of buttons for the mouse cursor.
 2. **Timeline** – `timeline2.js` plans the whole film in *bars* of the music: camera moves, cursor path, clicks, typed commands, captions and theme changes. Everything lands on the beat.
@@ -119,4 +155,4 @@ Needs `ffmpeg` and Node.js 22. The music is **not included**: put your own track
 
 ## License
 
-No license has been chosen yet — all rights reserved.
+[MIT](LICENSE) © 2026 HyperGaming99. The sync server defaults to `https://ssh.arolg.dev`; you can enter your own under Settings → Account & Sync (or set `DECK_SERVER`).

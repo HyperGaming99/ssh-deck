@@ -279,7 +279,7 @@ const SpotlightCard = ({
     >
       <span
         ref={lightRef}
-        className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] opacity-0"
+        className="spotlight-fx pointer-events-none absolute inset-0 -z-10 rounded-[inherit] opacity-0"
         aria-hidden="true"
       />
       <span
@@ -295,7 +295,7 @@ const SpotlightCard = ({
       />
       <span
         ref={edgeRef}
-        className="pointer-events-none absolute inset-0 z-[1] rounded-[inherit] p-px opacity-0 [-webkit-mask:linear-gradient(#000_0_0)_content-box,linear-gradient(#000_0_0)] [-webkit-mask-composite:xor] [mask:linear-gradient(#000_0_0)_content-box_exclude,linear-gradient(#000_0_0)]"
+        className="spotlight-fx pointer-events-none absolute inset-0 z-[1] rounded-[inherit] p-px opacity-0 [-webkit-mask:linear-gradient(#000_0_0)_content-box,linear-gradient(#000_0_0)] [-webkit-mask-composite:xor] [mask:linear-gradient(#000_0_0)_content-box_exclude,linear-gradient(#000_0_0)]"
         aria-hidden="true"
       />
     </div>

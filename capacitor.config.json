@@ -1,0 +1,7 @@
+{
+  "appId": "io.github.hypergaming99.sshdeck",
+  "appName": "SSH Deck",
+  "webDir": "mobile/www",
+  "android": { "allowMixedContent": false },
+  "server": { "androidScheme": "https" }
+}

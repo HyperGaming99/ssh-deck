@@ -32,16 +32,16 @@
   #sizeNum { z-index: 80; opacity: 0; display: grid; place-items: center; font: 400 14px/1 "Inter", "Ubuntu", "Noto Sans", system-ui, sans-serif; font-variant-numeric: tabular-nums; }
   .ripple { width: 28px; height: 28px; margin: -14px 0 0 -14px; border-radius: 50%; border: 3px solid rgba(255,255,255,.8); opacity: 0; z-index: 119; }
 
-  #shade { left: 0; right: 0; bottom: 0; height: 520px; z-index: 30; background: linear-gradient(to top, rgba(5,6,10,.82), rgba(5,6,10,.45) 50%, rgba(5,6,10,0)); opacity: 0; }
-  .cap { left: 112px; bottom: 100px; z-index: 31; opacity: 0; }
+  #shade { left: 0; top: 0; bottom: 0; width: 980px; z-index: 30; background: linear-gradient(to right, rgba(5,6,10,.94), rgba(5,6,10,.82) 50%, rgba(5,6,10,.4) 75%, rgba(5,6,10,0)); opacity: 0; }
+  .cap { left: 110px; top: 0; height: 1080px; width: 580px; display: flex; flex-direction: column; justify-content: center; z-index: 31; opacity: 0; } /* linke Spalte: das Bild liegt rechts daneben */
   .cap .lab { font: 500 21px/1 "JB", monospace; letter-spacing: .2em; color: var(--acc, #8da2ff); margin-bottom: 26px; display: flex; align-items: center; gap: 14px; }
   .cap .lab::before { content: ""; width: 34px; height: 2px; background: var(--acc, #8da2ff); display: block; }
   .mask { overflow: hidden; padding-bottom: .14em; margin-bottom: -.14em; }
-  .cap .t { font-size: 80px; line-height: 1.06; font-weight: 640; letter-spacing: -.04em; }
-  .cap .s { margin-top: 26px; font-size: 30px; font-weight: 420; color: #a3a9b6; }
+  .cap .t { font-size: 64px; line-height: 1.08; font-weight: 640; letter-spacing: -.035em; white-space: nowrap; }
+  .cap .s { margin-top: 26px; font-size: 27px; line-height: 1.35; font-weight: 420; color: #a3a9b6; }
   .ln2 { will-change: transform; }
 
-  #tname { right: 112px; bottom: 100px; z-index: 32; opacity: 0; display: flex; align-items: center; gap: 22px; padding: 18px 34px 18px 24px; border-radius: 999px;
+  #tname { left: 110px; bottom: 110px; z-index: 32; opacity: 0; display: flex; align-items: center; gap: 22px; padding: 18px 34px 18px 24px; border-radius: 999px;
     background: rgba(10,11,16,.62); border: 1px solid rgba(255,255,255,.14); backdrop-filter: blur(14px); }
   #tname i { width: 20px; height: 20px; border-radius: 50%; display: block; box-shadow: 0 0 24px currentColor; background: currentColor; }
   #tname .lab { font: 500 17px/1 "JB", monospace; letter-spacing: .22em; color: #8d94a3; }
@@ -49,8 +49,8 @@
   #tname .nm { font-size: 56px; line-height: 66px; font-weight: 640; letter-spacing: -.03em; }
 
   .logo { left: 0; top: 0; width: 1920px; height: 1080px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 40; opacity: 0; }
-  .logo svg { width: 150px; height: 150px; overflow: visible; filter: drop-shadow(0 18px 50px rgba(60,90,255,.5)); }
-  .logo .tile2 { fill: #3b5bff; } .logo .chev { fill: none; stroke: #fff; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; } .logo .cur { fill: #fff; }
+  .logo svg { width: 190px; height: 190px; overflow: visible; filter: drop-shadow(0 18px 50px rgba(90,100,255,.5)); }
+  .logo .chev { stroke-dasharray: 1; }
   .logo .name { margin-top: 36px; font-size: 108px; font-weight: 660; letter-spacing: -.045em; }
   .logo .tag { margin-top: 12px; font-size: 38px; color: #a3a9b6; }
   .logo .feat { margin-top: 54px; font: 500 22px/1 "JB", monospace; letter-spacing: .16em; color: #8189a0; display: flex; gap: 22px; text-transform: uppercase; }
@@ -214,7 +214,7 @@ const capEls = TL.caps.map((c) => {
 });
 
 // ---------- Logo ----------
-const LOGO = `<svg viewBox="0 0 64 64"><rect class="tile2" width="64" height="64" rx="16"/><path class="chev" pathLength="1" d="M20 22 L32 32 L20 42"/><rect class="cur" x="36" y="40" width="13" height="5" rx="2.5"/></svg>`;
+const LOGO = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"> <defs> <linearGradient id="gm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff5fa2"/><stop offset="1" stop-color="#ff9a5a"/></linearGradient> <linearGradient id="gc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2ec4ff"/><stop offset="1" stop-color="#4f7bff"/></linearGradient> <linearGradient id="gf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7a5cff"/><stop offset="1" stop-color="#4f7bff"/></linearGradient> <linearGradient id="gp" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#9fe3ff"/></linearGradient> <radialGradient id="bg" cx=".3" cy=".2" r="1.1"><stop offset="0" stop-color="#23264a"/><stop offset="1" stop-color="#090a14"/></radialGradient> </defs> <rect width="512" height="512" rx="116" fill="url(#bg)"/> <g transform="translate(228 262) scale(.8) translate(-256 -256)"> <g transform="rotate(21 256 452)"><rect x="130" y="82" width="252" height="326" rx="50" fill="url(#gm)"/></g> <g transform="rotate(10.5 256 452)"><rect x="130" y="82" width="252" height="326" rx="50" fill="url(#gc)"/></g> <rect x="130" y="82" width="252" height="326" rx="50" fill="url(#gf)"/> <rect x="146" y="98" width="220" height="294" rx="36" fill="#0e1020"/> <path class="chev" pathLength="1" d="M196 206 L262 262 L196 318" fill="none" stroke="url(#gp)" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/> <rect class="cur" x="282" y="312" width="68" height="30" rx="15" fill="url(#gm)"/> </g> </svg>`;
 $('introLogo').innerHTML = LOGO + '<div class="mask"><div class="name ln2">SSH Deck</div></div><div class="mask"><div class="tag ln2">Your terminal. Your colors.</div></div>';
 $('outroLogo').innerHTML = LOGO + '<div class="mask"><div class="name ln2">SSH Deck</div></div><div class="mask"><div class="tag ln2">Your servers. One deck.</div></div><div class="feat">SSH<i>/</i>SFTP<i>/</i>Themes<i>/</i>Keychain<i>/</i>Tor<i>/</i>Cloud sync</div>';
 function logo(root, l, withFeat) {

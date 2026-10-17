@@ -5,3 +5,13 @@ trailer/shots/
 trailer/shots2/
 trailer/music/
 *.log
+mobile/www
+mobile/web/preload-web.js
+mobile/node-app
+android/app/src/main/assets/nodejs
+android/.gradle
+android/build
+android/app/build
+android/local.properties
+android/app/libnode
+mobile/shots

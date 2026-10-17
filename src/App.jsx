@@ -1,5 +1,5 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronLeft, Eye, EyeOff, LayoutGrid, List, CloudOff, Fingerprint, Languages, ShieldCheck, Check, FileText, Palette, Settings as SettingsIcon, User, Folder, FolderPlus, Menu, Minus, Square, ArrowLeftRight, Code2, Copy, Download, Ellipsis, FileUp, FolderOpen, KeyRound, Lock, Moon, Pencil, Plus, RefreshCw, Search, Send, Server, Sun, PanelRight, Terminal as TermIcon, Trash2, Users, X } from 'lucide-react';
+import { Fragment, Suspense, createContext, lazy, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronDown, ChevronLeft, Eye, EyeOff, LayoutGrid, List, Cloud, CloudOff, Fingerprint, Languages, ShieldCheck, Check, FileText, Palette, Settings as SettingsIcon, User, Folder, FolderPlus, Menu, Minus, Square, ArrowLeftRight, Code2, Copy, Star, Download, Ellipsis, FileUp, FolderOpen, KeyRound, Lock, Moon, Pencil, Circle, Plus, RefreshCw, Search, Send, Server, Sun, PanelRight, Terminal as TermIcon, Trash2, Users, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -12,9 +12,12 @@ import HostIcon from '@/components/HostIcon';
 import FormDialog from '@/components/FormDialog';
 import CredDialog from '@/components/CredDialog';
 import Logo from '@/components/Logo';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import KeychainCloud from '@/components/KeychainCloud';
 import TeamsSettings from '@/components/TeamsSettings';
 import TermPanel from '@/components/TermPanel';
+import { vars, fill } from '@/lib/snippetVars.mjs';
+import ReconnectBar from '@/components/ReconnectBar';
 import { FONTS, chromeVars, resolveTheme } from '@/lib/termThemes';
 import ConnectScreen from '@/components/ConnectScreen';
 import ForwardSheet from '@/components/ForwardSheet';
@@ -24,14 +27,20 @@ import HostKeyDialog from '@/components/HostKeyDialog';
 import ImportDialog from '@/components/ImportDialog';
 import KeyImportSheet from '@/components/KeyImportSheet';
 import { maskFingerprint, maskHost } from '@/lib/censor.mjs';
+import { sshCommand, sshConfig } from '@/lib/sshcmd.mjs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import Terminal, { writers } from '@/components/Terminal';
-import SftpTab from '@/components/SftpTab';
+import { bcast, writers, getPaste, setPaste, getSuggest, setSuggest, startRec, stopRec } from '@/lib/termState';
+import SplitView, { MAX_PANES, SplitTools } from '@/components/SplitView';
+import KeyBar from '@/components/KeyBar';
+const SftpTab = lazy(() => import('@/components/SftpTab')); // erst beim ersten SFTP-Tab
 import LoginScreen from '@/components/LoginScreen';
 import LanguageSetup from '@/components/LanguageSetup';
 import { I18nContext, LANGS, RTL, T, makeT, useLang, useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { hideSplash } from '@/splash';
+
+const mobile = !!window.api?.mobile; // Android-App: Touch-Layout (CSS: html[data-mobile]); .mhide blendet Desktop-Funktionen dort aus
+const Wrap = mobile ? 'div' : Fragment; // Handy: Terminal und Tastenleiste untereinander
 
 const SECTIONS = [
   ['hosts', T('Hosts'), Server],
@@ -52,7 +61,7 @@ function IconButton({ label, onClick, children }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant="ghost" size="icon" className="size-8" onClick={(e) => { e.stopPropagation(); onClick(); }}>{children}</Button>
+        <Button variant="ghost" size="icon" className="size-8" aria-label={label} onClick={(e) => { e.stopPropagation(); onClick(); }}>{children}</Button>
       </TooltipTrigger>
       <TooltipContent>{label}</TooltipContent>
     </Tooltip>
@@ -63,14 +72,14 @@ function IconButton({ label, onClick, children }) {
 function Item({ icon, title, sub, onClick, actions, dark, compact }) {
   return (
     <SpotlightCard theme={dark ? 'dark' : 'light'} className="cursor-pointer p-0!" onClick={onClick} style={{ borderRadius: 18 }}>
-      <div className={cn('group relative flex items-center', compact ? 'gap-3 p-3' : 'gap-4 p-5')}>
+      <div className={cn('group relative flex items-center mcard', compact ? 'gap-3 p-3' : 'gap-4 p-5')}>
         <div className={cn('grid shrink-0 place-items-center', compact ? 'size-11 rounded-lg bg-primary/10 text-primary' : 'size-14 rounded-xl bg-secondary [&>img]:size-9 [&>svg]:size-7')}>{icon}</div>
         <div className={cn('min-w-0 flex-1', compact ? 'space-y-0.5' : 'space-y-1')}>
           <div className={cn('truncate font-semibold', compact ? 'text-sm' : 'text-base')}>{title}</div>
           <div className={cn('truncate text-muted-foreground', compact ? 'text-xs' : 'text-sm')}>{sub}</div>
         </div>
         {/* Aktionen schweben über der Karte statt Platz zu belegen: so bleibt der Text voll lesbar */}
-        <div className="absolute end-3 top-1/2 flex -translate-y-1/2 rounded-xl border bg-card/95 p-0.5 opacity-0 shadow-sm backdrop-blur transition-opacity group-hover:opacity-100">{actions}</div>
+        <div className="mact absolute end-3 top-1/2 flex -translate-y-1/2 rounded-xl border bg-card/95 p-0.5 opacity-0 shadow-sm backdrop-blur transition-opacity group-hover:opacity-100">{actions}</div>
       </div>
     </SpotlightCard>
   );
@@ -151,15 +160,26 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
     toast((move ? t('Host verschoben.') : t('Host geklont.')) + (r.keyDropped ? ` ${t('Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.')}` : ''));
     load();
   };
+  // Favorit umschalten, SSH-Befehl kopieren, als ~/.ssh/config exportieren
+  const toggleFav = async (h) => { await api.hosts.save({ ...h, fav: !h.fav }); load(); };
+  const copyCmd = async (h) => { await navigator.clipboard.writeText(sshCommand(h)); toast(t('SSH-Befehl kopiert.')); };
+  const copyConfig = async (h) => { await navigator.clipboard.writeText(sshConfig([h])); toast(t('SSH-Config kopiert.')); };
+  const exportConfig = async (list, name) => {
+    if (!list.length) return toast(t('Keine Hosts zum Exportieren.'));
+    const err = await api.saveText(name, sshConfig(list));
+    if (err) toast(err);
+  };
   const hostMenu = (h) => {
     const others = vaults.filter((x) => x.id !== vault);
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="size-8" aria-label={t('Mehr')} onClick={(e) => e.stopPropagation()}><Ellipsis className="size-3.5" /></Button></DropdownMenuTrigger>
         <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuItem onSelect={() => copyCmd(h)}><Copy className="size-4" />{t('SSH-Befehl kopieren')}</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => copyConfig(h)}><FileText className="size-4" />{t('Als SSH-Config exportieren')}</DropdownMenuItem>
           {writable && <DropdownMenuItem onSelect={() => copyTo(h, vault, false)}><Copy className="size-4" />{t('Klonen')}</DropdownMenuItem>}
           {others.length > 0 && <>
-            {writable && <DropdownMenuSeparator />}
+            <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-xs text-muted-foreground">{t('In Tresor klonen')}</DropdownMenuLabel>
             {others.map((x) => <DropdownMenuItem key={`c${x.id}`} onSelect={() => copyTo(h, x.id, false)}>{x.id === 'personal' ? <User className="size-4" /> : <Users className="size-4" />}{x.name}</DropdownMenuItem>)}
             {writable && <>
@@ -173,12 +193,12 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
     );
   };
   const hostCard = (h) => (
-    <Item key={h.id} dark={dark} icon={<HostIcon slug={h.icon || h.autoIcon} />} sub={`${h.user}@${h.host}:${h.port}`}
+    <Item key={h.id} dark={dark} icon={<HostIcon slug={h.icon || h.autoIcon} />} sub={h.protocol === 'telnet' ? `telnet://${h.host}:${h.port}` : `${h.user}@${h.host}:${h.port}`}
       title={<span className="flex items-center gap-2">{h.name}{(h.tags || []).slice(0, 2).map((tg) => <Badge key={tg} variant="secondary" className="px-1.5 py-0 text-xs">{tg}</Badge>)}</span>}
       onClick={() => connect(h)}
-      actions={<><IconButton label="SFTP" onClick={() => openSftp(h)}><FolderOpen className="size-3.5" /></IconButton>
-        {(writable || vaults.some((x) => x.id !== vault)) && hostMenu(h)}
-        {writable && <><IconButton label={t('Bearbeiten')} onClick={() => edit(h)}><Pencil className="size-3.5" /></IconButton>
+      actions={<>{h.protocol !== 'telnet' && <IconButton label="SFTP" onClick={() => openSftp(h)}><FolderOpen className="size-3.5" /></IconButton>}
+        {hostMenu(h)}
+        {writable && <><IconButton label={t('Favorit')} onClick={() => toggleFav(h)}><Star className={cn('size-3.5', h.fav && 'fill-current text-primary')} /></IconButton><IconButton label={t('Bearbeiten')} onClick={() => edit(h)}><Pencil className="size-3.5" /></IconButton>
         <IconButton label={t('Löschen')} onClick={async () => { await api.hosts.remove(h.id); load(); }}><Trash2 className="size-3.5" /></IconButton></>}</>} />
   );
   const grid = (kids) => <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">{kids}</div>;
@@ -187,15 +207,18 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
   const searching = q.trim() !== '';
   const found = hosts.filter((h) => matches(q, h.name, h.host, h.user, h.group, (h.tags || []).join(' ')));
   const inGroup = hosts.filter((h) => h.group === current);
+  const favs = hosts.filter((h) => h.fav);
+  const lastUsed = hosts.filter((h) => !h.fav && h.lastUsed).sort((a, b) => b.lastUsed - a.lastUsed).slice(0, 5);
   const ungrouped = hosts.filter((h) => !h.group || !groups.some((g) => g.name === h.group));
 
   return (
     <>
-      <div className="mb-6 flex gap-3">
+      <div className="mtool mb-6 flex gap-3">
         <div className="relative max-w-md flex-1">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input className="pl-9" placeholder={t('Suchen …')} value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
+        <Button variant="outline" onClick={() => exportConfig(current !== null ? inGroup : hosts, 'ssh_config')}><FileText className="size-4" />{t('Als SSH-Config exportieren')}</Button>
         {writable && <>
         <Button variant="outline" onClick={() => setImportOpen(true)}><Download className="size-4" />{t('Importieren')}</Button>
         <Button variant="outline" onClick={newGroup}><FolderPlus className="size-4" />{t('Neue Gruppe')}</Button>
@@ -215,6 +238,8 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
         </>
       ) : (
         <>
+          {favs.length > 0 && <section className="mb-8">{heading(t('Favoriten'))}{grid(favs.map(hostCard))}</section>}
+          {lastUsed.length > 0 && <section className="mb-8">{heading(t('Zuletzt verwendet'))}{grid(lastUsed.map(hostCard))}</section>}
           {groups.length > 0 && (
             <section className="mb-8">
               {heading(t('Gruppen'))}
@@ -223,8 +248,9 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
                 return (
                   <Item key={g.id} dark={dark} icon={<Folder className="size-5 text-primary" />} title={g.name} sub={t('{n} Server', { n })}
                     onClick={() => setCurrent(g.name)}
-                    actions={writable && <><IconButton label={t('Umbenennen')} onClick={() => renameGroup(g)}><Pencil className="size-3.5" /></IconButton>
-                      <IconButton label={t('Gruppe löschen')} onClick={() => removeGroup(g)}><Trash2 className="size-3.5" /></IconButton></>} />
+                    actions={<><IconButton label={t('Als SSH-Config exportieren')} onClick={() => exportConfig(hosts.filter((h) => h.group === g.name), g.name)}><FileText className="size-3.5" /></IconButton>
+                      {writable && <><IconButton label={t('Umbenennen')} onClick={() => renameGroup(g)}><Pencil className="size-3.5" /></IconButton>
+                      <IconButton label={t('Gruppe löschen')} onClick={() => removeGroup(g)}><Trash2 className="size-3.5" /></IconButton></>}</>} />
                 );
               }))}
             </section>
@@ -319,7 +345,7 @@ function KeychainView({ dark, openForm, toast }) {
   const rescan = async () => { const n = await api.keys.rescan(); toast(n ? t('{n} neue(r) Schlüssel aus ~/.ssh importiert.', { n }) : t('Keine neuen Schlüssel in ~/.ssh.')); load(); };
   const toHost = async (k) => openForm({
     title: t('Auf Host exportieren'), description: t('Trägt den öffentlichen Schlüssel „{name}“ in ~/.ssh/authorized_keys ein.', { name: k.name }), submitLabel: t('Exportieren'),
-    fields: [{ name: 'hostId', label: t('Host'), options: (await api.hosts.list()).map((h) => [h.id, `${h.name} (${h.user}@${h.host})`]) }],
+    fields: [{ name: 'hostId', label: t('Host'), options: (await api.hosts.list()).filter((h) => h.protocol !== 'telnet').map((h) => [h.id, `${h.name} (${h.user}@${h.host})`]) }],
     onSubmit: async (v) => { const err = await api.keys.toHost(k.id, v.hostId); toast(err || t('Schlüssel auf dem Host eingetragen.')); },
   });
   const passphrase = (k) => openForm({
@@ -419,9 +445,28 @@ function KnownHostsView({ dark, toast, rev }) {
 }
 
 // Konto-Status; Anmelden passiert im Login-Bildschirm
-function SyncView({ st, onLogin, onLogout }) {
+// Sync-Server: Standard ist der Server des Projekts; ein eigener kann eingetragen werden (nur ohne Anmeldung änderbar)
+function ServerField({ st, locked, toast }) {
+  const t = useT();
+  const [v, setV] = useState(st.server);
+  useEffect(() => setV(st.server), [st.server]);
+  const save = async (x) => { const r = await api.settings.set({ syncServer: x === st.defaultServer ? '' : x }); if (r?.error) { toast(r.error); setV(st.server); } };
+  return (
+    <div className="mt-4 space-y-1.5 border-t pt-4">
+      <p className="text-xs font-medium text-muted-foreground">{t('Sync-Server')}</p>
+      <div className="flex gap-2">
+        <Input dir="ltr" value={v} disabled={locked} autoComplete="off" onChange={(e) => setV(e.target.value)} onBlur={() => v !== st.server && save(v.trim())} onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()} />
+        {!locked && st.server !== st.defaultServer && <Button type="button" variant="outline" onClick={() => save(st.defaultServer)}>{t('Standard')}</Button>}
+      </div>
+      {locked && <p className="text-xs text-muted-foreground">{t('Zum Ändern zuerst abmelden.')}</p>}
+    </div>
+  );
+}
+
+function SyncView({ st, onLogin, onLogout, toast }) {
   const t = useT();
   const lang = useLang();
+  const [del, setDel] = useState(null); // null = zu, sonst { pw, busy, error }
   if (!st.configured) {
     return (
       <div className="flex max-w-2xl items-start gap-4 rounded-xl border bg-card p-5">
@@ -430,6 +475,7 @@ function SyncView({ st, onLogin, onLogout }) {
           <p className="font-medium">{t('Nicht angemeldet')}</p>
           <p className="mt-1 text-sm text-muted-foreground">{t('Ohne Konto bleiben deine Daten nur auf diesem Gerät.')}</p>
           <Button className="mt-4" onClick={onLogin}>{t('Anmelden')}</Button>
+          <ServerField st={st} toast={toast} />
         </div>
       </div>
     );
@@ -438,7 +484,7 @@ function SyncView({ st, onLogin, onLogout }) {
   const label = { off: t('Nicht verbunden'), syncing: t('Synchronisiere …'), ok: t('Synchronisiert'), error: t('Fehler') }[st.status];
   return (
     <div className="max-w-2xl rounded-xl border bg-card p-5">
-      <div className="flex items-center gap-3">
+      <div className="mrow flex items-center gap-3">
         <span className={cn('grid size-10 place-items-center rounded-lg bg-secondary', st.status === 'error' && 'text-destructive', st.status === 'ok' && 'text-success')}>
           {st.status === 'syncing' ? <RefreshCw className="size-5 animate-spin" /> : st.status === 'error' ? <CloudOff className="size-5" /> : <Check className="size-5" />}
         </span>
@@ -450,9 +496,29 @@ function SyncView({ st, onLogin, onLogout }) {
         <Button variant="outline" onClick={() => api.sync.now()} disabled={st.status === 'syncing'}><RefreshCw className="size-4" />{t('Jetzt synchronisieren')}</Button>
       </div>
       {st.error && <p className="mt-3 text-sm text-destructive">{t(st.error)}</p>}
+      <ServerField st={st} locked toast={toast} />
       <p className="mt-4 border-t pt-4 text-xs text-muted-foreground">{t('Gesynct werden Hosts (mit Passwörtern), Gruppen, Snippets und Forwarding-Regeln – Ende-zu-Ende verschlüsselt. Private Schlüssel bleiben auf dem Gerät. Der Abgleich läuft automatisch.')}</p>
       <div className="mt-3 flex justify-end">
         <Button variant="ghost" className="text-destructive" onClick={() => { if (confirm(t('Abmelden? Die lokalen Daten bleiben erhalten, der Sync stoppt auf diesem Gerät.'))) { api.sync.logout(); onLogout(); } }}>{t('Abmelden')}</Button>
+      </div>
+      <div className="mt-3 border-t pt-3">
+        {!del ? (
+          <Button variant="ghost" className="text-destructive" onClick={() => setDel({ pw: '' })}>{t('Konto löschen')}</Button>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-sm text-destructive">{t('Dein Konto und alle Daten auf dem Sync-Server werden gelöscht (Hosts, Tresor, Cloud-Schlüsselbund, Team-Mitgliedschaften). Die Daten auf diesem Gerät bleiben. Das lässt sich nicht rückgängig machen.')}</p>
+            <Input type="password" autoComplete="current-password" placeholder={t('Passwort zur Bestätigung')} value={del.pw} onChange={(e) => setDel({ ...del, pw: e.target.value, error: '' })} />
+            {del.error && <p className="text-sm text-destructive">{t(del.error)}</p>}
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setDel(null)}>{t('Abbrechen')}</Button>
+              <Button variant="destructive" disabled={!del.pw || del.busy} onClick={async () => {
+                setDel({ ...del, busy: true });
+                const r = await api.sync.deleteAccount(del.pw);
+                if (r.error) setDel({ ...del, busy: false, error: r.error }); else { setDel(null); onLogout(); }
+              }}>{t('Konto endgültig löschen')}</Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -473,7 +539,7 @@ function TorSettings() {
     setRes(r.state === 'ok' ? { ok: true, text: t('Tor-Verbindung funktioniert. Ausgangs-IP: {ip}', { ip: r.ip }) }
       : { text: r.state === 'notor' ? t('Der Proxy antwortet, aber die Verbindung läuft nicht über Tor.') : t('Tor-Proxy nicht erreichbar. Läuft Tor unter {address}?', { address: `${c.host}:${c.port}` }) });
   };
-  const row = 'flex items-center justify-between gap-4 rounded-xl border bg-card p-4';
+  const row = 'mrow flex items-center justify-between gap-4 rounded-xl border bg-card p-4';
   return (
     <>
       <div className={row}>
@@ -486,7 +552,7 @@ function TorSettings() {
       </div>
       <div className="space-y-3 rounded-xl border bg-card p-4">
         <p className="text-sm font-medium">{t('Tor-Proxy (SOCKS5)')}</p>
-        <div className="flex gap-2" dir="ltr">
+        <div className="mrow flex gap-2" dir="ltr">
           <Input className="flex-1 font-mono" aria-label={t('Adresse')} value={c.host} onChange={(e) => save({ host: e.target.value })} />
           <Input className="w-24 font-mono" type="number" min="1" max="65535" aria-label={t('Port')} value={c.port} onChange={(e) => save({ port: +e.target.value })} />
           <Button variant="outline" onClick={test} disabled={busy}>{busy ? t('Bitte warten …') : t('Verbindung testen')}</Button>
@@ -498,16 +564,16 @@ function TorSettings() {
   );
 }
 
-const SETTINGS_TABS = [
+const SETTINGS_TABS = [ // Updates/Editor gibt es nur am Desktop
   ['account', T('Konto & Sync'), User],
   ['appearance', T('Darstellung'), Palette],
   ['language', T('Sprache'), Languages],
   ['privacy', T('Datenschutz'), ShieldCheck],
   ['keychain', T('Cloud-Schlüsselbund'), KeyRound],
   ['teams', T('Teams'), Users],
-  ['updates', T('Updates'), Download],
-  ['files', T('Dateien öffnen'), FileText],
-];
+  ['updates', T('Updates'), Download, true],
+  ['files', T('Dateien öffnen'), FileText, true],
+].filter((x) => !(mobile && x[3]));
 
 // Update-Einstellungen: Version, Prüfen, automatisch prüfen, Quelle, Installieren
 function UpdatesSettings() {
@@ -520,7 +586,9 @@ function UpdatesSettings() {
   const check = useCallback(async () => { setBusy(true); setErr(''); const r = await api.update.check(); setBusy(false); setRes(r); if (r.error) setErr(r.error); }, []);
   useEffect(() => { api.settings.get().then((x) => setS({ auto: x.updates?.auto !== false, repo: x.updates?.repo || '', channel: x.updates?.channel === 'dev' ? 'dev' : 'stable' })).then(check); }, [check]);
   const save = (p) => { const n = { ...s, ...p }; setS(n); api.settings.set({ updates: n }); };
-  const install = async () => { setInstalling(true); setErr(''); const r = await api.update.install(); if (r.error) { setInstalling(false); setErr(r.error); } };
+  const [rel, setRel] = useState({ list: [], pick: '' }); // Versionswahl, auch ältere
+  useEffect(() => { api.update.list().then((r) => r.list && setRel({ list: r.list, pick: '' })); }, []);
+  const install = async (v) => { setInstalling(true); setErr(''); const r = await api.update.install(v); if (r.error) { setInstalling(false); setErr(r.error); } };
   const row = 'flex items-center justify-between gap-4 rounded-xl border bg-card p-4';
   return (
     <div className="max-w-xl space-y-3">
@@ -535,7 +603,7 @@ function UpdatesSettings() {
         <div className={cn(row, 'flex-col items-stretch')}>
           {res.notes && <pre className="max-h-40 overflow-auto whitespace-pre-wrap text-xs text-muted-foreground">{res.notes}</pre>}
           {res.canInstall
-            ? <Button disabled={installing} onClick={install}>{installing ? t('Update wird installiert …') : t('Installieren und neu starten')}</Button>
+            ? <Button disabled={installing} onClick={() => install()}>{installing ? t('Update wird installiert …') : t('Installieren und neu starten')}</Button>
             : <Button onClick={() => api.update.openPage()}>{t('Release-Seite öffnen')}</Button>}
         </div>
       )}
@@ -543,6 +611,20 @@ function UpdatesSettings() {
         <p className="text-sm font-medium">{t('Automatisch nach Updates suchen')}</p>
         <Switch checked={s.auto} onCheckedChange={(v) => save({ auto: v })} />
       </div>
+      {rel.list.length > 0 && (
+        <div className={cn(row, 'flex-col items-stretch')}>
+          <p className="text-sm font-medium">{t('Andere Version installieren (auch ältere)')}</p>
+          <div className="flex gap-2">
+            <select value={rel.pick} onChange={(e) => setRel({ ...rel, pick: e.target.value })} className="h-9 min-w-0 flex-1 rounded-md border bg-background px-2 text-sm">
+              <option value="" />
+              {rel.list.map((r) => <option key={r.version} value={r.version}>{r.version}{r.version === res?.current ? ' ✓' : ''}</option>)}
+            </select>
+            <Button disabled={!rel.pick || rel.pick === res?.current || installing} onClick={() => (res?.canInstall ? install(rel.pick) : api.update.openPage(rel.pick))}>
+              {res?.canInstall ? t('Installieren und neu starten') : t('Release-Seite öffnen')}
+            </Button>
+          </div>
+        </div>
+      )}
       <div className={cn(row, 'flex-col items-stretch')}>
         <p className="text-sm font-medium">{t('Update-Kanal')}</p>
         <div className="grid grid-cols-2 rounded-lg bg-muted p-1 text-sm">
@@ -608,6 +690,11 @@ function UpdateBanner({ upd, onClose }) {
   );
 }
 
+// Animationen (Glow, Übergänge) an/aus: Merkmal am <html>, das CSS blendet alles aus; liegt in localStorage
+const getAnim = () => { try { return localStorage.getItem('anim') || 'on'; } catch { return 'on'; } };
+const applyAnim = (v) => { document.documentElement.dataset.anim = v; try { localStorage.setItem('anim', v); } catch { /* egal */ } };
+applyAnim(getAnim());
+
 // Einstellungen mit eigener Seitenleiste (links Kategorien, rechts Inhalt)
 function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lang, setLang, settingsTab, teams, refreshTeams, vault, setVault, toast }) {
   const t = useT();
@@ -616,8 +703,15 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
   const [editors, setEditors] = useState([]);
   const [editor, setEditor] = useState('auto');
   useEffect(() => { api.editors.list().then(setEditors); api.settings.get().then((s) => setEditor(s.editor || 'auto')); }, []);
+  const [sg, setSg] = useState(getSuggest);
+  const pickSg = (v) => { setSg(v); setSuggest(v); };
+  const [paste, setPasteState] = useState(getPaste);
+  const pickPaste = (v) => { setPasteState(v); setPaste(v); };
+  const [anim, setAnim] = useState(getAnim);
+  const pickAnim = (v) => { setAnim(v); applyAnim(v); };
+  const [autoRe, setAutoRe] = useState(() => { try { return localStorage.getItem('autoReconnect') !== '0'; } catch { return true; } });
   const pickEditor = (v) => { setEditor(v); api.settings.set({ editor: v }); };
-  const row = 'flex items-center justify-between gap-4 rounded-xl border bg-card p-4';
+  const row = 'mrow flex items-center justify-between gap-4 rounded-xl border bg-card p-4';
   const seg = (opts, value, onChange) => (
     <div className={cn('grid rounded-lg bg-muted p-1 text-sm', opts.length === 3 ? 'grid-cols-3' : 'grid-cols-2')}>
       {opts.map(([v, l, Icon]) => (
@@ -628,7 +722,7 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
     </div>
   );
   return (
-    <div className="flex gap-8">
+    <div className="mset flex gap-8">
       <aside className="w-48 shrink-0 space-y-1">
         {SETTINGS_TABS.map(([id, label, Icon]) => (
           <button key={id} onClick={() => setTab(id)}
@@ -639,16 +733,32 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
         ))}
       </aside>
       <div className="min-w-0 max-w-2xl flex-1 space-y-3">
-        {tab === 'account' && <SyncView st={st} onLogin={onLogin} onLogout={onLogout} />}
+        {tab === 'account' && <SyncView st={st} onLogin={onLogin} onLogout={onLogout} toast={toast} />}
         {tab === 'appearance' && (
           <>
             <div className={row}>
               <div><p className="text-sm font-medium">{t('Design')}</p><p className="text-xs text-muted-foreground">{t('Hell oder dunkel')}</p></div>
               {seg([[false, t('Hell'), Sun], [true, t('Dunkel'), Moon]], dark, setDark)}
             </div>
-            <div className={row}>
+            <div className={cn(row, 'mhide')}>
               <div><p className="text-sm font-medium">{t('Seitenleiste')}</p><p className="text-xs text-muted-foreground">{t('Stil der linken Navigation')}</p></div>
               {seg([['compact', t('Kompakt')], ['wide', t('Breit')], ['float', t('Schwebend')]], side, setSide)}
+            </div>
+            <div className={row}>
+              <div><p className="text-sm font-medium">{t('Animationen')}</p><p className="text-xs text-muted-foreground">{t('Glow bei Hosts und Gruppen sowie Übergänge')}</p></div>
+              {seg([['on', t('An')], ['off', t('Aus')]], anim, pickAnim)}
+            </div>
+            <div className={row}>
+              <div><p className="text-sm font-medium">{t('Befehlsvorschläge')}</p><p className="text-xs text-muted-foreground">{t('Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.')}</p></div>
+              {seg([['on', t('An')], ['off', t('Aus')]], sg, pickSg)}
+            </div>
+            <div className={row}>
+              <div><p className="text-sm font-medium">{t('Einfügen im Terminal')}</p><p className="text-xs text-muted-foreground">{t('Strg+V und Rechtsklick fügen die Zwischenablage ein')}</p></div>
+              {seg([['ask', t('Nachfragen')], ['on', t('Erlauben')], ['off', t('Aus')]], paste, pickPaste)}
+            </div>
+            <div className={row}>
+              <div><p className="text-sm font-medium">{t('Automatisch neu verbinden')}</p><p className="text-xs text-muted-foreground">{t('Bei unerwartet getrennter Verbindung erneut versuchen')}</p></div>
+              <Switch checked={autoRe} onCheckedChange={(v) => { setAutoRe(v); try { localStorage.setItem('autoReconnect', v ? '1' : '0'); } catch { /* egal */ } }} />
             </div>
           </>
         )}
@@ -697,7 +807,7 @@ function SnippetsView({ dark, runSnippet, openForm, rev }) {
   const load = useCallback(() => api.snippets.list().then((l) => setItems(l.filter((x) => inV(x, vault)))), [vault]);
   useEffect(() => { load(); }, [load, rev]);
   const edit = (s = {}) => openForm({
-    title: s.id ? t('Snippet bearbeiten') : t('Neues Snippet'), values: s,
+    title: s.id ? t('Snippet bearbeiten') : t('Neues Snippet'), values: s, description: t('Platzhalter: {{name}} oder {{name:Standardwert}} – wird beim Ausführen abgefragt.'),
     fields: [{ name: 'name', label: t('Name'), required: true }, { name: 'cmd', label: t('Befehl'), required: true }],
     onSubmit: async (v) => { await api.snippets.save({ ...v, id: s.id, vault: s.vault ?? vault }); load(); },
   });
@@ -756,16 +866,18 @@ export default function App() {
   const [section, setSection] = useState('hosts');
   const store = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
   const [termTheme, setTermTheme] = useState(() => store('termTheme', 'auto'));
-  const [font, setFontState] = useState(() => store('termFont', { family: FONTS[0][0], size: 14 }));
-  const [panel, setPanel] = useState(() => store('termPanel', true));
+  const [font, setFontState] = useState(() => store('termFont', { family: FONTS[0][0], size: mobile ? 12 : 14 }));
+  const [panel, setPanel] = useState(() => !mobile && store('termPanel', true)); // Handy: Panel startet zu (es liegt über dem Terminal)
   const [history, setHistory] = useState({}); // sid -> eingegebene Befehle (nur im Speicher, nie gespeichert)
   const persist = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* egal */ } };
   const setTheme = (v) => { setTermTheme(v); persist('termTheme', v); };
   const setFont = (v) => { setFontState(v); persist('termFont', v); };
-  const togglePanel = () => { setPanel(!panel); persist('termPanel', !panel); };
+  const togglePanel = () => { setPanel(!panel); if (!mobile) persist('termPanel', !panel); };
   const xtheme = useMemo(() => resolveTheme(termTheme, dark), [termTheme, dark]);
   const onCommand = useCallback((sid, c) => setHistory((h) => ({ ...h, [sid]: [...(h[sid] || []).filter((x) => x !== c), c].slice(-100) })), []);
-  const [tabs, setTabs] = useState([]); // { sid, title, closed }
+  const [tabs, setTabs] = useState([]); // { sid, title, kind, panes: [{ sid, conn, attempt, closed }], focus, dir }
+  const [bc, setBc] = useState({ on: false, ids: [] }); // Broadcast: Eingabe an mehrere Sessions
+  const updPane = (sid, f) => setTabs((prev) => prev.map((x) => (x.panes?.some((p) => p.sid === sid) ? { ...x, panes: x.panes.map((p) => (p.sid === sid ? { ...p, ...f(p) } : p)) } : x)));
   const [active, setActive] = useState('home');
   const [form, setForm] = useState(null);
   const [hostForm, setHostForm] = useState(null); // Host-Details-Panel
@@ -811,10 +923,16 @@ export default function App() {
     api.sync.onStatus(setSt);
     api.onCredAsk((a) => setCredAsks((q) => [...q, a]));
     api.update.onAvailable(setUpd);
-    api.onStatus((sid, conn) => setTabs((prev) => prev.map((x) => (x.sid === sid ? { ...x, conn } : x))));
-    api.onClosed((sid) => setTabs((prev) => prev.map((x) => (x.sid === sid ? { ...x, closed: true } : x))));
+    api.onStatus((sid, conn) => updPane(sid, (p) => (conn.state === 'ready' ? { conn, tries: 0, lost: false, closed: false }
+      : conn.state === 'failed' && p.tries ? { conn: null, lost: true } // Versuch nach Verbindungsabbruch gescheitert: weiter in der Leiste
+      : { conn })));
+    api.onLost((sid) => updPane(sid, () => ({ lost: true })));
+    api.onClosed((sid) => updPane(sid, () => ({ closed: true })));
   }, []);
 
+  const sessions = tabs.flatMap((x) => (x.panes || []).filter((p) => !p.closed).map((p, i) => ({ sid: p.sid, label: x.panes.length > 1 ? `${x.title} (${i + 1})` : x.title })));
+  const bcTargets = bc.on ? bc.ids.filter((id) => sessions.some((s) => s.sid === id)) : [];
+  bcast.to = bcTargets;
   const termActive = tabs.some((x) => x.sid === active && (x.kind === 'ssh' || !x.kind));
   useEffect(() => { // solange ein Terminal offen ist, färbt das gewählte Theme das ganze Fenster (auch Dialoge)
     const vars = termActive && termTheme !== 'auto' ? chromeVars(xtheme) : null;
@@ -839,7 +957,7 @@ export default function App() {
     }
     const sid = `s${seq + 1}`;
     setSeq(seq + 1);
-    setTabs((prev) => [...prev, { sid, hostId: h.id, title: kind === 'sftp' ? t('{name} · SFTP', { name: h.name }) : h.name, kind }]);
+    setTabs((prev) => [...prev, { sid, hostId: h.id, title: kind === 'sftp' ? t('{name} · SFTP', { name: h.name }) : h.name, kind, ...(kind === 'ssh' && { panes: [{ sid }], focus: sid, dir: 'row' }) }]);
     setActive(sid);
   };
   const editHost = async (id) => setHostForm({
@@ -847,6 +965,28 @@ export default function App() {
     onSave: async (o) => { const i = await api.hosts.save(o); setRev((r) => r + 1); return i; },
     onConnect: connect, onDelete: async (i) => { await api.hosts.remove(i); setRev((r) => r + 1); },
   });
+  // Terminal teilen: neue SSH-Session zum selben Host als weiteres Pane (2 bis 4)
+  const split = (dir) => {
+    const tab = tabsRef.current.find((x) => x.sid === active);
+    if (!tab?.panes || tab.panes.length >= MAX_PANES) return;
+    const sid = `p${Date.now()}`;
+    setTabs((prev) => prev.map((x) => (x.sid === tab.sid ? { ...x, dir, panes: [...x.panes, { sid }], focus: sid } : x)));
+  };
+  const setFocus = (tabSid, sid) => setTabs((prev) => prev.map((x) => (x.sid === tabSid ? { ...x, focus: sid } : x)));
+  const closePane = (tabSid, sid) => setTabs((prev) => prev.map((x) => {
+    if (x.sid !== tabSid || x.panes.length < 2) return x;
+    const panes = x.panes.filter((p) => p.sid !== sid);
+    return { ...x, panes, focus: x.focus === sid ? panes.at(-1).sid : x.focus };
+  }));
+  const [recs, setRecs] = useState({}); // sid -> true, solange aufgezeichnet wird
+  const toggleRec = async (tab) => { // zeichnet das fokussierte Pane auf
+    const sid = tab.focus || tab.panes[0].sid;
+    if (!recs[sid]) { startRec(sid); return setRecs((r) => ({ ...r, [sid]: true })); }
+    setRecs((r) => ({ ...r, [sid]: false }));
+    const text = stopRec(sid);
+    if (text && await api.saveRec(text, tab.title.replace(/[\\/:*?"<>|]/g, '_'))) toast(t('Aufzeichnung gespeichert.'));
+  };
+  const reconnect = (sid) => updPane(sid, (p) => ({ lost: false, closed: false, conn: null, tries: (p.tries || 0) + 1, reconn: (p.reconn || 0) + 1 }));
   const closeTab = (sid) => {
     setTabs((prev) => prev.filter((x) => x.sid !== sid));
     setActive((a) => (a === sid ? 'home' : a));
@@ -862,17 +1002,24 @@ export default function App() {
     setActive(sid);
   };
   const readyRef = useRef(false);
+  const splitRef = useRef();
+  splitRef.current = split;
   useEffect(() => {
     const onKey = (e) => {
+      if (e.key === 'Escape') setBc((b) => (b.on ? { ...b, on: false } : b));
+      if (e.ctrlKey && e.shiftKey && (e.key === 'D' || e.key === 'E')) { e.preventDefault(); splitRef.current(e.key === 'D' ? 'row' : 'col'); }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && readyRef.current) { e.preventDefault(); openNewTab(); }
     };
     addEventListener('keydown', onKey);
     return () => removeEventListener('keydown', onKey);
   }, []);
   const runSnippet = (cmd) => {
-    const sid = tabs.some((x) => x.sid === active) ? active : tabs.at(-1)?.sid;
+    const tb = tabs.find((x) => x.sid === active) || tabs.at(-1);
+    const sid = tb?.focus || tb?.sid;
     if (!sid) return toast(t('Erst ein Terminal öffnen.'));
-    api.input(sid, cmd + '\n');
+    const vs = vars(cmd);
+    if (vs.length) setForm({ title: t('Snippet ausführen'), submitLabel: t('Ausführen'), fields: vs.map((v) => ({ name: v.name, label: v.name })), values: Object.fromEntries(vs.map((v) => [v.name, v.def])), onSubmit: (v) => api.input(sid, fill(cmd, v) + '\n') });
+    else api.input(sid, cmd + '\n');
     setActive(sid);
   };
 
@@ -886,11 +1033,11 @@ export default function App() {
     <TooltipProvider delayDuration={300}>
     <VaultCtx.Provider value={vctx}>
       <div className="flex h-full flex-col">
-        <header dir="ltr" className={cn('flex h-12 shrink-0 items-center gap-2 border-b bg-sidebar [-webkit-app-region:drag]', mac ? 'pl-[88px]' : 'pl-2')}>
+        <header dir="ltr" className={cn('mhead flex h-12 shrink-0 items-center gap-2 border-b bg-sidebar [-webkit-app-region:drag]', mac ? 'pl-[88px]' : 'pl-2')}>
           {gate && <Logo className="ml-2 h-6 w-[19px]" />}
-          {!gate && <div className="flex min-w-0 items-center gap-1.5 [-webkit-app-region:no-drag]">
-            <Button variant="ghost" size="icon" className="size-8 shrink-0" onClick={() => setNavOpen(!navOpen)} aria-label={t('Navigation')}><Menu className="size-4" /></Button>
-            <Logo className="mx-1 h-6 w-[19px] shrink-0" />
+          {!gate && <div className="mtabs flex min-w-0 items-center gap-1.5 [-webkit-app-region:no-drag]">
+            <Button variant="ghost" size="icon" className="mhide size-8 shrink-0" onClick={() => setNavOpen(!navOpen)} aria-label={t('Navigation')}><Menu className="size-4" /></Button>
+            <Logo className="mhide mx-1 h-6 w-[19px] shrink-0" />
             <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto [scrollbar-width:none]">
               <VaultSwitcher vaults={vaults} vault={activeV.id} setVault={setVault} signedIn={!!st?.configured}
                 onNew={() => setForm({ title: t('Neues Team'), fields: [{ name: 'name', label: t('Name'), required: true }], submitLabel: t('Team erstellen'), onSubmit: async (v) => { const r = await api.team.create(v.name); if (r.error) return toast(r.error); await refreshTeams(); setVault(r.id); } })}
@@ -900,18 +1047,21 @@ export default function App() {
               {tabs.map((tab) => (
                 <Pill key={tab.sid} active={active === tab.sid} onClick={() => setActive(tab.sid)} onClose={() => closeTab(tab.sid)}>
                   {tab.kind === 'sftp' ? <FolderOpen className="size-4 shrink-0" /> : tab.kind === 'new' ? <Search className="size-4 shrink-0" /> : <TermIcon className="size-4 shrink-0" />}
-                  <span className="truncate">{tab.kind === 'new' ? t('Neuer Tab') : tab.title}</span>{tab.closed && <span className="text-xs opacity-60">{t('(getrennt)')}</span>}
+                  {tab.panes?.some((p) => recs[p.sid]) && <Circle className="size-2.5 shrink-0 fill-red-500 text-red-500" />}<span className="truncate">{tab.kind === 'new' ? t('Neuer Tab') : tab.title}</span>{tab.panes?.every((p) => p.closed) && <span className="text-xs opacity-60">{t('(getrennt)')}</span>}
                 </Pill>
               ))}
             </div>
             <IconButton label={t('Neue Verbindung')} onClick={openNewTab}><Plus className="size-4" /></IconButton>
           </div>}
           <div className="ml-auto flex h-full items-center [-webkit-app-region:no-drag]">
+            {bc.on && <span className="mr-2 rounded-md bg-orange-500 px-2 py-1 text-xs font-semibold text-white">{t('Broadcast an {n}', { n: bcTargets.length })}</span>}
+            {tabs.find((x) => x.sid === active && x.panes) && <SplitTools tab={tabs.find((x) => x.sid === active)} split={split} bc={bc} setBc={setBc} sessions={sessions} />}
+            {tabs.find((x) => x.sid === active && (x.kind === 'ssh' || !x.kind)) && (() => { const tb = tabs.find((x) => x.sid === active); const on = recs[tb.focus || tb.panes[0].sid]; return <Button variant="ghost" size="icon" className={cn('mhide mr-1 size-8', on && 'text-red-500')} onClick={() => toggleRec(tb)} aria-label={on ? t('Aufzeichnung beenden') : t('Aufzeichnen')} title={on ? t('Aufzeichnung beenden') : t('Aufzeichnen')}><Circle className={cn('size-4', on && 'fill-current')} /></Button>; })()}
             {tabs.find((x) => x.sid === active && (x.kind === 'ssh' || !x.kind)) && <Button variant="ghost" size="icon" className={cn('mr-1 size-8', panel && 'text-primary')} onClick={togglePanel} aria-label={t('Seitenleiste ein-/ausblenden')}><PanelRight className="size-4" /></Button>}
             <Button variant="ghost" size="icon" className="mr-1 size-8" onClick={() => setDark(!dark)} aria-label={t('Theme wechseln')}>
               {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
             </Button>
-            {!mac && <>
+            {!mac && !mobile && <>
             <button className="grid h-full w-11 place-items-center text-muted-foreground hover:bg-accent" onClick={api.win.minimize} aria-label={t('Minimieren')}><Minus className="size-4" /></button>
             <button className="grid h-full w-11 place-items-center text-muted-foreground hover:bg-accent" onClick={api.win.toggleMax} aria-label={t('Maximieren')}><Square className="size-3.5" /></button>
             <button className="grid h-full w-11 place-items-center text-muted-foreground hover:bg-destructive hover:text-white" onClick={api.win.close} aria-label={t('Schließen')}><X className="size-4" /></button>
@@ -920,9 +1070,9 @@ export default function App() {
         </header>
 
         {upd && !gate && <UpdateBanner upd={upd} onClose={() => setUpd(null)} />}
-        {st === null ? <div className="flex-1" /> : lang === null ? <LanguageSetup onPick={setLang} /> : gate ? <LoginScreen status={st} dark={dark} onSkip={() => chooseSkip(true)} /> : <div className="flex min-h-0 flex-1">
-        {navOpen && !termActive && (
-          <nav className={cn('flex shrink-0 flex-col gap-1 py-3', side === 'wide' ? 'w-56 items-stretch border-r bg-sidebar px-3' : 'items-stretch px-2',
+        {st === null ? <div className="flex-1" /> : lang === null ? <LanguageSetup onPick={setLang} /> : gate ? <LoginScreen status={st} dark={dark} onSkip={() => chooseSkip(true)} /> : <div className="mroot flex min-h-0 flex-1">
+        {(navOpen || mobile) && !termActive && (
+          <nav className={cn('mnav flex shrink-0 flex-col gap-1 py-3', side === 'wide' ? 'w-56 items-stretch border-r bg-sidebar px-3' : 'items-stretch px-2',
             side === 'compact' && 'w-[84px] border-r bg-sidebar', side === 'float' && 'm-2 mr-0 w-[92px] rounded-2xl border bg-card shadow-sm')}>
             {SECTIONS.map(([id, label, Icon]) => {
               const on = active === 'home' && section === id;
@@ -930,7 +1080,7 @@ export default function App() {
                 <button key={id} style={id === 'settings' ? { marginTop: 'auto' } : undefined} onClick={() => { setSection(id); setActive('home'); }}
                   className={cn('relative flex rounded-lg text-muted-foreground transition-colors hover:bg-accent',
                     side === 'wide' ? 'flex-row items-center gap-3 px-3 py-2 text-sm' : 'flex-col items-center gap-1 px-1 py-2 text-[10px] leading-none', on && 'bg-accent text-foreground')}>
-                  {on && <span className="absolute inset-y-2 -left-1 w-0.5 rounded-full bg-primary" />}
+                  {on && <span className="mhide absolute inset-y-2 -left-1 w-0.5 rounded-full bg-primary" />}
                   <Icon className={side === 'wide' ? 'size-4' : 'size-5'} />{t(label)}
                 </button>
               );
@@ -938,33 +1088,35 @@ export default function App() {
           </nav>
         )}
 
-        <main className="flex min-w-0 flex-1 flex-col">
+        <main className={cn('flex min-w-0 flex-1 flex-col', bc.on && 'ring-4 ring-inset ring-orange-500')}>
           <div className="relative min-h-0 flex-1">
-            <div className={cn('absolute inset-0 overflow-auto p-8', active !== 'home' && 'hidden')}>
+            <div className={cn('mpad absolute inset-0 overflow-auto p-8', active !== 'home' && 'hidden')}>
               <h1 className="mb-6 text-2xl font-semibold">
                 <ShinyText text={t(SECTIONS.find(([id]) => id === section)[1])} color={dark ? '#8a8a8a' : '#52525b'} shineColor={dark ? '#ffffff' : '#2563eb'} speed={4} />
               </h1>
-              <View settingsTab={settingsTab} teams={teams} refreshTeams={refreshTeams} vault={activeV.id} setVault={setVault} lang={lang} setLang={setLang} st={st} setDark={setDark} side={side} setSide={setSide} onLogin={() => chooseSkip(false)} onLogout={() => chooseSkip(false)} dark={dark} connect={connect} openSftp={(h) => connect(h, 'sftp')} runSnippet={runSnippet} openForm={setForm} openHost={setHostForm} toast={toast} rev={rev} />
+              <ErrorBoundary key={section + vault}><View settingsTab={settingsTab} teams={teams} refreshTeams={refreshTeams} vault={activeV.id} setVault={setVault} lang={lang} setLang={setLang} st={st} setDark={setDark} side={side} setSide={setSide} onLogin={() => chooseSkip(false)} onLogout={() => chooseSkip(false)} dark={dark} connect={connect} openSftp={(h) => connect(h, 'sftp')} runSnippet={runSnippet} openForm={setForm} openHost={setHostForm} toast={toast} rev={rev} /></ErrorBoundary>
             </div>
             <div className={cn('absolute inset-0 p-2', active !== 'sftp' && 'hidden')}>
-              {sftpMounted && <SftpTab sid="sftp" hostId={null} active={active === 'sftp'} toast={toast} openForm={setForm} />}
+              {sftpMounted && <Suspense fallback={null}><SftpTab sid="sftp" hostId={null} active={active === 'sftp'} toast={toast} openForm={setForm} /></Suspense>}
             </div>
             {tabs.map((tab) => (
               <div key={tab.sid} className={cn('absolute inset-0', tab.kind !== 'ssh' && tab.kind && 'p-2', active !== tab.sid && 'hidden')}>
                 {tab.kind === 'new'
                   ? <NewTab active={active === tab.sid} tabs={tabs} recent={recent} onConnect={(h) => { closeTab(tab.sid); connect(h); }} onSwitch={(sid) => { closeTab(tab.sid); setActive(sid); }} />
                   : tab.kind === 'sftp'
-                    ? <SftpTab sid={tab.sid} hostId={tab.hostId} toast={toast} openForm={setForm} />
-                    : (() => { const ready = tab.conn?.state === 'ready' || !tab.conn; return (
+                    ? <Suspense fallback={null}><SftpTab sid={tab.sid} hostId={tab.hostId} toast={toast} openForm={setForm} /></Suspense>
+                    : (() => { const fp = tab.panes.find((p) => p.sid === tab.focus) || tab.panes[0]; const ready = fp.conn?.state === 'ready' || !fp.conn; return (
                       <div className="flex size-full">
-                        <div className="relative min-w-0 flex-1 p-2" style={{ background: xtheme.background }}>
-                          <Terminal sid={tab.sid} hostId={tab.hostId} active={active === tab.sid} theme={xtheme} font={font} attempt={tab.attempt} onCommand={onCommand} />
-                          {tab.conn && tab.conn.state !== 'ready' && <ConnectScreen conn={tab.conn} onClose={() => closeTab(tab.sid)}
-                            onAnswer={(a) => { api.answer(tab.sid, a); setTabs((p) => p.map((x) => (x.sid === tab.sid ? { ...x, conn: { ...x.conn, state: 'connecting' } } : x))); }}
+                        <Wrap {...(mobile && { className: 'flex min-h-0 min-w-0 flex-1 flex-col' })}>
+                        <SplitView tab={tab} active={active === tab.sid} theme={xtheme} font={font} onCommand={onCommand} setFocus={(sid) => setFocus(tab.sid, sid)} closePane={(sid) => closePane(tab.sid, sid)}
+                          overlay={(p) => <>{p.lost && !p.conn && <ReconnectBar key={p.tries || 0} tries={p.tries || 0} onNow={() => reconnect(p.sid)} onCancel={() => updPane(p.sid, () => ({ lost: false, closed: true }))} />}{p.conn && p.conn.state !== 'ready' && <ConnectScreen conn={p.conn} onClose={() => (tab.panes.length > 1 ? closePane(tab.sid, p.sid) : closeTab(tab.sid))}
+                            onAnswer={(a) => { api.answer(p.sid, a); updPane(p.sid, (q) => ({ conn: { ...q.conn, state: 'connecting' } })); }}
                             onEdit={() => editHost(tab.hostId)}
-                            onRetry={() => setTabs((p) => p.map((x) => (x.sid === tab.sid ? { ...x, conn: null, attempt: (x.attempt || 0) + 1 } : x)))} />}
-                        </div>
-                        {panel && ready && tab.conn && <TermPanel sid={tab.sid} hostId={tab.hostId} dark={dark} history={history[tab.sid] || []} themeId={termTheme} setThemeId={setTheme} font={font} setFont={setFont} toast={toast} rev={rev} />}
+                            onRetry={() => updPane(p.sid, (q) => ({ conn: null, attempt: (q.attempt || 0) + 1 }))} />}</>} />
+                        {mobile && ready && <KeyBar sid={fp.sid} />}
+                        </Wrap>
+                        {panel && ready && fp.conn && mobile && <div className="fixed inset-0 z-30 bg-black/40" onClick={togglePanel} />}
+                        {panel && ready && fp.conn && <TermPanel onClose={togglePanel} sid={fp.sid} hostId={tab.hostId} dark={dark} history={history[fp.sid] || []} themeId={termTheme} setThemeId={setTheme} font={font} setFont={setFont} toast={toast} rev={rev} />}
                       </div>); })()}
               </div>
             ))}

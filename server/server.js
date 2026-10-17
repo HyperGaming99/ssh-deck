@@ -1,5 +1,5 @@
 // SSH-Deck-Sync-Server: Konten + verschlüsselter Tresor. Der Server sieht nie Passwort oder Klartext.
-// Start: node server/server.js   (Umgebung: PORT, DB_PATH, SMTP_URL, MAIL_FROM, VERIFY_EMAIL, ALLOW_REGISTRATION, TRUST_PROXY)
+// Start: node server/server.js   (Umgebung: PORT, DB_PATH, SMTP_URL, MAIL_FROM, VERIFY_EMAIL, ALLOW_REGISTRATION, TRUST_PROXY, PAGES_DIR, CONTACT_EMAIL)
 const fs = require('fs');
 const http = require('http');
 const path = require('path');
@@ -26,7 +26,11 @@ function openDb(file) {
   return db;
 }
 
-function createServer({ db, verify = false, sendMail = async () => {}, allowRegistration = true, trustProxy = false, now = Date.now }) {
+// Statische Info-Seiten (Datenschutz, Konto löschen) aus einem Ordner, der nicht zum Quellcode gehört (PAGES_DIR); {{CONTACT_EMAIL}} wird eingesetzt
+const PAGES = { '/privacy': 'privacy.html', '/delete-account': 'delete-account.html' };
+const esc = (x) => String(x).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function createServer({ db, verify = false, sendMail = async () => {}, allowRegistration = true, trustProxy = false, pagesDir = '', contactEmail = '', now = Date.now }) {
   const tries = new Map(); // einfache Bremse gegen Passwort-Raten: 10 Versuche / 10 Min je IP+E-Mail
   const limited = (key) => {
     const t = now();
@@ -100,6 +104,26 @@ function createServer({ db, verify = false, sendMail = async () => {}, allowRegi
       if (!u || !ok) throw fail(401, 'E-Mail oder Passwort falsch');
       if (!u.verified) throw fail(403, 'E-Mail noch nicht bestätigt', { needsVerification: true });
       return { token: issue(u.id) };
+    },
+    // Konto samt aller Daten löschen (Google Play verlangt das). Bestätigung mit E-Mail + Passwort-Beweis wie beim Login, auch ohne Sitzung (Web-Anfrage).
+    // Besitzer eines Teams mit weiteren Mitgliedern müssen das Team zuerst löschen (es gibt keine Übergabe, die Schlüssel gehören den Mitgliedern).
+    'POST /api/account/delete': async (req, b) => {
+      const { email, auth } = credentials(b);
+      if (limited(`d:${ip(req)}:${email}`)) throw fail(429, 'Zu viele Versuche, bitte später erneut');
+      const u = db.prepare('select id, salt, hash from users where email = ?').get(email);
+      const ok = same(hashAuth(auth, u ? u.salt : Buffer.alloc(16)), u ? Buffer.from(u.hash) : Buffer.alloc(32, 1));
+      if (!u || !ok) throw fail(401, 'E-Mail oder Passwort falsch');
+      const owned = db.prepare("select t.id, t.name, (select count(*) from team_members x where x.team_id = t.id) as n from team_members m join teams t on t.id = m.team_id where m.user_id = ? and m.role = 'owner'").all(u.id);
+      const shared = owned.find((t) => t.n > 1);
+      if (shared) throw fail(409, `Du bist Besitzer des Teams „${shared.name}“ mit weiteren Mitgliedern. Lösche das Team zuerst.`);
+      db.exec('begin');
+      try {
+        for (const t of owned) { db.prepare('delete from team_members where team_id = ?').run(t.id); db.prepare('delete from teams where id = ?').run(t.id); }
+        for (const q of ['team_members', 'sessions', 'vault', 'keyvault']) db.prepare(`delete from ${q} where user_id = ?`).run(u.id);
+        db.prepare('delete from users where id = ?').run(u.id);
+        db.exec('commit');
+      } catch (e) { db.exec('rollback'); throw e; }
+      return {};
     },
     'POST /api/logout': async (req) => {
       db.prepare('delete from sessions where token_hash = ?').run(userOf(req).tokenHash);
@@ -262,6 +286,13 @@ function createServer({ db, verify = false, sendMail = async () => {}, allowRegi
     const send = (status, obj) => { res.writeHead(status, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
     try {
       const url = new URL(req.url, 'http://x');
+      if (pagesDir && req.method === 'GET' && PAGES[url.pathname]) {
+        let html; try { html = fs.readFileSync(path.join(pagesDir, PAGES[url.pathname]), 'utf8'); } catch { html = null; }
+        if (html) {
+          res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'", 'X-Content-Type-Options': 'nosniff' });
+          return res.end(html.replaceAll('{{CONTACT_EMAIL}}', esc(contactEmail || 'the contact address shown in the Google Play listing')));
+        }
+      }
       let route = routes[`${req.method} ${url.pathname}`], match = [];
       if (!route) for (const [method, re, fn] of dynamic) { const m = method === req.method && re.exec(url.pathname); if (m) { route = fn; match = m.slice(1); break; } }
       if (!route) throw fail(404, 'Nicht gefunden');
@@ -287,6 +318,6 @@ if (require.main === module) {
   const dbFile = env.DB_PATH || './data/deck.db';
   fs.mkdirSync(path.dirname(dbFile), { recursive: true });
   const db = openDb(dbFile);
-  createServer({ db, verify, sendMail, allowRegistration: (env.ALLOW_REGISTRATION ?? '1') === '1', trustProxy: env.TRUST_PROXY === '1' })
+  createServer({ db, verify, sendMail, allowRegistration: (env.ALLOW_REGISTRATION ?? '1') === '1', trustProxy: env.TRUST_PROXY === '1', pagesDir: env.PAGES_DIR || '', contactEmail: env.CONTACT_EMAIL || '' })
     .listen(+env.PORT || 8787, env.HOST || '0.0.0.0', () => console.log(`SSH-Deck-Server läuft auf Port ${+env.PORT || 8787} (E-Mail-Code: ${verify ? 'an' : 'aus'})`));
 }

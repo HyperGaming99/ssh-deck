@@ -81,6 +81,7 @@ class Backend {
   async verify(email, code) { return (await this.#req('POST', 'verify', { email, code })).token; }
   async login(email, auth) { return (await this.#req('POST', 'login', { email, auth })).token; }
   logout() { return this.#req('POST', 'logout', {}); }
+  deleteAccount(email, auth) { return this.#req('POST', 'account/delete', { email, auth }); }
   async getVault() { return (await this.#req('GET', 'vault')).vault; }
   // prev null = erstes Schreiben. false = Konflikt (anderes Gerät war schneller).
   async putVault(blob, prev) {

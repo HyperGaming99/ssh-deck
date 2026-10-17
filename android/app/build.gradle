@@ -1,0 +1,90 @@
+apply plugin: 'com.android.application'
+
+// Version aus package.json: versionName = Version, versionCode = major*1000000 + minor*10000 + patch*100 (+ Build, siehe ANDROID_VERSION_CODE).
+// Für Google Play muss versionCode bei jedem Upload steigen: ANDROID_VERSION_CODE=<Zahl> überschreibt die Berechnung.
+def pkg = new groovy.json.JsonSlurper().parse(file('../../package.json'))
+def semver = (pkg.version =~ /^(\d+)\.(\d+)\.(\d+)/)[0]
+def computedCode = semver[1].toInteger() * 1000000 + semver[2].toInteger() * 10000 + semver[3].toInteger() * 100
+
+// Release-Signierung: ~/Android/ssh-deck-keystore.properties (storeFile, storePassword, keyAlias, keyPassword) oder die Umgebungsvariablen SSHDECK_KEYSTORE, SSHDECK_STORE_PASSWORD, SSHDECK_KEY_ALIAS, SSHDECK_KEY_PASSWORD (CI)
+def ksProps = new Properties()
+def ksFile = file(System.getProperty('user.home') + '/Android/ssh-deck-keystore.properties')
+if (ksFile.exists()) ksFile.withInputStream { ksProps.load(it) }
+def ks = { k, e -> System.getenv(e) ?: ksProps.getProperty(k) }
+
+android {
+    namespace = "io.github.hypergaming99.sshdeck"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "io.github.hypergaming99.sshdeck"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode(((System.getenv('ANDROID_VERSION_CODE') ?: computedCode) as String) as int)
+        versionName pkg.version
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        ndk { abiFilters 'arm64-v8a', 'x86_64' }
+        externalNativeBuild { cmake { cppFlags "-std=c++17"; arguments "-DANDROID_STL=c++_shared" } }
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    ndkVersion "27.2.12479018"
+    externalNativeBuild { cmake { path "CMakeLists.txt"; version "3.22.1" } }
+    sourceSets { main { jniLibs.srcDirs = ['libnode/bin/'] } }
+    packagingOptions { jniLibs { useLegacyPackaging = true } }
+    signingConfigs {
+        release {
+            if (ks('storeFile', 'SSHDECK_KEYSTORE')) {
+                storeFile file(ks('storeFile', 'SSHDECK_KEYSTORE'))
+                storePassword ks('storePassword', 'SSHDECK_STORE_PASSWORD')
+                keyAlias ks('keyAlias', 'SSHDECK_KEY_ALIAS')
+                keyPassword ks('keyPassword', 'SSHDECK_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            if (ks('storeFile', 'SSHDECK_KEYSTORE')) signingConfig signingConfigs.release
+            minifyEnabled true // R8: Code verkleinern (Play-Empfehlung); Schutzregeln in proguard-rules.pro
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        // zum Prüfen von R8 auf dem Gerät: wie release, aber mit dem Debug-Schlüssel (lässt sich über die Debug-App installieren)
+        r8test {
+            initWith release
+            signingConfig signingConfigs.debug
+            matchingFallbacks = ['release']
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

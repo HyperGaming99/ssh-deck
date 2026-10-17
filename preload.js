@@ -15,7 +15,8 @@ const unwrap = async (promise) => {
 const sftpCall = (name) => (sid, ...a) => unwrap(ipcRenderer.invoke(`sftp:${name}`, sid, ...a));
 
 contextBridge.exposeInMainWorld('api', {
-  hosts: { ...coll('hosts'), get: (id) => ipcRenderer.invoke('hosts:get', id), copy: (id, vault, move, name) => ipcRenderer.invoke('hosts:copy', id, vault, move, name) },
+  hosts: { ...coll('hosts'), get: (id) => ipcRenderer.invoke('hosts:get', id), copy: (id, vault, move, name) => ipcRenderer.invoke('hosts:copy', id, vault, move, name), jumpCandidates: (id, vault) => ipcRenderer.invoke('hosts:jumpCandidates', id, vault) },
+  saveText: (name, text) => ipcRenderer.invoke('saveText', name, text),
   win: {
     minimize: () => ipcRenderer.send('win:minimize'),
     toggleMax: () => ipcRenderer.send('win:toggleMax'),
@@ -32,6 +33,7 @@ contextBridge.exposeInMainWorld('api', {
     auth: (o) => ipcRenderer.invoke('auth:submit', o),
     now: () => ipcRenderer.invoke('sync:now'),
     logout: () => ipcRenderer.invoke('sync:logout'),
+    deleteAccount: (password) => ipcRenderer.invoke('sync:deleteAccount', password),
     onStatus: (cb) => ipcRenderer.on('sync:status', (_, s) => cb(s)),
   },
   known: {
@@ -50,7 +52,7 @@ contextBridge.exposeInMainWorld('api', {
     invite: (id, email, role) => ipcRenderer.invoke('team:invite', id, email, role), setRole: (id, u, role) => ipcRenderer.invoke('team:setRole', id, u, role),
     remove: (id, u) => ipcRenderer.invoke('team:remove', id, u), leave: (id) => ipcRenderer.invoke('team:leave', id), delete: (id) => ipcRenderer.invoke('team:delete', id),
     onChanged: (cb) => ipcRenderer.on('teams:changed', () => cb()) },
-  update: { check: () => ipcRenderer.invoke('update:check'), install: () => ipcRenderer.invoke('update:install'), openPage: () => ipcRenderer.invoke('update:openPage'),
+  update: { check: () => ipcRenderer.invoke('update:check'), install: (v) => ipcRenderer.invoke('update:install', v), openPage: (v) => ipcRenderer.invoke('update:openPage', v), list: () => ipcRenderer.invoke('update:list'),
     onAvailable: (cb) => ipcRenderer.on('update:available', (_, u) => cb(u)), onStep: (cb) => ipcRenderer.on('update:step', (_, s) => cb(s)) },
   settings: { get: () => ipcRenderer.invoke('settings:get'), set: (patch) => ipcRenderer.invoke('settings:set', patch) },
   onHostsChanged: (cb) => ipcRenderer.on('hosts:changed', cb),
@@ -88,6 +90,7 @@ contextBridge.exposeInMainWorld('api', {
   pathOf: (file) => webUtils.getPathForFile(file), // Pfad einer aus dem Dateimanager gezogenen Datei
   fwd: { ...coll('fwd'), toggle: (id) => ipcRenderer.invoke('fwd:toggle', id) },
   open: (sid, id, cols, rows) => ipcRenderer.send('ssh:open', sid, id, cols, rows),
+  stats: (sid) => ipcRenderer.invoke('stats:get', sid),
   input: (sid, d) => ipcRenderer.send('ssh:input', sid, d),
   resize: (sid, c, r) => ipcRenderer.send('ssh:resize', sid, c, r),
   close: (sid) => ipcRenderer.send('ssh:close', sid),
@@ -96,5 +99,7 @@ contextBridge.exposeInMainWorld('api', {
   answerCred: (id, a) => ipcRenderer.send('cred:answer', id, a),
   answer: (sid, a) => ipcRenderer.send('ssh:answer', sid, a),
   onStatus: (cb) => ipcRenderer.on('ssh:status', (_, sid, s) => cb(sid, s)),
+  saveRec: (text, name) => ipcRenderer.invoke('rec:save', text, name),
+  onLost: (cb) => ipcRenderer.on('ssh:lost', (_, sid) => cb(sid)),
   onClosed: (cb) => ipcRenderer.on('ssh:closed', (_, sid) => cb(sid)),
 });

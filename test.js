@@ -5,6 +5,23 @@ const os = require('os');
 const path = require('path');
 const { hosts, plain, keys } = require('./store');
 const keyTools = require('./keys');
+const serverStats = require('./serverstats');
+{
+  const out = '0.50 0.40 0.30 1/200 999\n---\n4\n---\nMemTotal:       8000000 kB\nMemFree: 1 kB\nMemAvailable:   2000000 kB\n---\nFilesystem 1024-blocks Used Available Capacity Mounted on\n/dev/sda1 10000000 4000000 6000000 40% /\n---\n90061.5 1000.0\n';
+  const r = serverStats.parse(out);
+  assert.deepEqual(r.load, [0.5, 0.4, 0.3]);
+  assert.equal(r.cores, 4);
+  assert.equal(r.memUsed, 6000000 * 1024);
+  assert.equal(r.diskPct, 40);
+  assert.equal(r.uptime, 90061.5);
+  assert.equal(serverStats.parse('Darwin'), null, 'kein Linux -> null');
+  assert.equal(serverStats.parse(''), null);
+}
+import('./src/lib/snippetVars.mjs').then(({ vars, fill }) => {
+  assert.deepEqual(vars('echo {{a}} {{ b:x y }} {{a:z}}'), [{ name: 'a', def: '' }, { name: 'b', def: 'x y ' }]);
+  assert.equal(fill('ls {{d:/tmp}} {{d}} {{n}}', { d: '/v' }), 'ls /v /v ');
+  assert.deepEqual(vars('ls -la'), []);
+}).catch((e) => { console.error(e); process.exit(1); });
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'deck-'));
 const file = path.join(dir, 'hosts.json');
 const s = hosts(file, { encrypt: (x) => 'ENC:' + x, decrypt: (x) => x.slice(4) });
@@ -81,6 +98,36 @@ const listen = (opts) => new Promise((res) => { const srv = createServer({ db: o
   await assert.rejects(new sync.Backend({ url }).login('a@x.de', kBad.auth), /falsch/);
   await assert.rejects(new sync.Backend({ url }).login('niemand@x.de', kA.auth), /falsch/);
   await assert.rejects(new sync.Backend({ url, token: 'nope' }).getVault(), (e) => e.status === 401);
+  { // Info-Seiten aus PAGES_DIR; fehlende Seite = 404, kein Zugriff außerhalb der Liste
+    const pd = fs.mkdtempSync(path.join(os.tmpdir(), 'pages-')); fs.writeFileSync(path.join(pd, 'privacy.html'), '<p>Mail: {{CONTACT_EMAIL}}</p>');
+    const sp = await listen({ pagesDir: pd, contactEmail: 'a<b>@x.de' });
+    const r = await fetch(sp.url + '/privacy'); const h = await r.text();
+    assert.equal(r.status, 200); assert(/text\/html/.test(r.headers.get('content-type'))); assert(h.includes('a&lt;b&gt;@x.de'), 'E-Mail wird escaped eingesetzt');
+    assert.equal((await fetch(sp.url + '/delete-account')).status, 404, 'Seite ohne Datei');
+    assert.equal((await fetch(sp.url + '/../../etc/passwd')).status, 404);
+    sp.srv.close();
+  }
+  { // Konto löschen: falsches Passwort, Team-Besitzer mit Mitgliedern blockiert, dann alles weg
+    const db2 = openDb(':memory:'); const s2 = await listen({ db: db2 }); const bk = () => new sync.Backend({ url: s2.url });
+    const kD = sync.deriveKeys('d@x.de', 'pw-d'), kE = sync.deriveKeys('e@x.de', 'pw-e');
+    const tD = await bk().register('d@x.de', kD.auth); const tE = await bk().register('e@x.de', kE.auth);
+    await new sync.Backend({ url: s2.url, token: tD.token }).putVault('blob', null);
+    await assert.rejects(bk().deleteAccount('d@x.de', kE.auth), /falsch/);
+    const dId = db2.prepare('select id from users where email = ?').get('d@x.de').id, eId = db2.prepare('select id from users where email = ?').get('e@x.de').id;
+    db2.prepare("insert into teams (id, name, updated, created) values ('t1', 'Team', 1, 1)").run();
+    db2.prepare("insert into team_members values ('t1', ?, 'owner', 'k', ?, 1, 1)").run(dId, dId);
+    db2.prepare("insert into team_members values ('t1', ?, 'member', 'k', ?, 1, 1)").run(eId, dId);
+    await assert.rejects(bk().deleteAccount('d@x.de', kD.auth), /Besitzer/);
+    db2.prepare('delete from team_members where user_id = ?').run(eId);
+    await bk().deleteAccount('d@x.de', kD.auth);
+    for (const q of ['users', 'sessions', 'vault', 'team_members']) assert.equal(db2.prepare(`select count(*) c from ${q} where ${q === 'users' ? 'id' : 'user_id'} = ?`).get(dId).c, 0, q + ' geleert');
+    assert.equal(db2.prepare('select count(*) c from teams where id = ?').get('t1').c, 0, 'eigenes Ein-Personen-Team gelöscht');
+    await assert.rejects(new sync.Backend({ url: s2.url, token: tD.token }).getVault(), (e) => e.status === 401);
+    await assert.rejects(bk().login('d@x.de', kD.auth), /falsch/);
+    assert((await bk().login('e@x.de', kE.auth)), 'andere Konten bleiben');
+    s2.srv.close();
+  }
+
 
   // Zwei Geräte gleichen ab: beide loggen sich mit denselben Daten ein
   const token = await new sync.Backend({ url }).login('a@x.de', kA.auth);
@@ -242,6 +289,33 @@ assert.equal(osIcon('ID=pop\nID_LIKE="ubuntu debian"'), 'ubuntu-linux', 'Derivat
 assert.equal(osIcon('ID=somethingnew'), 'linux');
 assert.equal(osIcon('Darwin\n'), 'apple');
 assert.equal(osIcon(''), '');
+
+// fav/lastUsed überleben save; touch ändert updatedAt nicht
+const fid = s.save({ name: 'f', host: 'h', user: 'u', fav: true });
+s.touch(fid);
+const f1 = s.list().find((x) => x.id === fid);
+assert(f1.fav === true && f1.lastUsed > 0, 'fav/lastUsed gesetzt');
+const upd = JSON.parse(fs.readFileSync(file, 'utf8')).find((x) => x.id === fid).updatedAt;
+s.touch(fid);
+assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).find((x) => x.id === fid).updatedAt, upd, 'touch löst keinen Sync aus');
+const lu = s.list().find((x) => x.id === fid).lastUsed; // nach dem zweiten touch
+s.save({ id: fid, name: 'f2', host: 'h', user: 'u' }); // ohne fav/lastUsed
+assert(s.list().find((x) => x.id === fid).fav && s.list().find((x) => x.id === fid).lastUsed === lu, 'überleben save');
+s.save({ id: fid, name: 'f2', host: 'h', user: 'u', fav: false });
+assert.equal(s.list().find((x) => x.id === fid).fav, false);
+
+// ssh-Befehl und SSH-Config
+(async () => {
+  const S = await import('./src/lib/sshcmd.mjs');
+  assert.equal(S.sshCommand({ host: 'h.io', user: 'me', port: 22 }), 'ssh me@h.io');
+  assert.equal(S.sshCommand({ host: 'h.io', user: 'me', port: 2222, keyPath: '/k/id' }), 'ssh -p 2222 -i /k/id me@h.io');
+  assert.equal(S.sshCommand({ host: '[::1]', user: 'me', port: '22' }), 'ssh me@::1');
+  assert.equal(S.sshCommand({ host: 'h', user: 'me', keyPath: "/my keys/id" }), "ssh -i '/my keys/id' me@h");
+  const c = S.sshConfig([{ name: 'Web Prod 1', host: '10.0.0.1', user: 'root', port: 2200, keyPath: '~/.ssh/k', secret: 'pw' }, { name: 'db', host: '::1', user: 'u', port: 22 }]);
+  assert.equal(c, 'Host WebProd1\n  HostName 10.0.0.1\n  User root\n  Port 2200\n  IdentityFile ~/.ssh/k\n\nHost db\n  HostName ::1\n  User u\n');
+  assert(!c.includes('pw'));
+  console.log('sshcmd ok');
+})().catch((e) => { console.error(e); process.exit(1); });
 
 // Pfad-Helfer (Windows/Linux) und Laufwerksliste
 (async () => {
@@ -716,6 +790,72 @@ const mock = {
   assert.equal(dev.version, '0.1.4-dev.10', 'Dev: höchster Build (10 > 2), Entwürfe zählen nicht');
   assert(dev.prerelease && dev.tarball.endsWith('/dev10'));
   assert(updater.isNewer(dev.version, '0.1.4-dev.2') && !updater.isNewer(dev.version, '0.1.4-dev.10'), 'Dev-Update nur bei höherer Build-Nummer');
+  assert(updater.available('0.1.4-dev.16', '0.1.4', true) && !updater.available('0.1.4-dev.16', '0.1.4-dev.16', true) && !updater.available('0.1.4-dev.16', '0.1.4', false), 'Quell-Installation 0.1.4 bekommt Dev-Builds von 0.1.4');
   srv.close();
   console.log('channels ok');
 })().catch((e) => { console.error(e); process.exit(1); });
+
+// Jump-Hosts: Kette, Schleifen, Tiefe; Telnet: IAC-Verhandlung
+(() => {
+  const jump = require('./jump');
+  const telnet = require('./telnet');
+  const L = [{ id: 'a' }, { id: 'b', jumpId: 'a' }, { id: 'c', jumpId: 'b' }, { id: 'd', jumpId: 'c' }, { id: 'e', jumpId: 'd' }, { id: 't', protocol: 'telnet' }];
+  const get = (id) => L.find((x) => x.id === id);
+  assert.deepEqual(jump.chain(get, get('c')).map((x) => x.id), ['a', 'b'], 'außen zuerst');
+  assert.deepEqual(jump.chain(get, get('a')), []);
+  assert.equal(jump.chain(get, get('d')).length, 3);
+  assert.throws(() => jump.chain(get, get('e')), /max\. 3/);
+  assert.throws(() => jump.chain(get, { id: 'a', jumpId: 'c' }), /Schleife/, 'a -> c -> b -> a');
+  assert.throws(() => jump.chain(get, { id: 'x', jumpId: 'x' }), /Schleife/);
+  assert.throws(() => jump.chain(get, { id: 'x', jumpId: 't' }), /Telnet/);
+  assert.throws(() => jump.chain(get, { id: 'x', jumpId: 'zz' }), /nicht gefunden/);
+  assert.deepEqual(jump.candidates(L, 'a').map((x) => x.id), [], 'b..e hängen an a (Schleife), t ist Telnet');
+  assert(!jump.candidates(L, 'x').some((x) => x.id === 'e'), 'Tiefe 4 nicht wählbar');
+
+  const IAC = 255;
+  const st = telnet.newState(100, 30);
+  let r = telnet.parse(st, Buffer.from([IAC, 251, 1, IAC, 251, 3, IAC, 253, 31, IAC, 253, 24, IAC, 251, 99, 65, IAC, IAC, 66, IAC]));
+  assert.deepEqual([...r.data], [65, 255, 66], 'IAC IAC = Datenbyte 255; angefangene Sequenz wartet');
+  assert.deepEqual([...r.reply], [IAC, 253, 1, IAC, 253, 3, IAC, 251, 31, IAC, 250, 31, 0, 100, 0, 30, IAC, 240, IAC, 252, 24, IAC, 254, 99], 'ECHO/SGA/NAWS an, Rest abgelehnt');
+  r = telnet.parse(st, Buffer.from([251, 1, 67]));
+  assert.deepEqual([...r.data], [67]);
+  assert.equal(r.reply.length, 0, 'zweites WILL ECHO: keine erneute Antwort');
+  telnet.parse(st, Buffer.from([IAC, 250, 24, 1, IAC]));
+  r = telnet.parse(st, Buffer.from([240, 68]));
+  assert.deepEqual([...r.data], [68], 'Unterverhandlung über Chunk-Grenze ignoriert');
+  assert.deepEqual([...telnet.encode('a\r')], [97, 13, 0]);
+  assert.deepEqual([...telnet.nawsFrame(255, 24)], [IAC, 250, 31, 0, 255, 255, 0, 24, IAC, 240], '255 in NAWS wird verdoppelt');
+  console.log('jump/telnet ok');
+})();
+
+// Proxy-Kette / Cloudflare Tunnel
+{
+  const tp = require('./transport');
+  const p = tp.parseProxies('# Kommentar\nsocks5://u:p%40w@a.example:9050\nsocks4://[::1]:1081\nb.example\n');
+  assert.deepEqual(p[0], { host: 'a.example', port: 9050, type: 5, userId: 'u', password: 'p@w' });
+  assert.deepEqual(p[1], { host: '::1', port: 1081, type: 4 });
+  assert.deepEqual(p[2], { host: 'b.example', port: 1080, type: 5 });
+  assert.throws(() => tp.parseProxies('http://x:8080'), /nicht unterstützt/);
+  assert.deepEqual(tp.parseProxies(''), []);
+  tp.cloudflared('x.example', '/nonexistent/cloudflared').then(() => assert.fail('sollte scheitern'), (e) => assert(/cloudflared nicht gefunden/.test(e.message)));
+  const hs = hosts(path.join(dir, 'via.json'), { encrypt: (x) => x, decrypt: (x) => x });
+  const vid = hs.save({ name: 'v', host: 'h', user: 'u', via: 'proxy', proxies: 'socks5://p:1' });
+  assert.equal(hs.list()[0].via, 'proxy'); assert.equal(hs.list()[0].proxies, 'socks5://p:1');
+  hs.save({ id: vid, name: 'v', host: 'h', user: 'u', via: 'cloudflared', proxies: 'x' });
+  assert.equal(hs.list()[0].proxies, ''); assert.equal(hs.list()[0].via, 'cloudflared');
+  console.log('transport ok');
+}
+
+// Handy-Unterbau (Node-Seite über den electron-Ersatz, Keystore-Schlüssel) in eigenem Prozess
+console.log(require('child_process').execFileSync(process.execPath, [path.join(__dirname, 'mobile', 'test-node.js')], { encoding: 'utf8', timeout: 60000 }).trim());
+
+// Befehlsvorschläge
+import('./src/lib/suggest.mjs').then(({ suggest, COMMON }) => {
+  assert.deepEqual(suggest('g', { history: ['git status'] }), [], 'unter 2 Zeichen keine Vorschläge');
+  const r = suggest('git ', { history: ['git push', 'ls', 'git pull'], snippets: ['git stash pop'], common: ['git status', 'git pull'] });
+  assert.deepEqual(r.map((x) => x.text + ':' + x.src), ['git pull:hist', 'git push:hist', 'git stash pop:snip', 'git status:common'], 'Verlauf neueste zuerst, dann Snippets, dann häufige; ohne Doppelte');
+  assert.equal(suggest('git pull', { history: ['git pull'] }).length, 0, 'identische Zeile wird nicht vorgeschlagen');
+  assert.equal(suggest('ls', { history: Array.from({ length: 9 }, (_, i) => 'ls ' + i) }).length, 5, 'höchstens 5');
+  assert(COMMON.length > 50 && new Set(COMMON).size === COMMON.length, 'häufige Befehle ohne Doppelte');
+  console.log('suggest ok');
+});

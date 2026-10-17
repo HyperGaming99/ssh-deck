@@ -109,7 +109,7 @@ function Pane({ pane, hosts, editors, onDropPane, onDropFiles, onTransfer, trans
           <SelectTrigger className="h-7 w-36 shrink-0 text-xs"><SelectValue placeholder={t('Host wählen …')} /></SelectTrigger>
           <SelectContent>
             <SelectItem value="local">{t('Lokal')}</SelectItem>
-            {hosts.map((h) => <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>)}
+            {hosts.filter((h) => h.protocol !== 'telnet').map((h) => <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>)}
           </SelectContent>
         </Select>
         <Button variant="ghost" size="icon" className="size-7" onClick={() => pane.go(pane.up())}><ArrowUp className="size-4" /></Button>
@@ -213,7 +213,7 @@ export default function SftpTab({ sid, hostId, active = true, toast, openForm })
   };
 
   return (
-    <div dir="ltr" className="flex h-full gap-3 p-3">
+    <div dir="ltr" className="msftp flex h-full gap-3 p-3">
       <Pane pane={left} hosts={hosts} editors={editors} onDropPane={onDropPane} onDropFiles={onDropFiles} onTransfer={() => send(left, right, [...left.sel])} transferLabel={label(left, right)} openForm={openForm} toast={toast} />
       <div className="flex flex-col justify-center gap-2">
         <Button size="icon" title={t('Nach rechts übertragen')} disabled={busy || !left.sel.size} onClick={() => send(left, right, [...left.sel])}><ArrowLeft className="size-4 rotate-180" /></Button>

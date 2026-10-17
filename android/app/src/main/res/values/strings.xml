@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SSH Deck</string>
+    <string name="title_activity_main">SSH Deck</string>
+    <string name="package_name">io.github.hypergaming99.sshdeck</string>
+    <string name="custom_url_scheme">io.github.hypergaming99.sshdeck</string>
+</resources>

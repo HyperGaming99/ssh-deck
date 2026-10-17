@@ -84,9 +84,24 @@ app.whenReady().then(async () => {
   for (const [id, title] of [['snip', 'Snippets'], ['hist', 'History'], ['fwd', 'Forwarding']]) {
     await ex(`document.querySelector('aside button[title=${JSON.stringify(title)}]').click()`); await sleep(300); await shot(`p_${id}`);
   }
+  // Forwarding-Assistent: alle fünf Schritte mit ausgefüllten Werten (Art, Port, Zwischen-Host, Ziel, Name)
+  const fillIn = (n, text) => ex(`(() => { const el = document.querySelectorAll('[role=dialog] input')[${n}]; if (!el) throw new Error('Eingabe fehlt: ${n}');
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, ${JSON.stringify(text)}); el.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`);
+  const dlgRect = (text) => ex(`(() => { const el = [...document.querySelectorAll('[role=dialog] button')].find((e) => e.textContent.trim() === ${JSON.stringify(text)}); if (!el) throw new Error('nicht gefunden: ' + ${JSON.stringify(text)});
+    const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; })()`);
+  const dlgClick = (text) => ex(`(() => { [...document.querySelectorAll('[role=dialog] button')].find((e) => e.textContent.trim() === ${JSON.stringify(text)}).click(); return true; })()`);
   L.newFwd = await rect('New forwarding', 'aside button');
   await click('New forwarding', 'aside button'); await sleep(900); await shot('fw0');
-  L.fwContinue = await rect('Continue'); await click('Continue'); await sleep(500); await shot('fw1');
+  L.fwBtn = [await dlgRect('Continue')]; L.fwContinue = L.fwBtn[0];
+  await dlgClick('Continue'); await sleep(500); await fillIn(0, '5432'); await sleep(200); await shot('fw1');
+  L.fwBtn.push(await dlgRect('Continue')); await dlgClick('Continue'); await sleep(500);
+  await ex(`document.querySelector('[role=dialog] [role=combobox]').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerType: 'mouse' }))`); await sleep(400);
+  await ex(`(() => { const o = document.querySelectorAll('[role=option]'); (o[1] || o[0]).click(); return true; })()`); await sleep(500); await shot('fw2');
+  L.fwBtn.push(await dlgRect('Continue')); await dlgClick('Continue'); await sleep(500);
+  await fillIn(0, 'localhost'); await fillIn(1, '5432'); await sleep(200); await shot('fw3');
+  L.fwBtn.push(await dlgRect('Continue')); await dlgClick('Continue'); await sleep(500);
+  await fillIn(0, 'Postgres'); await sleep(200); await shot('fw4');
+  L.fwBtn.push(await dlgRect('Done'));
   await ex("document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))");
 
 
@@ -123,6 +138,28 @@ app.whenReady().then(async () => {
   T4.privacy = await rect('Privacy', 'aside button'); T4.language = await rect('Language', 'aside button');
   await click('Privacy', 'aside button'); await sleep(300); await click('Test connection'); await sleep(700); await shot('set_privacy');
   await click('Language', 'aside button'); await sleep(500); await shot('set_lang');
+  // Neu: Darstellung (Animationen), Teams, Cloud-Schlüsselbund, Updates mit Versionswahl
+  const NEW = {};
+  await ex("window.api.__demo.setKcOn(true)");
+  await ex("window.api.__demo.setTeams([{ id: 't1', name: 'Platform team', role: 'owner', members: 3 }, { id: 't2', name: 'Ops on-call', role: 'member', members: 5 }])"); await sleep(500);
+  NEW.appearance = await rect('Appearance', 'aside button'); NEW.teams = await rect('Teams', 'aside button'); NEW.kc = await rect('Cloud keychain', 'aside button'); NEW.updates = await rect('Updates', 'aside button');
+  await click('Appearance', 'aside button'); await sleep(500); await shot('set_app');
+  // Schalter "Animationen" auf Aus: zweites Bild, damit man den Wechsel sieht (danach wieder an)
+  const animBtn = (label) => ex(`(() => { const row = [...document.querySelectorAll('p')].find((e) => e.textContent.trim() === 'Animations').closest('div.rounded-xl'); [...row.querySelectorAll('button')].find((x) => x.textContent.trim() === ${JSON.stringify(label)}).click(); return true; })()`);
+  NEW.animRow = await ex(`(() => { const el = [...document.querySelectorAll('p')].find((e) => e.textContent.trim() === 'Animations'); const r = el.closest('div.rounded-xl').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; })()`);
+  NEW.animOff = await ex(`(() => { const row = [...document.querySelectorAll('p')].find((e) => e.textContent.trim() === 'Animations').closest('div.rounded-xl'); const b = [...row.querySelectorAll('button')].find((x) => x.textContent.trim() === 'Off'); const r = b.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; })()`);
+  await animBtn('Off'); await sleep(400); await shot('set_app_off'); await animBtn('On'); await sleep(300);
+  await click('Teams', 'aside button'); await sleep(700);
+  try { NEW.teamRow = await rect('Platform team', 'button'); await click('Platform team', 'button'); } catch { NEW.teamRow = await rect('Platform team', 'div'); await click('Platform team', 'div'); }
+  await sleep(900); await shot('set_teams');
+  await click('Cloud keychain', 'aside button'); await sleep(700); await shot('set_kc');
+  await click('Updates', 'aside button'); await sleep(1200); await shot('set_upd');
+  NEW.vault = await rect('Personal', 'header button');
+  await click('Hosts', 'nav button'); await sleep(600);
+  await ex(`[...document.querySelectorAll('header button')].find((e) => e.textContent.trim().includes('Personal')).dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerType: 'mouse' }))`); await sleep(600); await shot('vault_menu');
+  await ex("document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))"); await sleep(400);
+  await click('Settings', 'nav button'); await sleep(500);
+  T4.NEW = NEW;
   await click('Hosts', 'nav button'); await sleep(600);
   T4.sun = await rectSel('[aria-label="Switch theme"]');
   await ex(`document.querySelector('[aria-label="Switch theme"]').click()`); await sleep(600); await shot('hosts_light');
