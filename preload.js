@@ -16,6 +16,7 @@ const sftpCall = (name) => (sid, ...a) => unwrap(ipcRenderer.invoke(`sftp:${name
 
 contextBridge.exposeInMainWorld('api', {
   hosts: { ...coll('hosts'), get: (id) => ipcRenderer.invoke('hosts:get', id), copy: (id, vault, move, name) => ipcRenderer.invoke('hosts:copy', id, vault, move, name) },
+  saveText: (name, text) => ipcRenderer.invoke('saveText', name, text),
   win: {
     minimize: () => ipcRenderer.send('win:minimize'),
     toggleMax: () => ipcRenderer.send('win:toggleMax'),

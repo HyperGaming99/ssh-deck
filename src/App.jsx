@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronLeft, Eye, EyeOff, LayoutGrid, List, CloudOff, Fingerprint, Languages, ShieldCheck, Check, FileText, Palette, Settings as SettingsIcon, User, Folder, FolderPlus, Menu, Minus, Square, ArrowLeftRight, Code2, Copy, Download, Ellipsis, FileUp, FolderOpen, KeyRound, Lock, Moon, Pencil, Plus, RefreshCw, Search, Send, Server, Sun, PanelRight, Terminal as TermIcon, Trash2, Users, X } from 'lucide-react';
+import { ChevronDown, ChevronLeft, Eye, EyeOff, LayoutGrid, List, CloudOff, Fingerprint, Languages, ShieldCheck, Check, FileText, Palette, Settings as SettingsIcon, User, Folder, FolderPlus, Menu, Minus, Square, ArrowLeftRight, Code2, Copy, Star, Download, Ellipsis, FileUp, FolderOpen, KeyRound, Lock, Moon, Pencil, Plus, RefreshCw, Search, Send, Server, Sun, PanelRight, Terminal as TermIcon, Trash2, Users, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,7 @@ import HostKeyDialog from '@/components/HostKeyDialog';
 import ImportDialog from '@/components/ImportDialog';
 import KeyImportSheet from '@/components/KeyImportSheet';
 import { maskFingerprint, maskHost } from '@/lib/censor.mjs';
+import { sshCommand, sshConfig } from '@/lib/sshcmd.mjs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import Terminal, { writers } from '@/components/Terminal';
 import SftpTab from '@/components/SftpTab';
@@ -151,15 +152,26 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
     toast((move ? t('Host verschoben.') : t('Host geklont.')) + (r.keyDropped ? ` ${t('Der Schlüssel gehört zu seinem Tresor und wurde nicht mitgenommen.')}` : ''));
     load();
   };
+  // Favorit umschalten, SSH-Befehl kopieren, als ~/.ssh/config exportieren
+  const toggleFav = async (h) => { await api.hosts.save({ ...h, fav: !h.fav }); load(); };
+  const copyCmd = async (h) => { await navigator.clipboard.writeText(sshCommand(h)); toast(t('SSH-Befehl kopiert.')); };
+  const copyConfig = async (h) => { await navigator.clipboard.writeText(sshConfig([h])); toast(t('SSH-Config kopiert.')); };
+  const exportConfig = async (list, name) => {
+    if (!list.length) return toast(t('Keine Hosts zum Exportieren.'));
+    const err = await api.saveText(name, sshConfig(list));
+    if (err) toast(err);
+  };
   const hostMenu = (h) => {
     const others = vaults.filter((x) => x.id !== vault);
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="size-8" aria-label={t('Mehr')} onClick={(e) => e.stopPropagation()}><Ellipsis className="size-3.5" /></Button></DropdownMenuTrigger>
         <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuItem onSelect={() => copyCmd(h)}><Copy className="size-4" />{t('SSH-Befehl kopieren')}</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => copyConfig(h)}><FileText className="size-4" />{t('Als SSH-Config exportieren')}</DropdownMenuItem>
           {writable && <DropdownMenuItem onSelect={() => copyTo(h, vault, false)}><Copy className="size-4" />{t('Klonen')}</DropdownMenuItem>}
           {others.length > 0 && <>
-            {writable && <DropdownMenuSeparator />}
+            <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-xs text-muted-foreground">{t('In Tresor klonen')}</DropdownMenuLabel>
             {others.map((x) => <DropdownMenuItem key={`c${x.id}`} onSelect={() => copyTo(h, x.id, false)}>{x.id === 'personal' ? <User className="size-4" /> : <Users className="size-4" />}{x.name}</DropdownMenuItem>)}
             {writable && <>
@@ -177,8 +189,8 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
       title={<span className="flex items-center gap-2">{h.name}{(h.tags || []).slice(0, 2).map((tg) => <Badge key={tg} variant="secondary" className="px-1.5 py-0 text-xs">{tg}</Badge>)}</span>}
       onClick={() => connect(h)}
       actions={<><IconButton label="SFTP" onClick={() => openSftp(h)}><FolderOpen className="size-3.5" /></IconButton>
-        {(writable || vaults.some((x) => x.id !== vault)) && hostMenu(h)}
-        {writable && <><IconButton label={t('Bearbeiten')} onClick={() => edit(h)}><Pencil className="size-3.5" /></IconButton>
+        {hostMenu(h)}
+        {writable && <><IconButton label={t('Favorit')} onClick={() => toggleFav(h)}><Star className={cn('size-3.5', h.fav && 'fill-current text-primary')} /></IconButton><IconButton label={t('Bearbeiten')} onClick={() => edit(h)}><Pencil className="size-3.5" /></IconButton>
         <IconButton label={t('Löschen')} onClick={async () => { await api.hosts.remove(h.id); load(); }}><Trash2 className="size-3.5" /></IconButton></>}</>} />
   );
   const grid = (kids) => <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">{kids}</div>;
@@ -187,6 +199,8 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
   const searching = q.trim() !== '';
   const found = hosts.filter((h) => matches(q, h.name, h.host, h.user, h.group, (h.tags || []).join(' ')));
   const inGroup = hosts.filter((h) => h.group === current);
+  const favs = hosts.filter((h) => h.fav);
+  const lastUsed = hosts.filter((h) => !h.fav && h.lastUsed).sort((a, b) => b.lastUsed - a.lastUsed).slice(0, 5);
   const ungrouped = hosts.filter((h) => !h.group || !groups.some((g) => g.name === h.group));
 
   return (
@@ -196,6 +210,7 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input className="pl-9" placeholder={t('Suchen …')} value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
+        <Button variant="outline" onClick={() => exportConfig(current !== null ? inGroup : hosts, 'ssh_config')}><FileText className="size-4" />{t('Als SSH-Config exportieren')}</Button>
         {writable && <>
         <Button variant="outline" onClick={() => setImportOpen(true)}><Download className="size-4" />{t('Importieren')}</Button>
         <Button variant="outline" onClick={newGroup}><FolderPlus className="size-4" />{t('Neue Gruppe')}</Button>
@@ -215,6 +230,8 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
         </>
       ) : (
         <>
+          {favs.length > 0 && <section className="mb-8">{heading(t('Favoriten'))}{grid(favs.map(hostCard))}</section>}
+          {lastUsed.length > 0 && <section className="mb-8">{heading(t('Zuletzt verwendet'))}{grid(lastUsed.map(hostCard))}</section>}
           {groups.length > 0 && (
             <section className="mb-8">
               {heading(t('Gruppen'))}
@@ -223,8 +240,9 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
                 return (
                   <Item key={g.id} dark={dark} icon={<Folder className="size-5 text-primary" />} title={g.name} sub={t('{n} Server', { n })}
                     onClick={() => setCurrent(g.name)}
-                    actions={writable && <><IconButton label={t('Umbenennen')} onClick={() => renameGroup(g)}><Pencil className="size-3.5" /></IconButton>
-                      <IconButton label={t('Gruppe löschen')} onClick={() => removeGroup(g)}><Trash2 className="size-3.5" /></IconButton></>} />
+                    actions={<><IconButton label={t('Als SSH-Config exportieren')} onClick={() => exportConfig(hosts.filter((h) => h.group === g.name), g.name)}><FileText className="size-3.5" /></IconButton>
+                      {writable && <><IconButton label={t('Umbenennen')} onClick={() => renameGroup(g)}><Pencil className="size-3.5" /></IconButton>
+                      <IconButton label={t('Gruppe löschen')} onClick={() => removeGroup(g)}><Trash2 className="size-3.5" /></IconButton></>}</>} />
                 );
               }))}
             </section>

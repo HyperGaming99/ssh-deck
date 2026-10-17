@@ -657,6 +657,12 @@ app.whenReady().then(() => {
   });
   handle('override:get', (_, id) => { const o = ownAccess(id); return { keyId: o.keyId || '', user: o.user || '' }; });
   handle('override:set', (_, id, o) => { overrides.save({ id, keyId: o?.keyId || '', user: String(o?.user || '').trim() }); });
+  // Text über den Speichern-Dialog ablegen (SSH-Config-Export); Rückgabe null oder Fehlertext
+  handle('saveText', async (_, name, text) => {
+    const { filePath } = await dialog.showSaveDialog(win, { defaultPath: name });
+    if (!filePath) return null;
+    try { fs.writeFileSync(filePath, text); return null; } catch (e) { return e.message; }
+  });
   handle('hosts:remove', (_, id) => hosts.remove(id));
   // Gruppen: Rückgabe null oder Fehlertext. Namen sind je Tresor eindeutig.
   const reGroup = (from, to, vault) => hosts.list().filter((h) => h.group === from && vOf(h) === vault).forEach((h) => hosts.save({ ...h, group: to }));
@@ -852,7 +858,7 @@ app.whenReady().then(() => {
   localOp('rename', (a, b) => fs.renameSync(a, b));
   localOp('open', (p, cmd) => launch(p, cmd));
   localOp('remove', (p) => shell.trashItem(p)); // Papierkorb statt endgültig löschen
-  ipcMain.on('ssh:open', (_, sid, id, cols, rows) => { const h = hosts.get(id); if (h) connect(win, sid, h, cols, rows); });
+  ipcMain.on('ssh:open', (_, sid, id, cols, rows) => { const h = hosts.get(id); if (h) hosts.touch(id); if (h) connect(win, sid, h, cols, rows); });
   ipcMain.on('ssh:input', (_, sid, d) => sessions.get(sid)?.stream?.write(d));
   ipcMain.on('cred:answer', (_, id, a) => { credAsks.get(id)?.(a); credAsks.delete(id); });
   ipcMain.on('ssh:answer', (_, sid, a) => { pending.get(sid)?.(a); pending.delete(sid); });
