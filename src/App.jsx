@@ -189,10 +189,10 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
     );
   };
   const hostCard = (h) => (
-    <Item key={h.id} dark={dark} icon={<HostIcon slug={h.icon || h.autoIcon} />} sub={`${h.user}@${h.host}:${h.port}`}
+    <Item key={h.id} dark={dark} icon={<HostIcon slug={h.icon || h.autoIcon} />} sub={h.protocol === 'telnet' ? `telnet://${h.host}:${h.port}` : `${h.user}@${h.host}:${h.port}`}
       title={<span className="flex items-center gap-2">{h.name}{(h.tags || []).slice(0, 2).map((tg) => <Badge key={tg} variant="secondary" className="px-1.5 py-0 text-xs">{tg}</Badge>)}</span>}
       onClick={() => connect(h)}
-      actions={<><IconButton label="SFTP" onClick={() => openSftp(h)}><FolderOpen className="size-3.5" /></IconButton>
+      actions={<>{h.protocol !== 'telnet' && <IconButton label="SFTP" onClick={() => openSftp(h)}><FolderOpen className="size-3.5" /></IconButton>}
         {hostMenu(h)}
         {writable && <><IconButton label={t('Favorit')} onClick={() => toggleFav(h)}><Star className={cn('size-3.5', h.fav && 'fill-current text-primary')} /></IconButton><IconButton label={t('Bearbeiten')} onClick={() => edit(h)}><Pencil className="size-3.5" /></IconButton>
         <IconButton label={t('Löschen')} onClick={async () => { await api.hosts.remove(h.id); load(); }}><Trash2 className="size-3.5" /></IconButton></>}</>} />
@@ -341,7 +341,7 @@ function KeychainView({ dark, openForm, toast }) {
   const rescan = async () => { const n = await api.keys.rescan(); toast(n ? t('{n} neue(r) Schlüssel aus ~/.ssh importiert.', { n }) : t('Keine neuen Schlüssel in ~/.ssh.')); load(); };
   const toHost = async (k) => openForm({
     title: t('Auf Host exportieren'), description: t('Trägt den öffentlichen Schlüssel „{name}“ in ~/.ssh/authorized_keys ein.', { name: k.name }), submitLabel: t('Exportieren'),
-    fields: [{ name: 'hostId', label: t('Host'), options: (await api.hosts.list()).map((h) => [h.id, `${h.name} (${h.user}@${h.host})`]) }],
+    fields: [{ name: 'hostId', label: t('Host'), options: (await api.hosts.list()).filter((h) => h.protocol !== 'telnet').map((h) => [h.id, `${h.name} (${h.user}@${h.host})`]) }],
     onSubmit: async (v) => { const err = await api.keys.toHost(k.id, v.hostId); toast(err || t('Schlüssel auf dem Host eingetragen.')); },
   });
   const passphrase = (k) => openForm({

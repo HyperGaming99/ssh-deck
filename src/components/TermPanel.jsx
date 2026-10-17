@@ -54,6 +54,7 @@ export default function TermPanel({ sid, hostId, dark, history, themeId, setThem
   const [snippets, setSnippets] = useState([]);
   const [sheet, setSheet] = useState(null);
   const [form, setForm] = useState(null);
+  const [telnet, setTelnet] = useState(false); // Telnet: kein Forwarding
   // Snippet senden; bei {{Platzhaltern}} erst nach Eingabe der Werte
   const run = (cmd) => {
     const vs = vars(cmd);
@@ -63,7 +64,8 @@ export default function TermPanel({ sid, hostId, dark, history, themeId, setThem
   const pick = (x) => { setTab(x); try { localStorage.setItem('termPanelTab', x); } catch { /* egal */ } };
   const load = useCallback(() => { api.fwd.list().then((l) => setRules(l.filter((r) => r.hostId === hostId))); api.snippets.list().then(setSnippets); }, [hostId]);
   useEffect(() => { load(); }, [load, rev]);
-  const TABS = [['fwd', t('Forwarding'), ArrowLeftRight], ['snip', t('Snippets'), Code2], ['hist', t('Verlauf'), Clock], ['status', t('Status'), Activity], ['themes', t('Terminal-Themes'), Palette]];
+  useEffect(() => { api.hosts.get(hostId).then((x) => setTelnet(x?.protocol === 'telnet')); }, [hostId, rev]);
+  const TABS = [...(telnet ? [] : [['fwd', t('Forwarding'), ArrowLeftRight]]), ['snip', t('Snippets'), Code2], ['hist', t('Verlauf'), Clock], ['status', t('Status'), Activity], ['themes', t('Terminal-Themes'), Palette]];
   const label = (r) => r.label || `${r.type} ${r.bindPort}`;
   const Row = ({ onClick, children }) => <button type="button" onClick={onClick} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-start text-sm hover:bg-accent">{children}</button>;
 
@@ -116,7 +118,7 @@ export default function TermPanel({ sid, hostId, dark, history, themeId, setThem
           </>
         )}
         {tab === 'status' && <StatusTab sid={sid} />}
-        {tab === 'fwd' && (
+        {tab === 'fwd' && !telnet && (
           <>
             <Row onClick={async () => setSheet({ rule: { hostId }, hosts: await api.hosts.list(), onSave: async (v) => { await api.fwd.save(v); load(); } })}><Plus className="size-4 text-primary" /><span className="font-medium">{t('Neues Forwarding')}</span></Row>
             {!rules.length && <p className="p-3 text-sm text-muted-foreground">{t('Keine Regeln.')}</p>}

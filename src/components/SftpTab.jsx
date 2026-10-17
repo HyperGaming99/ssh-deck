@@ -109,7 +109,7 @@ function Pane({ pane, hosts, editors, onDropPane, onDropFiles, onTransfer, trans
           <SelectTrigger className="h-7 w-36 shrink-0 text-xs"><SelectValue placeholder={t('Host wählen …')} /></SelectTrigger>
           <SelectContent>
             <SelectItem value="local">{t('Lokal')}</SelectItem>
-            {hosts.map((h) => <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>)}
+            {hosts.filter((h) => h.protocol !== 'telnet').map((h) => <SelectItem key={h.id} value={h.id}>{h.name}</SelectItem>)}
           </SelectContent>
         </Select>
         <Button variant="ghost" size="icon" className="size-7" onClick={() => pane.go(pane.up())}><ArrowUp className="size-4" /></Button>
