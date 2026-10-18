@@ -514,5 +514,12 @@
  "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "कैमरा उपलब्ध नहीं है। एक्सेस की अनुमति दें या कोड पेस्ट करें।",
  "Das ist kein SSH-Deck-Kopplungscode.": "यह SSH Deck पेयरिंग कोड नहीं है।",
  "Bitte zuerst abmelden.": "कृपया पहले साइन आउट करें।",
- "Der Kopplungscode ist ungültig.": "पेयरिंग कोड अमान्य है।"
+ "Der Kopplungscode ist ungültig.": "पेयरिंग कोड अमान्य है।",
+ "QR-Code koppeln": "QR कोड से जोड़ें",
+ "Zeige den Code auf diesem Gerät und scanne ihn auf dem neuen.": "इस डिवाइस पर कोड दिखाएँ और नए डिवाइस पर स्कैन करें।",
+ "Scanne den Code, den ein angemeldetes Gerät zeigt.": "साइन-इन किए हुए डिवाइस पर दिख रहा कोड स्कैन करें।",
+ "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "क्लाउड कीचेन और उसकी सीक्रेट की कोड में शामिल है।",
+ "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "क्लाउड कीचेन शामिल नहीं है। इसे कीचेन में चालू करें या यहाँ अनलॉक करें ताकि साथ आए।",
+ "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "साइन इन हो गया, क्लाउड कीचेन सेट हो गया।",
+ "Angemeldet.": "साइन इन हो गया।"
 }

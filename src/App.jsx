@@ -1,5 +1,5 @@
 import { Fragment, Suspense, createContext, lazy, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronLeft, Eye, EyeOff, LayoutGrid, List, Cloud, CloudOff, Fingerprint, Languages, ShieldCheck, Check, FileText, Palette, Settings as SettingsIcon, User, Folder, FolderPlus, Menu, Minus, Square, ArrowLeftRight, Code2, Copy, Star, Download, Ellipsis, FileUp, FolderOpen, KeyRound, Lock, Moon, Pencil, Circle, Plus, RefreshCw, Search, Send, Server, Sun, PanelRight, Terminal as TermIcon, Trash2, Users, X } from 'lucide-react';
+import { ChevronDown, ChevronLeft, Eye, EyeOff, LayoutGrid, List, Cloud, CloudOff, Fingerprint, Languages, ShieldCheck, Check, FileText, Palette, Settings as SettingsIcon, User, Folder, FolderPlus, Menu, Minus, Square, ArrowLeftRight, Code2, Copy, Star, Download, Ellipsis, FileUp, FolderOpen, KeyRound, Lock, Moon, Pencil, Circle, Plus, RefreshCw, Search, Send, Server, Sun, PanelRight, QrCode, Terminal as TermIcon, Trash2, Users, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,7 @@ import Logo from '@/components/Logo';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import KeychainCloud from '@/components/KeychainCloud';
 import TeamsSettings from '@/components/TeamsSettings';
-import { PairShow, PairScan } from '@/components/PairQR';
+import { PairShow, PairScan, PairSheet } from '@/components/PairQR';
 import TermPanel from '@/components/TermPanel';
 import { vars, fill } from '@/lib/snippetVars.mjs';
 import ReconnectBar from '@/components/ReconnectBar';
@@ -476,7 +476,7 @@ function SyncView({ st, onLogin, onLogout, toast }) {
           <p className="font-medium">{t('Nicht angemeldet')}</p>
           <p className="mt-1 text-sm text-muted-foreground">{t('Ohne Konto bleiben deine Daten nur auf diesem Gerät.')}</p>
           <Button className="mt-4" onClick={onLogin}>{t('Anmelden')}</Button>
-          <PairScan onDone={onLogout} />
+          <PairScan onDone={onLogout} toast={toast} />
           <ServerField st={st} toast={toast} />
         </div>
       </div>
@@ -1027,6 +1027,7 @@ export default function App() {
   };
 
   useEffect(() => { if (st) hideSplash(); }, [st]); // erst wenn der Status da ist, ist die Oberfläche bereit
+  const [pairOpen, setPairOpen] = useState(false);
   const gate = st && lang !== null && !st.configured && !skip;
   readyRef.current = !!st && lang !== null && !gate; // ohne Konto zuerst der Login-Bildschirm
   const view = { hosts: HostsView, keychain: KeychainView, known: KnownHostsView, settings: SettingsView, snippets: SnippetsView, forwards: ForwardsView }[section];
@@ -1061,6 +1062,7 @@ export default function App() {
             {tabs.find((x) => x.sid === active && x.panes) && <SplitTools tab={tabs.find((x) => x.sid === active)} split={split} bc={bc} setBc={setBc} sessions={sessions} />}
             {tabs.find((x) => x.sid === active && (x.kind === 'ssh' || !x.kind)) && (() => { const tb = tabs.find((x) => x.sid === active); const on = recs[tb.focus || tb.panes[0].sid]; return <Button variant="ghost" size="icon" className={cn('mhide mr-1 size-8', on && 'text-red-500')} onClick={() => toggleRec(tb)} aria-label={on ? t('Aufzeichnung beenden') : t('Aufzeichnen')} title={on ? t('Aufzeichnung beenden') : t('Aufzeichnen')}><Circle className={cn('size-4', on && 'fill-current')} /></Button>; })()}
             {tabs.find((x) => x.sid === active && (x.kind === 'ssh' || !x.kind)) && <Button variant="ghost" size="icon" className={cn('mr-1 size-8', panel && 'text-primary')} onClick={togglePanel} aria-label={t('Seitenleiste ein-/ausblenden')}><PanelRight className="size-4" /></Button>}
+            <Button variant="ghost" size="icon" className="mr-1 size-8" onClick={() => setPairOpen(true)} aria-label={t('QR-Code koppeln')}><QrCode className="size-4" /></Button>
             <Button variant="ghost" size="icon" className="mr-1 size-8" onClick={() => setDark(!dark)} aria-label={t('Theme wechseln')}>
               {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
             </Button>
@@ -1071,9 +1073,10 @@ export default function App() {
             </>}
           </div>
         </header>
+        <PairSheet open={pairOpen} onClose={() => setPairOpen(false)} signedIn={!!st?.configured} toast={toast} />
 
         {upd && !gate && <UpdateBanner upd={upd} onClose={() => setUpd(null)} />}
-        {st === null ? <div className="flex-1" /> : lang === null ? <LanguageSetup onPick={setLang} /> : gate ? <LoginScreen status={st} dark={dark} onSkip={() => chooseSkip(true)} /> : <div className="mroot flex min-h-0 flex-1">
+        {st === null ? <div className="flex-1" /> : lang === null ? <LanguageSetup onPick={setLang} /> : gate ? <LoginScreen status={st} dark={dark} onSkip={() => chooseSkip(true)} onPair={() => setPairOpen(true)} /> : <div className="mroot flex min-h-0 flex-1">
         {(navOpen || mobile) && !termActive && (
           <nav className={cn('mnav flex shrink-0 flex-col gap-1 py-3', side === 'wide' ? 'w-56 items-stretch border-r bg-sidebar px-3' : 'items-stretch px-2',
             side === 'compact' && 'w-[84px] border-r bg-sidebar', side === 'float' && 'm-2 mr-0 w-[92px] rounded-2xl border bg-card shadow-sm')}>

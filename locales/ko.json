@@ -514,5 +514,12 @@
  "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "카메라를 사용할 수 없습니다. 접근을 허용하거나 코드를 붙여넣으세요.",
  "Das ist kein SSH-Deck-Kopplungscode.": "SSH Deck 연결 코드가 아닙니다.",
  "Bitte zuerst abmelden.": "먼저 로그아웃하세요.",
- "Der Kopplungscode ist ungültig.": "연결 코드가 올바르지 않습니다."
+ "Der Kopplungscode ist ungültig.": "연결 코드가 올바르지 않습니다.",
+ "QR-Code koppeln": "QR 코드로 연결",
+ "Zeige den Code auf diesem Gerät und scanne ihn auf dem neuen.": "이 기기에서 코드를 표시하고 새 기기에서 스캔하세요.",
+ "Scanne den Code, den ein angemeldetes Gerät zeigt.": "로그인된 기기에 표시된 코드를 스캔하세요.",
+ "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "클라우드 키체인과 비밀 키가 코드에 포함되어 있습니다.",
+ "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "클라우드 키체인이 포함되지 않았습니다. 키체인에서 켜거나 여기서 잠금 해제하면 함께 전달됩니다.",
+ "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "로그인했고 클라우드 키체인이 설정되었습니다.",
+ "Angemeldet.": "로그인했습니다."
 }

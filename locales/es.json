@@ -514,5 +514,12 @@
  "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "Cámara no disponible. Permite el acceso o pega el código.",
  "Das ist kein SSH-Deck-Kopplungscode.": "Este no es un código de vinculación de SSH Deck.",
  "Bitte zuerst abmelden.": "Cierra sesión primero.",
- "Der Kopplungscode ist ungültig.": "El código de vinculación no es válido."
+ "Der Kopplungscode ist ungültig.": "El código de vinculación no es válido.",
+ "QR-Code koppeln": "Vincular con código QR",
+ "Zeige den Code auf diesem Gerät und scanne ihn auf dem neuen.": "Muestra el código en este dispositivo y escanéalo en el nuevo.",
+ "Scanne den Code, den ein angemeldetes Gerät zeigt.": "Escanea el código que muestra un dispositivo con sesión iniciada.",
+ "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "El llavero en la nube con su clave secreta está incluido en el código.",
+ "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "Sin llavero en la nube. Actívalo en Llavero o desbloquéalo aquí para incluirlo.",
+ "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "Sesión iniciada, llavero en la nube configurado.",
+ "Angemeldet.": "Sesión iniciada."
 }

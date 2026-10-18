@@ -514,5 +514,12 @@
  "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "Camera niet beschikbaar. Sta toegang toe of plak de code.",
  "Das ist kein SSH-Deck-Kopplungscode.": "Dit is geen SSH Deck-koppelcode.",
  "Bitte zuerst abmelden.": "Meld je eerst af.",
- "Der Kopplungscode ist ungültig.": "De koppelcode is ongeldig."
+ "Der Kopplungscode ist ungültig.": "De koppelcode is ongeldig.",
+ "QR-Code koppeln": "Koppelen met QR-code",
+ "Zeige den Code auf diesem Gerät und scanne ihn auf dem neuen.": "Toon de code op dit apparaat en scan hem op het nieuwe.",
+ "Scanne den Code, den ein angemeldetes Gerät zeigt.": "Scan de code die een ingelogd apparaat toont.",
+ "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "De cloudsleutelbos met geheime sleutel zit in de code.",
+ "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "Zonder cloudsleutelbos. Schakel hem in onder Sleutelbos of ontgrendel hem hier, zodat hij meekomt.",
+ "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "Ingelogd, cloudsleutelbos ingesteld.",
+ "Angemeldet.": "Ingelogd."
 }
