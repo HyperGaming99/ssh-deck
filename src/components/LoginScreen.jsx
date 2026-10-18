@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { useT } from '@/i18n';
 
 // Anmelden / Registrieren / E-Mail-Code. Nach Erfolg meldet der Hauptprozess 'configured' per Status-Event, der Bildschirm verschwindet dann von selbst.
-export default function LoginScreen({ status, dark, onSkip }) {
+export default function LoginScreen({ status, dark, onSkip, onPair }) {
   const t = useT();
   const [mode, setMode] = useState('login'); // login | register | verify
   const [f, setF] = useState({ email: '', password: '', password2: '', code: '', server: status.server });
@@ -86,6 +86,7 @@ export default function LoginScreen({ status, dark, onSkip }) {
               <Input id="server" value={f.server} onChange={set('server')} className="h-8 text-xs" />
             </div>
           ) : <button type="button" className="hover:text-foreground" onClick={() => setShowServer(true)}>{t('Server')}: {f.server}</button>}
+          <div><button type="button" className="hover:text-foreground" onClick={onPair}>{t('Per QR-Code anmelden')}</button></div>
           <div><button type="button" className="hover:text-foreground" onClick={onSkip}>{t('Ohne Konto fortfahren (nur lokal)')}</button></div>
         </div>
       </form>

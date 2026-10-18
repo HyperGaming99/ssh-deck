@@ -514,5 +514,12 @@
  "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "相机不可用。请允许访问或粘贴代码。",
  "Das ist kein SSH-Deck-Kopplungscode.": "这不是 SSH Deck 配对码。",
  "Bitte zuerst abmelden.": "请先退出登录。",
- "Der Kopplungscode ist ungültig.": "配对码无效。"
+ "Der Kopplungscode ist ungültig.": "配对码无效。",
+ "QR-Code koppeln": "二维码配对",
+ "Zeige den Code auf diesem Gerät und scanne ihn auf dem neuen.": "在此设备上显示二维码，并在新设备上扫描。",
+ "Scanne den Code, den ein angemeldetes Gerät zeigt.": "扫描已登录设备上显示的二维码。",
+ "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "云端钥匙串及其密钥已包含在二维码中。",
+ "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "未包含云端钥匙串。请在钥匙串中开启或在此解锁，即可一并带上。",
+ "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "已登录，云端钥匙串已设置。",
+ "Angemeldet.": "已登录。"
 }

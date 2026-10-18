@@ -514,5 +514,12 @@
  "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "Kamera kullanılamıyor. Erişime izin verin veya kodu yapıştırın.",
  "Das ist kein SSH-Deck-Kopplungscode.": "Bu bir SSH Deck eşleme kodu değil.",
  "Bitte zuerst abmelden.": "Önce çıkış yapın.",
- "Der Kopplungscode ist ungültig.": "Eşleme kodu geçersiz."
+ "Der Kopplungscode ist ungültig.": "Eşleme kodu geçersiz.",
+ "QR-Code koppeln": "QR kodla eşle",
+ "Zeige den Code auf diesem Gerät und scanne ihn auf dem neuen.": "Kodu bu cihazda gösterin ve yenisinde tarayın.",
+ "Scanne den Code, den ein angemeldetes Gerät zeigt.": "Oturum açmış bir cihazın gösterdiği kodu tarayın.",
+ "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "Bulut anahtarlığı ve gizli anahtarı koda dahildir.",
+ "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "Bulut anahtarlığı yok. Anahtarlık bölümünden açın veya burada kilidini açın, böylece gelsin.",
+ "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "Giriş yapıldı, bulut anahtarlığı kuruldu.",
+ "Angemeldet.": "Giriş yapıldı."
 }

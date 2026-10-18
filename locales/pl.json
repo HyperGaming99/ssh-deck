@@ -514,5 +514,12 @@
  "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "Aparat niedostępny. Zezwól na dostęp lub wklej kod.",
  "Das ist kein SSH-Deck-Kopplungscode.": "To nie jest kod parowania SSH Deck.",
  "Bitte zuerst abmelden.": "Najpierw się wyloguj.",
- "Der Kopplungscode ist ungültig.": "Kod parowania jest nieprawidłowy."
+ "Der Kopplungscode ist ungültig.": "Kod parowania jest nieprawidłowy.",
+ "QR-Code koppeln": "Sparuj kodem QR",
+ "Zeige den Code auf diesem Gerät und scanne ihn auf dem neuen.": "Pokaż kod na tym urządzeniu i zeskanuj go na nowym.",
+ "Scanne den Code, den ein angemeldetes Gerät zeigt.": "Zeskanuj kod wyświetlany na zalogowanym urządzeniu.",
+ "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "Chmurowy pęk kluczy z kluczem tajnym jest zawarty w kodzie.",
+ "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "Bez chmurowego pęku kluczy. Włącz go w Pęku kluczy lub odblokuj tutaj, aby został dołączony.",
+ "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "Zalogowano, chmurowy pęk kluczy skonfigurowany.",
+ "Angemeldet.": "Zalogowano."
 }

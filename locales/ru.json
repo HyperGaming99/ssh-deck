@@ -514,5 +514,12 @@
  "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "Камера недоступна. Разрешите доступ или вставьте код.",
  "Das ist kein SSH-Deck-Kopplungscode.": "Это не код привязки SSH Deck.",
  "Bitte zuerst abmelden.": "Сначала выйдите из аккаунта.",
- "Der Kopplungscode ist ungültig.": "Код привязки недействителен."
+ "Der Kopplungscode ist ungültig.": "Код привязки недействителен.",
+ "QR-Code koppeln": "Привязка по QR-коду",
+ "Zeige den Code auf diesem Gerät und scanne ihn auf dem neuen.": "Покажите код на этом устройстве и отсканируйте его на новом.",
+ "Scanne den Code, den ein angemeldetes Gerät zeigt.": "Отсканируйте код, который показывает устройство с выполненным входом.",
+ "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "Облачная связка ключей с секретным ключом включена в код.",
+ "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "Без облачной связки ключей. Включите её в разделе «Связка ключей» или разблокируйте здесь, чтобы она передалась.",
+ "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "Вход выполнен, облачная связка ключей настроена.",
+ "Angemeldet.": "Вход выполнен."
 }

@@ -514,5 +514,12 @@
  "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "Fotocamera non disponibile. Consenti l’accesso o incolla il codice.",
  "Das ist kein SSH-Deck-Kopplungscode.": "Questo non è un codice di associazione SSH Deck.",
  "Bitte zuerst abmelden.": "Esci prima dall’account.",
- "Der Kopplungscode ist ungültig.": "Il codice di associazione non è valido."
+ "Der Kopplungscode ist ungültig.": "Il codice di associazione non è valido.",
+ "QR-Code koppeln": "Associa con codice QR",
+ "Zeige den Code auf diesem Gerät und scanne ihn auf dem neuen.": "Mostra il codice su questo dispositivo e scansionalo sul nuovo.",
+ "Scanne den Code, den ein angemeldetes Gerät zeigt.": "Scansiona il codice mostrato da un dispositivo connesso.",
+ "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "Il portachiavi cloud con la chiave segreta è incluso nel codice.",
+ "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "Senza portachiavi cloud. Attivalo in Portachiavi o sbloccalo qui per includerlo.",
+ "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "Accesso eseguito, portachiavi cloud configurato.",
+ "Angemeldet.": "Accesso eseguito."
 }

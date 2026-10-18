@@ -761,7 +761,7 @@ app.whenReady().then(() => {
     if (!k.enc.equals(ctx.enc)) return { error: 'Passwort falsch' };
     const kc = kcLoad();
     const o = { v: 1, s: ctx.c.server, e: ctx.c.email, a: k.auth, k: k.enc.toString('base64'), ...(kc.vk && kc.sk && { vk: crypt.decrypt(kc.vk), sk: crypt.decrypt(kc.sk) }) };
-    return { code: PAIR + Buffer.from(JSON.stringify(o)).toString('base64url') };
+    return { code: PAIR + Buffer.from(JSON.stringify(o)).toString('base64url'), keychain: !!o.vk };
   });
   handle('pair:join', async (_, code) => {
     try {
@@ -775,7 +775,7 @@ app.whenReady().then(() => {
       if (o.vk && o.sk) kcStore(Buffer.from(o.vk, 'base64'), o.sk);
       syncState.error = '';
       runSync();
-      return { ok: true };
+      return { ok: true, keychain: !!(o.vk && o.sk) };
     } catch (e) {
       return { error: /fetch failed/.test(e.message) ? 'Server nicht erreichbar.' : e.message };
     }

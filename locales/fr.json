@@ -514,5 +514,12 @@
  "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "Caméra indisponible. Autorisez l’accès ou collez le code.",
  "Das ist kein SSH-Deck-Kopplungscode.": "Ce n’est pas un code d’association SSH Deck.",
  "Bitte zuerst abmelden.": "Veuillez d’abord vous déconnecter.",
- "Der Kopplungscode ist ungültig.": "Le code d’association est invalide."
+ "Der Kopplungscode ist ungültig.": "Le code d’association est invalide.",
+ "QR-Code koppeln": "Associer par code QR",
+ "Zeige den Code auf diesem Gerät und scanne ihn auf dem neuen.": "Affichez le code sur cet appareil et scannez-le sur le nouveau.",
+ "Scanne den Code, den ein angemeldetes Gerät zeigt.": "Scannez le code affiché par un appareil connecté.",
+ "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "Le trousseau cloud et sa clé secrète sont inclus dans le code.",
+ "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "Sans trousseau cloud. Activez-le dans Trousseau ou déverrouillez-le ici pour l’inclure.",
+ "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "Connecté, trousseau cloud configuré.",
+ "Angemeldet.": "Connecté."
 }

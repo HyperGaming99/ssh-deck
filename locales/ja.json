@@ -514,5 +514,12 @@
  "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "カメラを使用できません。アクセスを許可するか、コードを貼り付けてください。",
  "Das ist kein SSH-Deck-Kopplungscode.": "これはSSH Deckの連携コードではありません。",
  "Bitte zuerst abmelden.": "先にログアウトしてください。",
- "Der Kopplungscode ist ungültig.": "連携コードが無効です。"
+ "Der Kopplungscode ist ungültig.": "連携コードが無効です。",
+ "QR-Code koppeln": "QRコードで連携",
+ "Zeige den Code auf diesem Gerät und scanne ihn auf dem neuen.": "このデバイスでコードを表示し、新しいデバイスでスキャンしてください。",
+ "Scanne den Code, den ein angemeldetes Gerät zeigt.": "ログイン済みのデバイスに表示されたコードをスキャンしてください。",
+ "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "クラウドキーチェーンとシークレットキーがコードに含まれています。",
+ "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "クラウドキーチェーンは含まれていません。キーチェーンで有効にするか、ここでロック解除すると含まれます。",
+ "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "ログインし、クラウドキーチェーンを設定しました。",
+ "Angemeldet.": "ログインしました。"
 }
