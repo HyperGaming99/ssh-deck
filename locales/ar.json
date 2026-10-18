@@ -505,5 +505,14 @@
  "Bitte das Passwort eingeben.": "الرجاء إدخال كلمة المرور.",
  "Sync-Server": "خادم المزامنة",
  "Standard": "الافتراضي",
- "Zum Ändern zuerst abmelden.": "سجّل الخروج أولًا لتغييره."
+ "Zum Ändern zuerst abmelden.": "سجّل الخروج أولًا لتغييره.",
+ "Gerät per QR-Code koppeln": "إقران جهاز برمز QR",
+ "Scanne den Code mit SSH Deck auf dem anderen Gerät. Er enthält deine Zugangsdaten – zeige ihn niemandem. Gültig noch {n} s.": "امسح الرمز باستخدام SSH Deck على الجهاز الآخر. يحتوي على بيانات اعتمادك – لا تُظهره لأحد. صالح لمدة {n} ثانية.",
+ "QR-Code anzeigen": "عرض رمز QR",
+ "Per QR-Code anmelden": "تسجيل الدخول برمز QR",
+ "Einfügen": "لصق",
+ "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "الكاميرا غير متاحة. اسمح بالوصول أو الصق الرمز.",
+ "Das ist kein SSH-Deck-Kopplungscode.": "هذا ليس رمز إقران SSH Deck.",
+ "Bitte zuerst abmelden.": "يرجى تسجيل الخروج أولاً.",
+ "Der Kopplungscode ist ungültig.": "رمز الإقران غير صالح."
 }

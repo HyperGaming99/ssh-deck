@@ -505,5 +505,14 @@
  "Bitte das Passwort eingeben.": "Please enter the password.",
  "Sync-Server": "Sync server",
  "Standard": "Default",
- "Zum Ändern zuerst abmelden.": "Sign out first to change it."
+ "Zum Ändern zuerst abmelden.": "Sign out first to change it.",
+ "Gerät per QR-Code koppeln": "Pair a device with QR code",
+ "Scanne den Code mit SSH Deck auf dem anderen Gerät. Er enthält deine Zugangsdaten – zeige ihn niemandem. Gültig noch {n} s.": "Scan the code with SSH Deck on the other device. It contains your credentials – show it to no one. Valid for {n} s.",
+ "QR-Code anzeigen": "Show QR code",
+ "Per QR-Code anmelden": "Sign in with QR code",
+ "Einfügen": "Paste",
+ "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "Camera not available. Allow access or paste the code.",
+ "Das ist kein SSH-Deck-Kopplungscode.": "This is not an SSH Deck pairing code.",
+ "Bitte zuerst abmelden.": "Please sign out first.",
+ "Der Kopplungscode ist ungültig.": "The pairing code is invalid."
 }

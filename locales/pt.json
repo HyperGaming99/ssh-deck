@@ -505,5 +505,14 @@
  "Bitte das Passwort eingeben.": "Digite a senha.",
  "Sync-Server": "Servidor de sincronização",
  "Standard": "Padrão",
- "Zum Ändern zuerst abmelden.": "Saia primeiro para alterar."
+ "Zum Ändern zuerst abmelden.": "Saia primeiro para alterar.",
+ "Gerät per QR-Code koppeln": "Emparelhar dispositivo com código QR",
+ "Scanne den Code mit SSH Deck auf dem anderen Gerät. Er enthält deine Zugangsdaten – zeige ihn niemandem. Gültig noch {n} s.": "Leia o código com o SSH Deck no outro dispositivo. Ele contém suas credenciais – não o mostre a ninguém. Válido por mais {n} s.",
+ "QR-Code anzeigen": "Mostrar código QR",
+ "Per QR-Code anmelden": "Entrar com código QR",
+ "Einfügen": "Colar",
+ "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "Câmera indisponível. Permita o acesso ou cole o código.",
+ "Das ist kein SSH-Deck-Kopplungscode.": "Este não é um código de emparelhamento do SSH Deck.",
+ "Bitte zuerst abmelden.": "Saia da conta primeiro.",
+ "Der Kopplungscode ist ungültig.": "O código de emparelhamento é inválido."
 }

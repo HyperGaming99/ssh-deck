@@ -505,5 +505,14 @@
  "Bitte das Passwort eingeben.": "कृपया पासवर्ड दर्ज करें।",
  "Sync-Server": "सिंक सर्वर",
  "Standard": "डिफ़ॉल्ट",
- "Zum Ändern zuerst abmelden.": "बदलने के लिए पहले साइन आउट करें।"
+ "Zum Ändern zuerst abmelden.": "बदलने के लिए पहले साइन आउट करें।",
+ "Gerät per QR-Code koppeln": "QR कोड से डिवाइस जोड़ें",
+ "Scanne den Code mit SSH Deck auf dem anderen Gerät. Er enthält deine Zugangsdaten – zeige ihn niemandem. Gültig noch {n} s.": "दूसरे डिवाइस पर SSH Deck से कोड स्कैन करें। इसमें आपके क्रेडेंशियल हैं – इसे किसी को न दिखाएँ। {n} सेकंड तक मान्य।",
+ "QR-Code anzeigen": "QR कोड दिखाएँ",
+ "Per QR-Code anmelden": "QR कोड से साइन इन करें",
+ "Einfügen": "पेस्ट करें",
+ "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "कैमरा उपलब्ध नहीं है। एक्सेस की अनुमति दें या कोड पेस्ट करें।",
+ "Das ist kein SSH-Deck-Kopplungscode.": "यह SSH Deck पेयरिंग कोड नहीं है।",
+ "Bitte zuerst abmelden.": "कृपया पहले साइन आउट करें।",
+ "Der Kopplungscode ist ungültig.": "पेयरिंग कोड अमान्य है।"
 }

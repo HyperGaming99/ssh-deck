@@ -505,5 +505,14 @@
  "Bitte das Passwort eingeben.": "Lütfen parolayı girin.",
  "Sync-Server": "Eşitleme sunucusu",
  "Standard": "Varsayılan",
- "Zum Ändern zuerst abmelden.": "Değiştirmek için önce oturumu kapatın."
+ "Zum Ändern zuerst abmelden.": "Değiştirmek için önce oturumu kapatın.",
+ "Gerät per QR-Code koppeln": "Cihazı QR kodla eşle",
+ "Scanne den Code mit SSH Deck auf dem anderen Gerät. Er enthält deine Zugangsdaten – zeige ihn niemandem. Gültig noch {n} s.": "Kodu diğer cihazdaki SSH Deck ile tarayın. Erişim bilgilerinizi içerir – kimseye göstermeyin. {n} sn daha geçerli.",
+ "QR-Code anzeigen": "QR kodu göster",
+ "Per QR-Code anmelden": "QR kodla giriş yap",
+ "Einfügen": "Yapıştır",
+ "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "Kamera kullanılamıyor. Erişime izin verin veya kodu yapıştırın.",
+ "Das ist kein SSH-Deck-Kopplungscode.": "Bu bir SSH Deck eşleme kodu değil.",
+ "Bitte zuerst abmelden.": "Önce çıkış yapın.",
+ "Der Kopplungscode ist ungültig.": "Eşleme kodu geçersiz."
 }

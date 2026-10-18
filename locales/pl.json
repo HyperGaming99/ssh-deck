@@ -505,5 +505,14 @@
  "Bitte das Passwort eingeben.": "Wpisz hasło.",
  "Sync-Server": "Serwer synchronizacji",
  "Standard": "Domyślny",
- "Zum Ändern zuerst abmelden.": "Aby to zmienić, najpierw się wyloguj."
+ "Zum Ändern zuerst abmelden.": "Aby to zmienić, najpierw się wyloguj.",
+ "Gerät per QR-Code koppeln": "Sparuj urządzenie kodem QR",
+ "Scanne den Code mit SSH Deck auf dem anderen Gerät. Er enthält deine Zugangsdaten – zeige ihn niemandem. Gültig noch {n} s.": "Zeskanuj kod w SSH Deck na drugim urządzeniu. Zawiera Twoje dane dostępu – nikomu go nie pokazuj. Ważny jeszcze {n} s.",
+ "QR-Code anzeigen": "Pokaż kod QR",
+ "Per QR-Code anmelden": "Zaloguj kodem QR",
+ "Einfügen": "Wklej",
+ "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "Aparat niedostępny. Zezwól na dostęp lub wklej kod.",
+ "Das ist kein SSH-Deck-Kopplungscode.": "To nie jest kod parowania SSH Deck.",
+ "Bitte zuerst abmelden.": "Najpierw się wyloguj.",
+ "Der Kopplungscode ist ungültig.": "Kod parowania jest nieprawidłowy."
 }

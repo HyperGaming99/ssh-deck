@@ -15,6 +15,7 @@ import Logo from '@/components/Logo';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import KeychainCloud from '@/components/KeychainCloud';
 import TeamsSettings from '@/components/TeamsSettings';
+import { PairShow, PairScan } from '@/components/PairQR';
 import TermPanel from '@/components/TermPanel';
 import { vars, fill } from '@/lib/snippetVars.mjs';
 import ReconnectBar from '@/components/ReconnectBar';
@@ -475,6 +476,7 @@ function SyncView({ st, onLogin, onLogout, toast }) {
           <p className="font-medium">{t('Nicht angemeldet')}</p>
           <p className="mt-1 text-sm text-muted-foreground">{t('Ohne Konto bleiben deine Daten nur auf diesem Gerät.')}</p>
           <Button className="mt-4" onClick={onLogin}>{t('Anmelden')}</Button>
+          <PairScan onDone={onLogout} />
           <ServerField st={st} toast={toast} />
         </div>
       </div>
@@ -498,6 +500,7 @@ function SyncView({ st, onLogin, onLogout, toast }) {
       {st.error && <p className="mt-3 text-sm text-destructive">{t(st.error)}</p>}
       <ServerField st={st} locked toast={toast} />
       <p className="mt-4 border-t pt-4 text-xs text-muted-foreground">{t('Gesynct werden Hosts (mit Passwörtern), Gruppen, Snippets und Forwarding-Regeln – Ende-zu-Ende verschlüsselt. Private Schlüssel bleiben auf dem Gerät. Der Abgleich läuft automatisch.')}</p>
+      <div className="mt-4"><PairShow /></div>
       <div className="mt-3 flex justify-end">
         <Button variant="ghost" className="text-destructive" onClick={() => { if (confirm(t('Abmelden? Die lokalen Daten bleiben erhalten, der Sync stoppt auf diesem Gerät.'))) { api.sync.logout(); onLogout(); } }}>{t('Abmelden')}</Button>
       </div>
