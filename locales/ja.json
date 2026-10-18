@@ -505,5 +505,14 @@
  "Bitte das Passwort eingeben.": "パスワードを入力してください。",
  "Sync-Server": "同期サーバー",
  "Standard": "既定",
- "Zum Ändern zuerst abmelden.": "変更するには先にサインアウトしてください。"
+ "Zum Ändern zuerst abmelden.": "変更するには先にサインアウトしてください。",
+ "Gerät per QR-Code koppeln": "QRコードでデバイスを連携",
+ "Scanne den Code mit SSH Deck auf dem anderen Gerät. Er enthält deine Zugangsdaten – zeige ihn niemandem. Gültig noch {n} s.": "もう一方のデバイスのSSH Deckでコードをスキャンしてください。認証情報が含まれるため、他人に見せないでください。有効期限はあと{n}秒です。",
+ "QR-Code anzeigen": "QRコードを表示",
+ "Per QR-Code anmelden": "QRコードでログイン",
+ "Einfügen": "貼り付け",
+ "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "カメラを使用できません。アクセスを許可するか、コードを貼り付けてください。",
+ "Das ist kein SSH-Deck-Kopplungscode.": "これはSSH Deckの連携コードではありません。",
+ "Bitte zuerst abmelden.": "先にログアウトしてください。",
+ "Der Kopplungscode ist ungültig.": "連携コードが無効です。"
 }

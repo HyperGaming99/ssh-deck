@@ -505,5 +505,14 @@
  "Bitte das Passwort eingeben.": "请输入密码。",
  "Sync-Server": "同步服务器",
  "Standard": "默认",
- "Zum Ändern zuerst abmelden.": "如需更改,请先退出登录。"
+ "Zum Ändern zuerst abmelden.": "如需更改,请先退出登录。",
+ "Gerät per QR-Code koppeln": "用二维码配对设备",
+ "Scanne den Code mit SSH Deck auf dem anderen Gerät. Er enthält deine Zugangsdaten – zeige ihn niemandem. Gültig noch {n} s.": "在另一台设备上用 SSH Deck 扫描此码。其中包含您的凭据，请勿给任何人看。还剩 {n} 秒有效。",
+ "QR-Code anzeigen": "显示二维码",
+ "Per QR-Code anmelden": "用二维码登录",
+ "Einfügen": "粘贴",
+ "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "相机不可用。请允许访问或粘贴代码。",
+ "Das ist kein SSH-Deck-Kopplungscode.": "这不是 SSH Deck 配对码。",
+ "Bitte zuerst abmelden.": "请先退出登录。",
+ "Der Kopplungscode ist ungültig.": "配对码无效。"
 }

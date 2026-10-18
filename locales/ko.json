@@ -505,5 +505,14 @@
  "Bitte das Passwort eingeben.": "비밀번호를 입력하세요.",
  "Sync-Server": "동기화 서버",
  "Standard": "기본값",
- "Zum Ändern zuerst abmelden.": "변경하려면 먼저 로그아웃하세요."
+ "Zum Ändern zuerst abmelden.": "변경하려면 먼저 로그아웃하세요.",
+ "Gerät per QR-Code koppeln": "QR 코드로 기기 연결",
+ "Scanne den Code mit SSH Deck auf dem anderen Gerät. Er enthält deine Zugangsdaten – zeige ihn niemandem. Gültig noch {n} s.": "다른 기기의 SSH Deck으로 코드를 스캔하세요. 인증 정보가 들어 있으니 누구에게도 보여주지 마세요. {n}초 동안 유효합니다.",
+ "QR-Code anzeigen": "QR 코드 표시",
+ "Per QR-Code anmelden": "QR 코드로 로그인",
+ "Einfügen": "붙여넣기",
+ "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "카메라를 사용할 수 없습니다. 접근을 허용하거나 코드를 붙여넣으세요.",
+ "Das ist kein SSH-Deck-Kopplungscode.": "SSH Deck 연결 코드가 아닙니다.",
+ "Bitte zuerst abmelden.": "먼저 로그아웃하세요.",
+ "Der Kopplungscode ist ungültig.": "연결 코드가 올바르지 않습니다."
 }

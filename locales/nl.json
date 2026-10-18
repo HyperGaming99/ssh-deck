@@ -505,5 +505,14 @@
  "Bitte das Passwort eingeben.": "Voer het wachtwoord in.",
  "Sync-Server": "Synchronisatieserver",
  "Standard": "Standaard",
- "Zum Ändern zuerst abmelden.": "Meld je eerst af om dit te wijzigen."
+ "Zum Ändern zuerst abmelden.": "Meld je eerst af om dit te wijzigen.",
+ "Gerät per QR-Code koppeln": "Apparaat koppelen met QR-code",
+ "Scanne den Code mit SSH Deck auf dem anderen Gerät. Er enthält deine Zugangsdaten – zeige ihn niemandem. Gültig noch {n} s.": "Scan de code met SSH Deck op het andere apparaat. Hij bevat je inloggegevens – laat hem aan niemand zien. Nog {n} s geldig.",
+ "QR-Code anzeigen": "QR-code tonen",
+ "Per QR-Code anmelden": "Inloggen met QR-code",
+ "Einfügen": "Plakken",
+ "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "Camera niet beschikbaar. Sta toegang toe of plak de code.",
+ "Das ist kein SSH-Deck-Kopplungscode.": "Dit is geen SSH Deck-koppelcode.",
+ "Bitte zuerst abmelden.": "Meld je eerst af.",
+ "Der Kopplungscode ist ungültig.": "De koppelcode is ongeldig."
 }

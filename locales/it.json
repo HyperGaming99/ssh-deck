@@ -505,5 +505,14 @@
  "Bitte das Passwort eingeben.": "Inserisci la password.",
  "Sync-Server": "Server di sincronizzazione",
  "Standard": "Predefinito",
- "Zum Ändern zuerst abmelden.": "Esci prima per modificarlo."
+ "Zum Ändern zuerst abmelden.": "Esci prima per modificarlo.",
+ "Gerät per QR-Code koppeln": "Associa un dispositivo con codice QR",
+ "Scanne den Code mit SSH Deck auf dem anderen Gerät. Er enthält deine Zugangsdaten – zeige ihn niemandem. Gültig noch {n} s.": "Scansiona il codice con SSH Deck sull’altro dispositivo. Contiene le tue credenziali: non mostrarlo a nessuno. Valido ancora {n} s.",
+ "QR-Code anzeigen": "Mostra codice QR",
+ "Per QR-Code anmelden": "Accedi con codice QR",
+ "Einfügen": "Incolla",
+ "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "Fotocamera non disponibile. Consenti l’accesso o incolla il codice.",
+ "Das ist kein SSH-Deck-Kopplungscode.": "Questo non è un codice di associazione SSH Deck.",
+ "Bitte zuerst abmelden.": "Esci prima dall’account.",
+ "Der Kopplungscode ist ungültig.": "Il codice di associazione non è valido."
 }

@@ -505,5 +505,14 @@
  "Bitte das Passwort eingeben.": "Veuillez saisir le mot de passe.",
  "Sync-Server": "Serveur de synchronisation",
  "Standard": "Par défaut",
- "Zum Ändern zuerst abmelden.": "Déconnectez-vous d'abord pour le modifier."
+ "Zum Ändern zuerst abmelden.": "Déconnectez-vous d'abord pour le modifier.",
+ "Gerät per QR-Code koppeln": "Associer un appareil par code QR",
+ "Scanne den Code mit SSH Deck auf dem anderen Gerät. Er enthält deine Zugangsdaten – zeige ihn niemandem. Gültig noch {n} s.": "Scannez le code avec SSH Deck sur l’autre appareil. Il contient vos identifiants : ne le montrez à personne. Valable encore {n} s.",
+ "QR-Code anzeigen": "Afficher le code QR",
+ "Per QR-Code anmelden": "Se connecter par code QR",
+ "Einfügen": "Coller",
+ "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "Caméra indisponible. Autorisez l’accès ou collez le code.",
+ "Das ist kein SSH-Deck-Kopplungscode.": "Ce n’est pas un code d’association SSH Deck.",
+ "Bitte zuerst abmelden.": "Veuillez d’abord vous déconnecter.",
+ "Der Kopplungscode ist ungültig.": "Le code d’association est invalide."
 }

@@ -505,5 +505,14 @@
  "Bitte das Passwort eingeben.": "Введіть пароль.",
  "Sync-Server": "Сервер синхронізації",
  "Standard": "За замовчуванням",
- "Zum Ändern zuerst abmelden.": "Щоб змінити, спочатку вийдіть."
+ "Zum Ändern zuerst abmelden.": "Щоб змінити, спочатку вийдіть.",
+ "Gerät per QR-Code koppeln": "Прив'язати пристрій за QR-кодом",
+ "Scanne den Code mit SSH Deck auf dem anderen Gerät. Er enthält deine Zugangsdaten – zeige ihn niemandem. Gültig noch {n} s.": "Відскануйте код у SSH Deck на іншому пристрої. Він містить ваші облікові дані – нікому його не показуйте. Діє ще {n} с.",
+ "QR-Code anzeigen": "Показати QR-код",
+ "Per QR-Code anmelden": "Увійти за QR-кодом",
+ "Einfügen": "Вставити",
+ "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "Камера недоступна. Дозвольте доступ або вставте код.",
+ "Das ist kein SSH-Deck-Kopplungscode.": "Це не код прив'язки SSH Deck.",
+ "Bitte zuerst abmelden.": "Спочатку вийдіть з облікового запису.",
+ "Der Kopplungscode ist ungültig.": "Код прив'язки недійсний."
 }

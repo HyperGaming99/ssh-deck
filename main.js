@@ -753,6 +753,33 @@ app.whenReady().then(() => {
       return { error: /fetch failed/.test(e.message) ? 'Server nicht erreichbar.' : e.message };
     }
   });
+  // Geräte koppeln: Der QR-Code enthält Server, E-Mail, abgeleitete Schlüssel und (falls entsperrt) den Cloud-Schlüsselbund – nie das Passwort.
+  const PAIR = 'sshdeck://pair/';
+  handle('pair:create', (_, password) => {
+    const ctx = kcCtx(); if (!ctx) return { error: 'Nicht angemeldet' };
+    const k = syncTools.deriveKeys(ctx.c.email, String(password || ''));
+    if (!k.enc.equals(ctx.enc)) return { error: 'Passwort falsch' };
+    const kc = kcLoad();
+    const o = { v: 1, s: ctx.c.server, e: ctx.c.email, a: k.auth, k: k.enc.toString('base64'), ...(kc.vk && kc.sk && { vk: crypt.decrypt(kc.vk), sk: crypt.decrypt(kc.sk) }) };
+    return { code: PAIR + Buffer.from(JSON.stringify(o)).toString('base64url') };
+  });
+  handle('pair:join', async (_, code) => {
+    try {
+      const str = String(code || '').trim();
+      if (!str.startsWith(PAIR)) return { error: 'Das ist kein SSH-Deck-Kopplungscode.' };
+      if (loadSyncCfg()) return { error: 'Bitte zuerst abmelden.' };
+      const o = JSON.parse(Buffer.from(str.slice(PAIR.length), 'base64url').toString());
+      if (o.v !== 1 || !validServer(o.s) || !o.e || !o.a || !o.k) return { error: 'Der Kopplungscode ist ungültig.' };
+      const token = await new syncTools.Backend({ url: o.s }, backendOpts(o.s)).login(o.e, o.a);
+      saveSyncCfg({ server: o.s, email: o.e, token: crypt.encrypt(token), key: crypt.encrypt(o.k) });
+      if (o.vk && o.sk) kcStore(Buffer.from(o.vk, 'base64'), o.sk);
+      syncState.error = '';
+      runSync();
+      return { ok: true };
+    } catch (e) {
+      return { error: /fetch failed/.test(e.message) ? 'Server nicht erreichbar.' : e.message };
+    }
+  });
   handle('hosts:list', () => hosts.list());
   handle('hosts:get', (_, id) => { const h = hosts.get(id); return h && { ...h, secret: undefined, hasSecret: !!h.secret }; });
   const vOf = (r) => (r && r.vault) || 'personal';
