@@ -4,7 +4,7 @@
   "updates": {
     "repo": "HyperGaming99/ssh-deck"
   },
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Minimaler SSH-Client im Stil von Termius",
   "main": "main.js",
   "scripts": {
@@ -36,7 +36,9 @@
     "country-flag-icons": "^1.6.20",
     "electron": "^33.0.0",
     "electron-builder": "^25.1.8",
+    "jsqr": "^1.4.0",
     "lucide-react": "^1.57.0",
+    "qrcode": "^1.5.4",
     "radix-ui": "^1.8.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",

@@ -32,6 +32,8 @@ contextBridge.exposeInMainWorld('api', {
     status: () => ipcRenderer.invoke('sync:status'),
     auth: (o) => ipcRenderer.invoke('auth:submit', o),
     now: () => ipcRenderer.invoke('sync:now'),
+    pairCreate: (password) => ipcRenderer.invoke('pair:create', password),
+    pairJoin: (code) => ipcRenderer.invoke('pair:join', code),
     logout: () => ipcRenderer.invoke('sync:logout'),
     deleteAccount: (password) => ipcRenderer.invoke('sync:deleteAccount', password),
     onStatus: (cb) => ipcRenderer.on('sync:status', (_, s) => cb(s)),

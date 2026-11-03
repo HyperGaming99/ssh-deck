@@ -505,5 +505,21 @@
  "Bitte das Passwort eingeben.": "الرجاء إدخال كلمة المرور.",
  "Sync-Server": "خادم المزامنة",
  "Standard": "الافتراضي",
- "Zum Ändern zuerst abmelden.": "سجّل الخروج أولًا لتغييره."
+ "Zum Ändern zuerst abmelden.": "سجّل الخروج أولًا لتغييره.",
+ "Gerät per QR-Code koppeln": "إقران جهاز برمز QR",
+ "Scanne den Code mit SSH Deck auf dem anderen Gerät. Er enthält deine Zugangsdaten – zeige ihn niemandem. Gültig noch {n} s.": "امسح الرمز باستخدام SSH Deck على الجهاز الآخر. يحتوي على بيانات اعتمادك – لا تُظهره لأحد. صالح لمدة {n} ثانية.",
+ "QR-Code anzeigen": "عرض رمز QR",
+ "Per QR-Code anmelden": "تسجيل الدخول برمز QR",
+ "Einfügen": "لصق",
+ "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "الكاميرا غير متاحة. اسمح بالوصول أو الصق الرمز.",
+ "Das ist kein SSH-Deck-Kopplungscode.": "هذا ليس رمز إقران SSH Deck.",
+ "Bitte zuerst abmelden.": "يرجى تسجيل الخروج أولاً.",
+ "Der Kopplungscode ist ungültig.": "رمز الإقران غير صالح.",
+ "QR-Code koppeln": "إقران عبر رمز QR",
+ "Zeige den Code auf diesem Gerät und scanne ihn auf dem neuen.": "اعرض الرمز على هذا الجهاز وامسحه على الجهاز الجديد.",
+ "Scanne den Code, den ein angemeldetes Gerät zeigt.": "امسح الرمز الذي يعرضه جهاز مسجّل الدخول.",
+ "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "سلسلة المفاتيح السحابية مع المفتاح السري مضمّنة في الرمز.",
+ "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "لا تتضمن سلسلة مفاتيح سحابية. فعّلها من «سلسلة المفاتيح» أو افتحها هنا لتُدرج.",
+ "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "تم تسجيل الدخول وإعداد سلسلة المفاتيح السحابية.",
+ "Angemeldet.": "تم تسجيل الدخول."
 }

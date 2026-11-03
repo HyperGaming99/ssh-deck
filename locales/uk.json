@@ -505,5 +505,21 @@
  "Bitte das Passwort eingeben.": "Введіть пароль.",
  "Sync-Server": "Сервер синхронізації",
  "Standard": "За замовчуванням",
- "Zum Ändern zuerst abmelden.": "Щоб змінити, спочатку вийдіть."
+ "Zum Ändern zuerst abmelden.": "Щоб змінити, спочатку вийдіть.",
+ "Gerät per QR-Code koppeln": "Прив'язати пристрій за QR-кодом",
+ "Scanne den Code mit SSH Deck auf dem anderen Gerät. Er enthält deine Zugangsdaten – zeige ihn niemandem. Gültig noch {n} s.": "Відскануйте код у SSH Deck на іншому пристрої. Він містить ваші облікові дані – нікому його не показуйте. Діє ще {n} с.",
+ "QR-Code anzeigen": "Показати QR-код",
+ "Per QR-Code anmelden": "Увійти за QR-кодом",
+ "Einfügen": "Вставити",
+ "Kamera nicht verfügbar. Erlaube den Zugriff oder füge den Code ein.": "Камера недоступна. Дозвольте доступ або вставте код.",
+ "Das ist kein SSH-Deck-Kopplungscode.": "Це не код прив'язки SSH Deck.",
+ "Bitte zuerst abmelden.": "Спочатку вийдіть з облікового запису.",
+ "Der Kopplungscode ist ungültig.": "Код прив'язки недійсний.",
+ "QR-Code koppeln": "Прив'язка за QR-кодом",
+ "Zeige den Code auf diesem Gerät und scanne ihn auf dem neuen.": "Покажіть код на цьому пристрої та відскануйте його на новому.",
+ "Scanne den Code, den ein angemeldetes Gerät zeigt.": "Відскануйте код, який показує пристрій із виконаним входом.",
+ "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "Хмарна в'язка ключів із секретним ключем входить до коду.",
+ "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "Без хмарної в'язки ключів. Увімкніть її в розділі «В'язка ключів» або розблокуйте тут, щоб вона передалася.",
+ "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "Вхід виконано, хмарну в'язку ключів налаштовано.",
+ "Angemeldet.": "Вхід виконано."
 }
