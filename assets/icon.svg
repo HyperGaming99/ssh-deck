@@ -8,7 +8,7 @@
     <radialGradient id="bg" cx=".3" cy=".2" r="1.1"><stop offset="0" stop-color="#23264a"/><stop offset="1" stop-color="#090a14"/></radialGradient>
   </defs>
   <rect width="512" height="512" rx="116" fill="url(#bg)"/>
-  <g transform="translate(228 262) scale(.8) translate(-256 -256)">
+  <g transform="translate(228 262) scale(1.05) translate(-256 -256)">
     
   <!-- ein Deck aus drei Karten, gefächert um den unteren Mittelpunkt -->
   <g transform="rotate(21 256 452)"><rect x="130" y="82" width="252" height="326" rx="50" fill="url(#gm)"/></g>

@@ -90,7 +90,7 @@
       ],
       "category": "public.app-category.developer-tools",
       "icon": "icon.png",
-      "identity": null
+      "identity": "-"
     },
     "win": {
       "target": [
