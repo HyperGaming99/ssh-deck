@@ -28,5 +28,5 @@ export const ipcRenderer = {
   on: (c, f) => subs.set(c, [...(subs.get(c) || []), f]),
   removeListener: (c, f) => subs.set(c, (subs.get(c) || []).filter((x) => x !== f)),
 };
-export const contextBridge = { exposeInMainWorld: (name, obj) => { window[name] = obj; } };
+export const contextBridge = { exposeInMainWorld: (name, obj) => { window[name] = { ...obj, mobile: true }; } };
 export const webUtils = { getPathForFile: () => '' };

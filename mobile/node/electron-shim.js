@@ -46,6 +46,7 @@ const win = Object.assign(new EventEmitter(), {
 class BrowserWindow { constructor() { return win; } static fromWebContents() { return win; } }
 
 const app = Object.assign(new EventEmitter(), {
+  mobile: true,
   whenReady: () => Promise.resolve(),
   getPath: (n) => (n === 'temp' ? path.join(DATA, 'tmp') : DATA),
   getVersion: () => process.env.DECK_VERSION || '0.0.0',

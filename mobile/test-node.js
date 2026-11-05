@@ -46,6 +46,8 @@ const call = (ch, ...args) => new Promise((res, rej) => {
   const { createDecipheriv } = require('crypto'); const blob = Buffer.from(JSON.parse(raw)[0].secret, 'base64');
   const d = createDecipheriv('aes-256-gcm', legacyKey, blob.subarray(0, 12)); d.setAuthTag(blob.subarray(12, 28));
   assert.equal(Buffer.concat([d.update(blob.subarray(28)), d.final()]).toString(), 'geheim', 'der eingepackte Altschlüssel ist weiter der Datenschlüssel');
+  const updRes = await call('update:check');
+  assert(updRes && updRes.current && !updRes.available, 'Kein Update-Checker auf dem Handy');
   await assert.rejects(call('gibt:es:nicht'), /Kein Handler/);
   console.log('mobile node ok');
   process.exit(0);
