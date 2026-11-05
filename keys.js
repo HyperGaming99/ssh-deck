@@ -13,7 +13,10 @@ function generate({ type = 'ed25519', bits, comment = '', passphrase }) {
   if (type === 'rsa') opts.bits = bits || 4096;
   if (type === 'ecdsa') opts.bits = 256;
   if (passphrase) Object.assign(opts, { passphrase, cipher: 'aes256-ctr', rounds: 16 }); // ssh2 verlangt bei Passphrase einen Cipher
-  const { private: privateKey, public: pub } = utils.generateKeyPairSync(type, opts);
+  // ssh2-Bug umgehen: beginnt der öffentliche Ed25519-Schlüssel zufällig mit 0x00 (1:256), schneidet ssh2 das Byte ab und erzeugt einen ungültigen Schlüssel
+  let pair;
+  do { pair = utils.generateKeyPairSync(type, opts); } while (utils.parseKey(pair.private, passphrase) instanceof Error);
+  const { private: privateKey, public: pub } = pair;
   const publicKey = pub.trim();
   return { privateKey, publicKey, type: publicKey.split(' ')[0], fingerprint: fp(blobOf(publicKey)) };
 }
