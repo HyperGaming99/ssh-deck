@@ -355,13 +355,11 @@ function Pane({ pane, hosts, editors, busy, onDropPane, onDropFiles, onTransfer,
     >
       {/* Obere Werkzeugleiste: Quelle, Pfad-Navigation & Aktionen */}
       <div className="flex flex-col gap-2 border-b bg-muted/20 p-2.5">
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <Select value={pane.src} onValueChange={pane.setSrc}>
-            <SelectTrigger className="h-8 w-44 shrink-0 gap-1.5 rounded-lg bg-background text-xs font-medium shadow-2xs">
+            <SelectTrigger className="h-8 w-40 shrink-0 gap-1.5 rounded-lg bg-background text-xs font-medium shadow-2xs">
               <span className="flex items-center gap-1.5 truncate">
-                {pane.src === 'local' ? (
-                  <HardDrive className="size-3.5 shrink-0 text-primary" />
-                ) : (
+                {pane.src !== 'local' && (
                   <span className="relative flex size-2 shrink-0">
                     <span className={cn(
                       'size-2 rounded-full',
@@ -384,7 +382,7 @@ function Pane({ pane, hosts, editors, busy, onDropPane, onDropFiles, onTransfer,
             </SelectContent>
           </Select>
 
-          <div className="flex items-center rounded-lg border bg-background p-0.5 shadow-2xs">
+          <div className="flex shrink-0 items-center rounded-lg border bg-background p-0.5 shadow-2xs">
             <Button variant="ghost" size="icon" className="size-7 rounded-md" title={t('Startverzeichnis')} disabled={pane.idle} onClick={() => pane.go(pane.home())}>
               <Home className="size-3.5" />
             </Button>
@@ -398,7 +396,7 @@ function Pane({ pane, hosts, editors, busy, onDropPane, onDropFiles, onTransfer,
 
           {/* Pfadleiste: Klickbare Breadcrumbs oder direkte Texteingabe */}
           {draft !== null ? (
-            <form className="min-w-0 flex-1" onSubmit={(e) => { e.preventDefault(); pane.go(draft); setDraft(null); }}>
+            <form className="min-w-[140px] flex-1" onSubmit={(e) => { e.preventDefault(); pane.go(draft); setDraft(null); }}>
               <Input
                 autoFocus
                 className="h-8 rounded-lg bg-background font-mono text-xs"
@@ -411,7 +409,7 @@ function Pane({ pane, hosts, editors, busy, onDropPane, onDropFiles, onTransfer,
           ) : (
             <div
               onClick={() => !pane.idle && setDraft(pane.shown)}
-              className="flex h-8 min-w-0 flex-1 cursor-text items-center gap-0.5 overflow-x-auto rounded-lg border bg-background px-2 font-mono text-xs shadow-2xs hover:border-ring/50"
+              className="flex h-8 min-w-[140px] flex-1 cursor-text items-center gap-0.5 overflow-x-auto rounded-lg border bg-background px-2 font-mono text-xs shadow-2xs hover:border-ring/50"
             >
               {segments.length ? segments.map((seg, i) => (
                 <div key={seg.path} className="flex shrink-0 items-center">
