@@ -521,5 +521,13 @@
  "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "Le trousseau cloud et sa clé secrète sont inclus dans le code.",
  "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "Sans trousseau cloud. Activez-le dans Trousseau ou déverrouillez-le ici pour l’inclure.",
  "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "Connecté, trousseau cloud configuré.",
- "Angemeldet.": "Connecté."
+ "Angemeldet.": "Connecté.",
+ "Größe": "Taille",
+ "Geändert": "Modifié",
+ "Auswahl aufheben": "Tout désélectionner",
+ "Übertragung abgebrochen.": "Transfert annulé.",
+ "Verbleibend: {time}": "Restant : {time}",
+ "{done} von {total} Dateien": "{done} sur {total} fichiers",
+ "Übergeordneter Ordner": "Dossier parent",
+ "Startverzeichnis": "Dossier personnel"
 }

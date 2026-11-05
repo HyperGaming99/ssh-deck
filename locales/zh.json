@@ -521,5 +521,13 @@
  "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "云端钥匙串及其密钥已包含在二维码中。",
  "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "未包含云端钥匙串。请在钥匙串中开启或在此解锁，即可一并带上。",
  "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "已登录，云端钥匙串已设置。",
- "Angemeldet.": "已登录。"
+ "Angemeldet.": "已登录。",
+ "Größe": "大小",
+ "Geändert": "修改时间",
+ "Auswahl aufheben": "取消选择",
+ "Übertragung abgebrochen.": "传输已取消。",
+ "Verbleibend: {time}": "剩余：{time}",
+ "{done} von {total} Dateien": "{done} / {total} 个文件",
+ "Übergeordneter Ordner": "上级文件夹",
+ "Startverzeichnis": "主目录"
 }

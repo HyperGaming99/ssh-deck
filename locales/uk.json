@@ -521,5 +521,13 @@
  "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "Хмарна в'язка ключів із секретним ключем входить до коду.",
  "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "Без хмарної в'язки ключів. Увімкніть її в розділі «В'язка ключів» або розблокуйте тут, щоб вона передалася.",
  "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "Вхід виконано, хмарну в'язку ключів налаштовано.",
- "Angemeldet.": "Вхід виконано."
+ "Angemeldet.": "Вхід виконано.",
+ "Größe": "Розмір",
+ "Geändert": "Змінено",
+ "Auswahl aufheben": "Зняти виділення",
+ "Übertragung abgebrochen.": "Передавання скасовано.",
+ "Verbleibend: {time}": "Залишилося: {time}",
+ "{done} von {total} Dateien": "{done} з {total} файлів",
+ "Übergeordneter Ordner": "Батьківська папка",
+ "Startverzeichnis": "Домашня папка"
 }

@@ -521,5 +521,13 @@
  "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "Il portachiavi cloud con la chiave segreta è incluso nel codice.",
  "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "Senza portachiavi cloud. Attivalo in Portachiavi o sbloccalo qui per includerlo.",
  "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "Accesso eseguito, portachiavi cloud configurato.",
- "Angemeldet.": "Accesso eseguito."
+ "Angemeldet.": "Accesso eseguito.",
+ "Größe": "Dimensione",
+ "Geändert": "Modificato",
+ "Auswahl aufheben": "Deseleziona tutto",
+ "Übertragung abgebrochen.": "Trasferimento annullato.",
+ "Verbleibend: {time}": "Rimanente: {time}",
+ "{done} von {total} Dateien": "{done} di {total} file",
+ "Übergeordneter Ordner": "Cartella superiore",
+ "Startverzeichnis": "Cartella iniziale"
 }

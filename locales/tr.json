@@ -521,5 +521,13 @@
  "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "Bulut anahtarlığı ve gizli anahtarı koda dahildir.",
  "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "Bulut anahtarlığı yok. Anahtarlık bölümünden açın veya burada kilidini açın, böylece gelsin.",
  "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "Giriş yapıldı, bulut anahtarlığı kuruldu.",
- "Angemeldet.": "Giriş yapıldı."
+ "Angemeldet.": "Giriş yapıldı.",
+ "Größe": "Boyut",
+ "Geändert": "Değiştirilme",
+ "Auswahl aufheben": "Seçimi temizle",
+ "Übertragung abgebrochen.": "Aktarım iptal edildi.",
+ "Verbleibend: {time}": "Kalan: {time}",
+ "{done} von {total} Dateien": "{done} / {total} dosya",
+ "Übergeordneter Ordner": "Üst klasör",
+ "Startverzeichnis": "Başlangıç klasörü"
 }

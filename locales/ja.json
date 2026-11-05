@@ -521,5 +521,13 @@
  "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "クラウドキーチェーンとシークレットキーがコードに含まれています。",
  "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "クラウドキーチェーンは含まれていません。キーチェーンで有効にするか、ここでロック解除すると含まれます。",
  "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "ログインし、クラウドキーチェーンを設定しました。",
- "Angemeldet.": "ログインしました。"
+ "Angemeldet.": "ログインしました。",
+ "Größe": "サイズ",
+ "Geändert": "更新日",
+ "Auswahl aufheben": "選択を解除",
+ "Übertragung abgebrochen.": "転送をキャンセルしました。",
+ "Verbleibend: {time}": "残り: {time}",
+ "{done} von {total} Dateien": "{done} / {total} ファイル",
+ "Übergeordneter Ordner": "上のフォルダ",
+ "Startverzeichnis": "ホームディレクトリ"
 }

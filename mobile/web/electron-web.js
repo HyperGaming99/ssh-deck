@@ -26,6 +26,7 @@ export const ipcRenderer = {
   invoke: (c, ...args) => up.then(() => new Promise((res, rej) => { const i = ++id; pend.set(i, { res, rej }); ch().send(JSON.stringify({ t: 'invoke', id: i, ch: c, args })); })),
   send: (c, ...args) => up.then(() => ch().send(JSON.stringify({ t: 'send', ch: c, args }))),
   on: (c, f) => subs.set(c, [...(subs.get(c) || []), f]),
+  removeListener: (c, f) => subs.set(c, (subs.get(c) || []).filter((x) => x !== f)),
 };
 export const contextBridge = { exposeInMainWorld: (name, obj) => { window[name] = obj; } };
 export const webUtils = { getPathForFile: () => '' };

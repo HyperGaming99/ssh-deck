@@ -521,5 +521,13 @@
  "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "Облачная связка ключей с секретным ключом включена в код.",
  "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "Без облачной связки ключей. Включите её в разделе «Связка ключей» или разблокируйте здесь, чтобы она передалась.",
  "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "Вход выполнен, облачная связка ключей настроена.",
- "Angemeldet.": "Вход выполнен."
+ "Angemeldet.": "Вход выполнен.",
+ "Größe": "Размер",
+ "Geändert": "Изменено",
+ "Auswahl aufheben": "Снять выделение",
+ "Übertragung abgebrochen.": "Передача отменена.",
+ "Verbleibend: {time}": "Осталось: {time}",
+ "{done} von {total} Dateien": "{done} из {total} файлов",
+ "Übergeordneter Ordner": "Родительская папка",
+ "Startverzeichnis": "Домашняя папка"
 }

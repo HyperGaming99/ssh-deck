@@ -521,5 +521,13 @@
  "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "Chmurowy pęk kluczy z kluczem tajnym jest zawarty w kodzie.",
  "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "Bez chmurowego pęku kluczy. Włącz go w Pęku kluczy lub odblokuj tutaj, aby został dołączony.",
  "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "Zalogowano, chmurowy pęk kluczy skonfigurowany.",
- "Angemeldet.": "Zalogowano."
+ "Angemeldet.": "Zalogowano.",
+ "Größe": "Rozmiar",
+ "Geändert": "Zmodyfikowano",
+ "Auswahl aufheben": "Odznacz wszystko",
+ "Übertragung abgebrochen.": "Przesyłanie anulowane.",
+ "Verbleibend: {time}": "Pozostało: {time}",
+ "{done} von {total} Dateien": "{done} z {total} plików",
+ "Übergeordneter Ordner": "Folder nadrzędny",
+ "Startverzeichnis": "Katalog domowy"
 }

@@ -14,47 +14,308 @@ async function list(sftp, dir) {
   return { path: real, entries };
 }
 
-// Lädt Datei oder Ordner (rekursiv) nach remoteDir hoch.
-async function upload(sftp, local, remoteDir) {
-  const remote = path.posix.join(remoteDir, path.basename(local));
-  if (fs.statSync(local).isDirectory()) {
+// Lädt Datei(en) oder Ordner (rekursiv) nach remoteDir hoch; optional mit Fortschritt und Abbruch (opts: { onProgress, signal }).
+function scanLocal(localPath, signal) {
+  if (signal?.aborted) throw new Error('Abgebrochen');
+  const st = fs.statSync(localPath);
+  if (!st.isDirectory()) return { bytes: st.size || 0, files: 1 };
+  let bytes = 0, files = 0;
+  for (const f of fs.readdirSync(localPath)) {
+    const r = scanLocal(path.join(localPath, f), signal);
+    bytes += r.bytes; files += r.files;
+  }
+  return { bytes, files };
+}
+
+async function scanRemote(sftp, remotePath, signal) {
+  if (signal?.aborted) throw new Error('Abgebrochen');
+  const st = await call(sftp, 'stat', remotePath);
+  if (!st.isDirectory()) return { bytes: st.size || 0, files: 1 };
+  let bytes = 0, files = 0;
+  for (const e of await call(sftp, 'readdir', remotePath)) {
+    if (!safeName(e.filename)) continue;
+    const r = await scanRemote(sftp, path.posix.join(remotePath, e.filename), signal);
+    bytes += r.bytes; files += r.files;
+  }
+  return { bytes, files };
+}
+
+function makeTracker(opts = {}, totalBytes = 0, filesTotal = 0) {
+  const startedAt = Date.now();
+  let transferredBytes = 0, filesDone = 0, currentFile = '', lastEmit = 0;
+  const samples = [{ t: startedAt, b: 0 }];
+  const emit = (force = false) => {
+    if (!opts.onProgress) return;
+    const now = Date.now();
+    if (!force && now - lastEmit < 50) return;
+    lastEmit = now;
+    samples.push({ t: now, b: transferredBytes });
+    while (samples.length > 2 && now - samples[0].t > 2500) samples.shift();
+    const dt = (now - samples[0].t) / 1000;
+    const db = transferredBytes - samples[0].b;
+    const elapsed = (now - startedAt) / 1000;
+    const speedBps = dt >= 0.2 ? db / dt : elapsed > 0.03 ? transferredBytes / elapsed : 0;
+    const rem = Math.max(0, totalBytes - transferredBytes);
+    const etaSeconds = speedBps > 0 ? Math.ceil(rem / speedBps) : null;
+    const percent = totalBytes > 0 ? Math.min(100, Math.round((transferredBytes / totalBytes) * 100)) : filesTotal > 0 ? Math.min(100, Math.round((filesDone / filesTotal) * 100)) : 0;
+    opts.onProgress({ transferredBytes, totalBytes, filesDone, filesTotal, currentFile, speedBps, etaSeconds, percent, elapsedMs: now - startedAt });
+  };
+  return {
+    signal: opts.signal,
+    startFile(name) { currentFile = name; emit(true); },
+    addChunk(n) { transferredBytes += n; emit(false); },
+    endFile() { filesDone++; emit(true); },
+    done() { transferredBytes = Math.max(transferredBytes, totalBytes); filesDone = filesTotal; },
+  };
+}
+
+// Schnelle, abbrechbare Dateiübertragung über sftp.open/write/read (16 parallele Blöcke à 32 KB, echter Netzwerk-Fortschritt).
+function sftpPutFile(sftp, local, remote, size, tracker) {
+  return new Promise((res, rej) => {
+    if (tracker?.signal?.aborted) return rej(new Error('Abgebrochen'));
+    let fd = null, handle = null, settled = false, offset = 0, written = 0, inflight = 0;
+    const CHUNK = 32768, CONC = 16;
+
+    const cleanup = (err) => {
+      if (settled) return;
+      settled = true;
+      if (tracker?.signal) tracker.signal.removeEventListener('abort', onAbort);
+      if (fd !== null) { try { fs.closeSync(fd); } catch {} fd = null; }
+      const finishClose = () => {
+        if (err) call(sftp, 'unlink', remote).catch(() => {}).finally(() => rej(err));
+        else res();
+      };
+      if (handle) { const h = handle; handle = null; sftp.close(h, () => finishClose()); }
+      else finishClose();
+    };
+    const onAbort = () => cleanup(new Error('Abgebrochen'));
+    if (tracker?.signal) tracker.signal.addEventListener('abort', onAbort, { once: true });
+
+    try { fd = fs.openSync(local, 'r'); } catch (e) { return cleanup(e); }
+    sftp.open(remote, 'w', (err, h) => {
+      if (settled) { if (h) sftp.close(h, () => {}); return; }
+      if (err) return cleanup(err);
+      handle = h;
+      if (size <= 0) return cleanup(null);
+      pump();
+    });
+
+    function pump() {
+      while (!settled && inflight < CONC && offset < size) {
+        const len = Math.min(CHUNK, size - offset);
+        const pos = offset;
+        offset += len;
+        inflight++;
+        const buf = Buffer.allocUnsafe(len);
+        let bytesRead = 0;
+        try { bytesRead = fs.readSync(fd, buf, 0, len, pos); } catch (e) { return cleanup(e); }
+        if (bytesRead <= 0) { inflight--; if (inflight === 0) cleanup(null); break; }
+        sftp.write(handle, buf, 0, bytesRead, pos, (err) => {
+          inflight--;
+          if (settled) return;
+          if (err) return cleanup(err);
+          written += bytesRead;
+          tracker?.addChunk(bytesRead);
+          if (written >= size || (offset >= size && inflight === 0)) cleanup(null);
+          else pump();
+        });
+      }
+    }
+  });
+}
+
+function sftpGetFile(sftp, remote, target, size, tracker) {
+  return new Promise((res, rej) => {
+    if (tracker?.signal?.aborted) return rej(new Error('Abgebrochen'));
+    let fd = null, handle = null, settled = false, offset = 0, readTotal = 0, inflight = 0, eof = false;
+    const CHUNK = 32768, CONC = 16;
+
+    const cleanup = (err) => {
+      if (settled) return;
+      settled = true;
+      if (tracker?.signal) tracker.signal.removeEventListener('abort', onAbort);
+      if (fd !== null) { try { fs.closeSync(fd); } catch {} fd = null; }
+      const finishClose = () => {
+        if (err) { try { fs.rmSync(target, { force: true }); } catch {} rej(err); }
+        else res();
+      };
+      if (handle) { const h = handle; handle = null; sftp.close(h, () => finishClose()); }
+      else finishClose();
+    };
+    const onAbort = () => cleanup(new Error('Abgebrochen'));
+    if (tracker?.signal) tracker.signal.addEventListener('abort', onAbort, { once: true });
+
+    try { fd = fs.openSync(target, 'w'); } catch (e) { return cleanup(e); }
+    sftp.open(remote, 'r', (err, h) => {
+      if (settled) { if (h) sftp.close(h, () => {}); return; }
+      if (err) return cleanup(err);
+      handle = h;
+      if (size <= 0) return cleanup(null);
+      pump();
+    });
+
+    function pump() {
+      while (!settled && !eof && inflight < CONC && offset < size) {
+        const len = Math.min(CHUNK, size - offset);
+        const pos = offset;
+        offset += len;
+        inflight++;
+        const buf = Buffer.allocUnsafe(len);
+        sftp.read(handle, buf, 0, len, pos, (err, bytesRead) => {
+          inflight--;
+          if (settled) return;
+          if (err && (!bytesRead || bytesRead <= 0)) {
+            if (err.code === 1) { eof = true; if (inflight === 0) cleanup(null); return; } // STATUS_CODE.EOF
+            return cleanup(err);
+          }
+          if (!bytesRead || bytesRead <= 0) {
+            eof = true;
+            if (inflight === 0) cleanup(null);
+            return;
+          }
+          try { fs.writeSync(fd, buf, 0, bytesRead, pos); } catch (e) { return cleanup(e); }
+          readTotal += bytesRead;
+          tracker?.addChunk(bytesRead);
+          if (readTotal >= size || (offset >= size && inflight === 0)) cleanup(null);
+          else pump();
+        });
+      }
+    }
+  });
+}
+
+function streamPipe(r, w, tracker, cleanup) {
+  return new Promise((res, rej) => {
+    if (tracker?.signal?.aborted) {
+      r.destroy(); w.destroy();
+      return Promise.resolve(cleanup?.()).catch(() => {}).then(() => rej(new Error('Abgebrochen')));
+    }
+    let settled = false;
+    const finish = (err) => {
+      if (settled) return;
+      settled = true;
+      if (tracker?.signal) tracker.signal.removeEventListener('abort', onAbort);
+      if (err) {
+        r.destroy(); w.destroy();
+        Promise.resolve(cleanup?.()).catch(() => {}).then(() => rej(err));
+      } else res();
+    };
+    const onAbort = () => finish(new Error('Abgebrochen'));
+    if (tracker?.signal) tracker.signal.addEventListener('abort', onAbort, { once: true });
+    r.on('data', (chunk) => {
+      if (tracker?.signal?.aborted) return onAbort();
+      tracker?.addChunk(chunk.length);
+    });
+    r.on('error', finish);
+    w.on('error', finish);
+    w.on('close', () => finish(null));
+    r.pipe(w);
+  });
+}
+
+async function uploadOne(sftp, local, remoteDir, tracker) {
+  if (tracker?.signal?.aborted) throw new Error('Abgebrochen');
+  const base = path.basename(local);
+  const remote = path.posix.join(remoteDir, base);
+  const st = fs.statSync(local);
+  if (st.isDirectory()) {
     await call(sftp, 'mkdir', remote).catch(() => {}); // existiert evtl. schon
-    for (const f of fs.readdirSync(local)) await upload(sftp, path.join(local, f), remote);
+    for (const f of fs.readdirSync(local)) await uploadOne(sftp, path.join(local, f), remote, tracker);
   } else {
-    await call(sftp, 'fastPut', local, remote);
+    tracker?.startFile(base);
+    if (tracker && sftp.open && sftp.write) {
+      await sftpPutFile(sftp, local, remote, st.size || 0, tracker);
+    } else if (tracker && sftp.createWriteStream) {
+      await streamPipe(fs.createReadStream(local), sftp.createWriteStream(remote), tracker, () => call(sftp, 'unlink', remote));
+    } else {
+      await call(sftp, 'fastPut', local, remote);
+      tracker?.addChunk(st.size || 0);
+    }
+    tracker?.endFile();
   }
 }
 
-// Lädt Datei oder Ordner (rekursiv) nach localDir herunter.
-async function download(sftp, remote, localDir) {
-  const target = path.join(localDir, path.posix.basename(remote));
-  if ((await call(sftp, 'stat', remote)).isDirectory()) {
+async function upload(sftp, local, remoteDir, opts) {
+  const items = Array.isArray(local) ? local : [local];
+  if (!opts) {
+    for (const p of items) await uploadOne(sftp, p, remoteDir, null);
+    return;
+  }
+  let totalBytes = 0, filesTotal = 0;
+  for (const p of items) { const s = scanLocal(p, opts.signal); totalBytes += s.bytes; filesTotal += s.files; }
+  const tracker = makeTracker(opts, totalBytes, filesTotal);
+  for (const p of items) await uploadOne(sftp, p, remoteDir, tracker);
+  tracker.done();
+}
+
+// Lädt Datei(en) oder Ordner (rekursiv) nach localDir herunter.
+async function downloadOne(sftp, remote, localDir, tracker) {
+  if (tracker?.signal?.aborted) throw new Error('Abgebrochen');
+  const base = path.posix.basename(remote);
+  const target = path.join(localDir, base);
+  const st = await call(sftp, 'stat', remote);
+  if (st.isDirectory()) {
     fs.mkdirSync(target, { recursive: true });
     for (const e of await call(sftp, 'readdir', remote)) {
       // Servergelieferte Namen nie als Pfad vertrauen (../ würde außerhalb von target schreiben)
-      if (safeName(e.filename)) await download(sftp, path.posix.join(remote, e.filename), target);
+      if (safeName(e.filename)) await downloadOne(sftp, path.posix.join(remote, e.filename), target, tracker);
     }
   } else {
-    await call(sftp, 'fastGet', remote, target);
+    tracker?.startFile(base);
+    if (tracker && sftp.open && sftp.read) {
+      await sftpGetFile(sftp, remote, target, st.size || 0, tracker);
+    } else if (tracker && sftp.createReadStream) {
+      await streamPipe(sftp.createReadStream(remote), fs.createWriteStream(target), tracker, () => fs.rmSync(target, { force: true }));
+    } else {
+      await call(sftp, 'fastGet', remote, target);
+      tracker?.addChunk(st.size || 0);
+    }
+    tracker?.endFile();
   }
 }
 
-// Kopiert Datei oder Ordner (rekursiv) direkt von einem SFTP-Server auf einen anderen, ohne Zwischenspeicher.
-async function copy(src, srcPath, dst, dstDir) {
-  const target = path.posix.join(dstDir, path.posix.basename(srcPath));
-  if ((await call(src, 'stat', srcPath)).isDirectory()) {
+async function download(sftp, remote, localDir, opts) {
+  const items = Array.isArray(remote) ? remote : [remote];
+  if (!opts) {
+    for (const p of items) await downloadOne(sftp, p, localDir, null);
+    return;
+  }
+  let totalBytes = 0, filesTotal = 0;
+  for (const p of items) { const s = await scanRemote(sftp, p, opts.signal); totalBytes += s.bytes; filesTotal += s.files; }
+  const tracker = makeTracker(opts, totalBytes, filesTotal);
+  for (const p of items) await downloadOne(sftp, p, localDir, tracker);
+  tracker.done();
+}
+
+// Kopiert Datei(en) oder Ordner (rekursiv) direkt von einem SFTP-Server auf einen anderen, ohne Zwischenspeicher.
+async function copyOne(src, srcPath, dst, dstDir, tracker) {
+  if (tracker?.signal?.aborted) throw new Error('Abgebrochen');
+  const base = path.posix.basename(srcPath);
+  const target = path.posix.join(dstDir, base);
+  const st = await call(src, 'stat', srcPath);
+  if (st.isDirectory()) {
     await call(dst, 'mkdir', target).catch(() => {});
     for (const e of await call(src, 'readdir', srcPath)) {
-      if (safeName(e.filename)) await copy(src, path.posix.join(srcPath, e.filename), dst, target);
+      if (safeName(e.filename)) await copyOne(src, path.posix.join(srcPath, e.filename), dst, target, tracker);
     }
   } else {
-    await new Promise((res, rej) => {
-      const r = src.createReadStream(srcPath);
-      const w = dst.createWriteStream(target);
-      r.on('error', rej); w.on('error', rej); w.on('close', res);
-      r.pipe(w);
-    });
+    tracker?.startFile(base);
+    await streamPipe(src.createReadStream(srcPath), dst.createWriteStream(target), tracker, () => call(dst, 'unlink', target));
+    tracker?.endFile();
   }
+}
+
+async function copy(src, srcPath, dst, dstDir, opts) {
+  const items = Array.isArray(srcPath) ? srcPath : [srcPath];
+  if (!opts) {
+    for (const p of items) await copyOne(src, p, dst, dstDir, null);
+    return;
+  }
+  let totalBytes = 0, filesTotal = 0;
+  for (const p of items) { const s = await scanRemote(src, p, opts.signal); totalBytes += s.bytes; filesTotal += s.files; }
+  const tracker = makeTracker(opts, totalBytes, filesTotal);
+  for (const p of items) await copyOne(src, p, dst, dstDir, tracker);
+  tracker.done();
 }
 
 async function remove(sftp, p) {
@@ -92,4 +353,4 @@ function listLocal(dir, home, { platform = process.platform, exists = fs.existsS
   return { path: real, entries };
 }
 
-module.exports = { list, upload, download, copy, put, remove, mkdir, rename, listLocal, listDrives, safeName };
+module.exports = { list, upload, download, copy, put, remove, mkdir, rename, listLocal, listDrives, safeName, scanLocal, scanRemote };
