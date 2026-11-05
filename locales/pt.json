@@ -521,5 +521,13 @@
  "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "O chaveiro na nuvem com a chave secreta está incluído no código.",
  "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "Sem chaveiro na nuvem. Ative-o em Chaveiro ou desbloqueie-o aqui para incluí-lo.",
  "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "Conectado, chaveiro na nuvem configurado.",
- "Angemeldet.": "Conectado."
+ "Angemeldet.": "Conectado.",
+ "Größe": "Tamanho",
+ "Geändert": "Modificado",
+ "Auswahl aufheben": "Limpar seleção",
+ "Übertragung abgebrochen.": "Transferência cancelada.",
+ "Verbleibend: {time}": "Restante: {time}",
+ "{done} von {total} Dateien": "{done} de {total} arquivos",
+ "Übergeordneter Ordner": "Pasta superior",
+ "Startverzeichnis": "Pasta inicial"
 }

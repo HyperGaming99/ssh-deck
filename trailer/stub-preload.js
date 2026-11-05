@@ -73,7 +73,7 @@ contextBridge.exposeInMainWorld('api', {
   snippets: { list: () => ok(snippets), save: () => ok(), remove: () => ok() },
   keys: { list: () => ok(keys), rescan: () => ok(0), generate: () => ok(null), setPassphrase: () => ok(), remove: () => ok(), exportPrivate: () => ok(null), toHost: () => ok(null) },
   sftp: { open: () => ok(), list: (sid, p) => ok({ path: '/var/www/app', entries: remoteFiles }), mkdir: () => ok(), rename: () => ok(), remove: () => ok(), upload: () => ok(),
-    download: () => ok(), edit: () => ok(), copy: () => ok(), close() {} },
+    download: () => ok(), edit: () => ok(), copy: () => ok(), cancel() {}, onProgress: () => () => {}, close() {} },
   local: { list: () => ok({ path: '/home/alex/projects/app', entries: localFiles }), mkdir: () => ok(), rename: () => ok(), remove: () => ok(), open: () => ok() },
   editors: { list: () => ok([{ cmd: 'code', name: 'VS Code' }, { cmd: 'gnome-text-editor', name: 'Text Editor' }]) },
   onEdit() {},

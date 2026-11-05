@@ -521,5 +521,13 @@
  "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "The cloud keychain with its Secret Key is included in the code.",
  "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "No cloud keychain included. Turn it on under Keychain or unlock it here so it comes along.",
  "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "Signed in, cloud keychain set up.",
- "Angemeldet.": "Signed in."
+ "Angemeldet.": "Signed in.",
+ "Größe": "Size",
+ "Geändert": "Modified",
+ "Auswahl aufheben": "Clear selection",
+ "Übertragung abgebrochen.": "Transfer cancelled.",
+ "Verbleibend: {time}": "Remaining: {time}",
+ "{done} von {total} Dateien": "{done} of {total} files",
+ "Übergeordneter Ordner": "Parent folder",
+ "Startverzeichnis": "Home directory"
 }

@@ -521,5 +521,13 @@
  "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "क्लाउड कीचेन और उसकी सीक्रेट की कोड में शामिल है।",
  "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "क्लाउड कीचेन शामिल नहीं है। इसे कीचेन में चालू करें या यहाँ अनलॉक करें ताकि साथ आए।",
  "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "साइन इन हो गया, क्लाउड कीचेन सेट हो गया।",
- "Angemeldet.": "साइन इन हो गया।"
+ "Angemeldet.": "साइन इन हो गया।",
+ "Größe": "आकार",
+ "Geändert": "संशोधित",
+ "Auswahl aufheben": "चयन हटाएँ",
+ "Übertragung abgebrochen.": "स्थानांतरण रद्द किया गया।",
+ "Verbleibend: {time}": "शेष समय: {time}",
+ "{done} von {total} Dateien": "{total} में से {done} फ़ाइलें",
+ "Übergeordneter Ordner": "ऊपरी फ़ोल्डर",
+ "Startverzeichnis": "होम फ़ोल्डर"
 }

@@ -547,7 +547,9 @@ const curVersion = () => {
   try { const i = JSON.parse(fs.readFileSync(installedFile(), 'utf8')); if (i.base === base) return i.version; } catch { /* nie per Update installiert */ }
   return base;
 };
+const isMobile = process.platform === 'android' || !!app.mobile;
 async function checkUpdate() {
+  if (isMobile) return { current: curVersion() };
   const cur = curVersion(), c = updCfg();
   try {
     const l = await updater.latest({ repo: c.repo, url: c.url, channel: c.channel, fetch: updFetch });
@@ -631,7 +633,7 @@ app.whenReady().then(() => {
     setTimeout(() => { app.relaunch(); app.exit(0); }, 600);
     return { ok: true };
   });
-  if (updCfg().auto) { setTimeout(checkUpdate, 8000); setInterval(() => updCfg().auto && checkUpdate(), 6 * 36e5); }
+  if (!isMobile && updCfg().auto) { setTimeout(checkUpdate, 8000); setInterval(() => updCfg().auto && checkUpdate(), 6 * 36e5); }
   // ---- Teams: Rückgabe { ... } oder { error } ----
   const teamErr = (e) => (/decrypting the ciphertext|fetch failed/.test(e.message) ? syncMsg(e) : e.status === 404 && e.message === 'Nicht gefunden' ? 'Der Server kennt noch keine Teams. Bitte den Server aktualisieren.' : e.status ? e.message : 'Team-Aktion fehlgeschlagen');
   const teamKey = async (ctx, id) => { if (!teamKeys.has(id)) await refreshTeams(ctx); const k = teamKeys.get(id); if (!k) throw Object.assign(new Error('Schlüssel fehlt'), { status: 400 }); return k; };
@@ -984,6 +986,14 @@ app.whenReady().then(() => {
     sshConnectJump(conn, h, sshConfig(h, auth), dialogAsk(h.name), () => {}, false);
     });
   });
+  const sftpAborts = new Map(); // sid -> AbortController
+  const sftpXfer = (direction, sid, run) => {
+    const ac = new AbortController();
+    sftpAborts.set(sid, ac);
+    let done = false;
+    const opts = { signal: ac.signal, onProgress: (p) => !done && !ac.signal.aborted && send('sftp:progress', { sid, direction, ...p }) };
+    return run(opts).finally(() => { done = true; if (sftpAborts.get(sid) === ac) sftpAborts.delete(sid); send('sftp:progress', { sid, done: true }); });
+  };
   const sftpOp = (name, fn) => handle(`sftp:${name}`, async (_, sid, ...a) => {
     const s = sftps.get(sid);
     if (!s) return { error: 'Nicht verbunden' };
@@ -993,15 +1003,26 @@ app.whenReady().then(() => {
   sftpOp('mkdir', sftpTools.mkdir);
   sftpOp('rename', sftpTools.rename);
   sftpOp('remove', sftpTools.remove);
-  sftpOp('upload', sftpTools.upload);
-  sftpOp('download', sftpTools.download);
-  ipcMain.on('sftp:close', (_, sid) => { stopEdits(sid); const s = sftps.get(sid); if (s) endAll(s.conn); sftps.delete(sid); });
+  handle('sftp:upload', async (_, sid, local, remoteDir) => {
+    const s = sftps.get(sid);
+    if (!s) return { error: 'Nicht verbunden' };
+    try { return { data: await sftpXfer('upload', sid, (opts) => sftpTools.upload(s.sftp, local, remoteDir, opts)) }; } catch (e) { return { error: e.message }; }
+  });
+  handle('sftp:download', async (_, sid, remote, localDir) => {
+    const s = sftps.get(sid);
+    if (!s) return { error: 'Nicht verbunden' };
+    try { return { data: await sftpXfer('download', sid, (opts) => sftpTools.download(s.sftp, remote, localDir, opts)) }; } catch (e) { return { error: e.message }; }
+  });
+  ipcMain.on('sftp:cancel', (_, sid) => {
+    for (const [k, ac] of sftpAborts) if (!sid || k === sid || k.startsWith(`${sid}:`)) ac.abort();
+  });
+  ipcMain.on('sftp:close', (_, sid) => { sftpAborts.get(sid)?.abort(); sftpAborts.delete(sid); stopEdits(sid); const s = sftps.get(sid); if (s) endAll(s.conn); sftps.delete(sid); });
   handle('sftp:edit', async (_, sid, p, cmd) => { try { await editRemote(win, sid, p, cmd); return { data: null }; } catch (e) { return { error: e.message }; } });
   handle('editors:list', () => editors.detect().map(({ cmd, name }) => ({ cmd, name })));
   handle('sftp:copy', async (_, a, pa, b, db) => {
     const x = sftps.get(a), y = sftps.get(b);
     if (!x || !y) return { error: 'Nicht verbunden' };
-    try { await sftpTools.copy(x.sftp, pa, y.sftp, db); return { data: null }; } catch (e) { return { error: e.message }; }
+    try { await sftpXfer('copy', a, (opts) => sftpTools.copy(x.sftp, pa, y.sftp, db, opts)); return { data: null }; } catch (e) { return { error: e.message }; }
   });
   const localOp = (name, fn) => handle(`local:${name}`, async (_, ...a) => {
     try { return { data: await fn(...a) }; } catch (e) { return { error: e.message }; }

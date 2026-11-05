@@ -521,5 +521,13 @@
  "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "El llavero en la nube con su clave secreta está incluido en el código.",
  "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "Sin llavero en la nube. Actívalo en Llavero o desbloquéalo aquí para incluirlo.",
  "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "Sesión iniciada, llavero en la nube configurado.",
- "Angemeldet.": "Sesión iniciada."
+ "Angemeldet.": "Sesión iniciada.",
+ "Größe": "Tamaño",
+ "Geändert": "Modificado",
+ "Auswahl aufheben": "Deseleccionar todo",
+ "Übertragung abgebrochen.": "Transferencia cancelada.",
+ "Verbleibend: {time}": "Restante: {time}",
+ "{done} von {total} Dateien": "{done} de {total} archivos",
+ "Übergeordneter Ordner": "Carpeta superior",
+ "Startverzeichnis": "Directorio de inicio"
 }

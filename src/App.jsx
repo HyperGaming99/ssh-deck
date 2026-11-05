@@ -783,8 +783,8 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
         {tab === 'privacy' && <TorSettings />}
         {tab === 'keychain' && <KeychainCloud st={st} toast={toast} goAccount={() => setTab('account')} />}
         {tab === 'teams' && <TeamsSettings st={st} teams={teams} refresh={refreshTeams} vault={vault} setVault={setVault} toast={toast} goAccount={() => setTab('account')} />}
-        {tab === 'updates' && <UpdatesSettings />}
-        {tab === 'files' && (
+        {!mobile && tab === 'updates' && <UpdatesSettings />}
+        {!mobile && tab === 'files' && (
           <div className={row}>
             <div><p className="text-sm font-medium">{t('Standard-Editor')}</p><p className="text-xs text-muted-foreground">{t('Für „Öffnen“ und Doppelklick auf Dateien im SFTP')}</p></div>
             <Select value={editor} onValueChange={pickEditor}>
@@ -925,7 +925,7 @@ export default function App() {
     api.sync.status().then(setSt);
     api.sync.onStatus(setSt);
     api.onCredAsk((a) => setCredAsks((q) => [...q, a]));
-    api.update.onAvailable(setUpd);
+    if (!mobile) api.update.onAvailable(setUpd);
     api.onStatus((sid, conn) => updPane(sid, (p) => (conn.state === 'ready' ? { conn, tries: 0, lost: false, closed: false }
       : conn.state === 'failed' && p.tries ? { conn: null, lost: true } // Versuch nach Verbindungsabbruch gescheitert: weiter in der Leiste
       : { conn })));
@@ -1075,7 +1075,7 @@ export default function App() {
         </header>
         <PairSheet open={pairOpen} onClose={() => setPairOpen(false)} signedIn={!!st?.configured} toast={toast} />
 
-        {upd && !gate && <UpdateBanner upd={upd} onClose={() => setUpd(null)} />}
+        {!mobile && upd && !gate && <UpdateBanner upd={upd} onClose={() => setUpd(null)} />}
         {st === null ? <div className="flex-1" /> : lang === null ? <LanguageSetup onPick={setLang} /> : gate ? <LoginScreen status={st} dark={dark} onSkip={() => chooseSkip(true)} onPair={() => setPairOpen(true)} /> : <div className="mroot flex min-h-0 flex-1">
         {(navOpen || mobile) && !termActive && (
           <nav className={cn('mnav flex shrink-0 flex-col gap-1 py-3', side === 'wide' ? 'w-56 items-stretch border-r bg-sidebar px-3' : 'items-stretch px-2',

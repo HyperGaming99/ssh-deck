@@ -472,6 +472,13 @@ const mock = {
   await sftpTools.copy(mock, path.join(remote, 'proj'), mock, other);
   assert.equal(fs.readFileSync(path.join(other, 'proj/sub/b.txt'), 'utf8'), 'B');
   await sftpTools.remove(mock, path.join(remote, 'proj'));
+  // Fortschritt + Mehrfachauswahl + Abbruch
+  const prog = [];
+  await sftpTools.upload(mock, [path.join(src, 'proj/a.txt'), path.join(src, 'proj/sub')], remote, { onProgress: (p) => prog.push(p) });
+  assert(prog.length >= 2 && prog.at(-1).percent === 100 && prog.at(-1).totalBytes === 2 && prog.at(-1).filesTotal === 2, 'SFTP-Fortschritt zählt Bytes und Dateien');
+  const ac = new AbortController();
+  ac.abort();
+  await assert.rejects(sftpTools.upload(mock, path.join(src, 'proj'), remote, { signal: ac.signal }), /Abgebrochen/);
   assert(!sftpTools.safeName('../x') && !sftpTools.safeName('..') && sftpTools.safeName('ok.txt'));
   assert(sftpTools.listLocal('', os.homedir()).entries.length >= 0);
   console.log('ok');

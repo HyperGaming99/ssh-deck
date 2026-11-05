@@ -521,5 +521,13 @@
  "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "سلسلة المفاتيح السحابية مع المفتاح السري مضمّنة في الرمز.",
  "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "لا تتضمن سلسلة مفاتيح سحابية. فعّلها من «سلسلة المفاتيح» أو افتحها هنا لتُدرج.",
  "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "تم تسجيل الدخول وإعداد سلسلة المفاتيح السحابية.",
- "Angemeldet.": "تم تسجيل الدخول."
+ "Angemeldet.": "تم تسجيل الدخول.",
+ "Größe": "الحجم",
+ "Geändert": "تاريخ التعديل",
+ "Auswahl aufheben": "إلغاء التحديد",
+ "Übertragung abgebrochen.": "تم إلغاء النقل.",
+ "Verbleibend: {time}": "المتبقي: {time}",
+ "{done} von {total} Dateien": "{done} من {total} ملفات",
+ "Übergeordneter Ordner": "المجلد الأعلى",
+ "Startverzeichnis": "المجلد الرئيسي"
 }

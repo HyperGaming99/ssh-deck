@@ -521,5 +521,13 @@
  "Der Cloud-Schlüsselbund mit Geheimschlüssel ist im Code enthalten.": "클라우드 키체인과 비밀 키가 코드에 포함되어 있습니다.",
  "Ohne Cloud-Schlüsselbund. Schalte ihn unter Schlüsselbund ein oder entsperre ihn hier, damit er mitkommt.": "클라우드 키체인이 포함되지 않았습니다. 키체인에서 켜거나 여기서 잠금 해제하면 함께 전달됩니다.",
  "Angemeldet, Cloud-Schlüsselbund eingerichtet.": "로그인했고 클라우드 키체인이 설정되었습니다.",
- "Angemeldet.": "로그인했습니다."
+ "Angemeldet.": "로그인했습니다.",
+ "Größe": "크기",
+ "Geändert": "수정일",
+ "Auswahl aufheben": "선택 해제",
+ "Übertragung abgebrochen.": "전송이 취소되었습니다.",
+ "Verbleibend: {time}": "남은 시간: {time}",
+ "{done} von {total} Dateien": "파일 {done} / {total}개",
+ "Übergeordneter Ordner": "상위 폴더",
+ "Startverzeichnis": "홈 디렉터리"
 }

@@ -77,6 +77,12 @@ contextBridge.exposeInMainWorld('api', {
     remove: sftpCall('remove'), upload: sftpCall('upload'), download: sftpCall('download'),
     edit: (sid, p, cmd) => unwrap(ipcRenderer.invoke('sftp:edit', sid, p, cmd)),
     copy: (a, pa, b, db) => unwrap(ipcRenderer.invoke('sftp:copy', a, pa, b, db)),
+    cancel: (sid) => ipcRenderer.send('sftp:cancel', sid),
+    onProgress: (cb) => {
+      const fn = (_, p) => cb(p);
+      ipcRenderer.on('sftp:progress', fn);
+      return () => ipcRenderer.removeListener?.('sftp:progress', fn);
+    },
     close: (sid) => ipcRenderer.send('sftp:close', sid),
   },
   local: {
