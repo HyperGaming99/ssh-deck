@@ -167,7 +167,7 @@ function usePane(side, tabSid, initialSrc, toast) {
   const sep = remote ? '/' : api.platform === 'win32' ? '\\' : '/'; // lokal: Trenner des Systems
   return {
     join: (n) => joinPath(path, n, sep),
-    up: () => parentPath(path, sep),
+    up: () => (!remote && api.mobile && path === '/storage/emulated/0' ? path : parentPath(path, sep)),
     home: () => (remote ? '.' : ''),
     shown: path === DRIVES ? '' : path,
     sep, side, src, setSrc, idle, status, path, entries, visible,

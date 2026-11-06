@@ -1035,7 +1035,9 @@ app.whenReady().then(() => {
   };
   localOp('list', async (d) => {
     if (isMobile && app.ensureStorage) await app.ensureStorage();
-    return sftpTools.listLocal(d, localHome());
+    const home = localHome();
+    if (isMobile && home === '/storage/emulated/0' && (d === '/' || d === '/storage' || d === '/storage/emulated')) d = home;
+    return sftpTools.listLocal(d, home);
   });
   localOp('mkdir', (p) => fs.mkdirSync(p));
   localOp('rename', (a, b) => fs.renameSync(a, b));
