@@ -46,7 +46,8 @@ const torCfg = () => { const s = readSettings().tor || {}; return { sync: !!s.sy
 async function dialVia(host, port, tp = {}) {
   if (tp.cf) return transportTools.cloudflared(host);
   const tor = torCfg();
-  const chain = [...(tor.servers && !torTools.isPrivateHost(host) ? [{ host: tor.host, port: tor.port, type: 5 }] : []), ...transportTools.parseProxies(tp.proxies)];
+  const torProxy = tor.servers && !torTools.isPrivateHost(host) ? await torTools.ensure(tor, dir) : null;
+  const chain = [...(torProxy ? [{ host: torProxy.host, port: torProxy.port, type: 5 }] : []), ...transportTools.parseProxies(tp.proxies)];
   return chain.length ? transportTools.chainSocket(chain, host, port) : null;
 }
 const transportOf = (h) => ({ cf: h.via === 'cloudflared', proxies: h.via === 'proxy' ? h.proxies : '' });
@@ -61,12 +62,10 @@ function sshConnect(conn, cfg, sock) {
     .catch((e) => conn.emit('error', new Error(`Proxy: ${e.message}`)));
 }
 
-// HTTP über Tor: eigene Sitzung mit festem SOCKS5-Proxy (Chromium löst Hostnamen beim Proxy auf)
+// HTTP über Tor: startet bei Bedarf den integrierten Tor-Daemon (Trezor-Tor-Paket / libtor.so) und leitet den Traffic über SOCKS5
 async function torFetch(url, init) {
-  const { host, port } = torCfg();
-  const ses = session.fromPartition('tor-sync');
-  await ses.setProxy({ proxyRules: `socks5://${host}:${port}` });
-  return ses.fetch(url, init);
+  const proxy = await torTools.ensure(torCfg(), dir);
+  return torTools.socksFetch(proxy, url, init);
 }
 const backendOpts = (url) => (torCfg().sync && !torTools.isPrivateHost(new URL(url).hostname) ? { fetch: torFetch } : {});
 
@@ -611,6 +610,11 @@ app.whenReady().then(() => {
     }
     fs.writeFileSync(settingsFile, JSON.stringify({ ...readSettings(), ...patch }));
     if ('syncServer' in patch) send('sync:status', syncStatus());
+    if ('tor' in patch) {
+      const tc = torCfg();
+      if (tc.sync || tc.servers) torTools.ensure(tc, dir).catch(() => {});
+      else torTools.stop();
+    }
   });
   handle('update:check', async () => { const u = await checkUpdate(); return u.error ? u : publicUpd(u); });
   let relCache = []; // Veröffentlichungen für die Versionswahl (auch ältere)
@@ -1071,10 +1075,12 @@ app.whenReady().then(() => {
 });
 
 app.whenReady().then(() => {
-  // erst nach dem Aufbau oben: Start-Sync, regelmäßig und beim Fokussieren
+  // erst nach dem Aufbau oben: integrierten Tor-Daemon vorwärmen (falls aktiv), Start-Sync, regelmäßig und beim Fokussieren
+  const tc = torCfg();
+  if (tc.sync || tc.servers) torTools.ensure(tc, dir).catch(() => {});
   if (loadSyncCfg()) runSync();
   setInterval(scheduleSync, 5 * 60 * 1000);
   mainWin.on('focus', scheduleSync);
 });
-app.on('before-quit', () => [...edits.keys()].forEach(stopEdits));
+app.on('before-quit', () => { torTools.stop(); [...edits.keys()].forEach(stopEdits); });
 app.on('window-all-closed', () => app.quit());

@@ -74,7 +74,8 @@ public class NodeBridgePlugin extends Plugin {
         java.nio.file.Files.write(stampFile.toPath(), stamp.getBytes());
       }
       node.registerNodeDataDirPath(files.getAbsolutePath());
-      node.startNodeWithArguments(new String[] {"node", new File(project, "entry.js").getAbsolutePath()}, builtin.getAbsolutePath(), true);
+      String torBin = new File(ctx.getApplicationInfo().nativeLibraryDir, "libtor.so").getAbsolutePath();
+      node.startNodeWithArguments(new String[] {"node", new File(project, "entry.js").getAbsolutePath(), torBin}, builtin.getAbsolutePath(), true);
     } catch (Exception e) {
       android.util.Log.e("SSHDeck", "Node-Start fehlgeschlagen", e);
     }

@@ -1,4 +1,5 @@
 // Einstieg auf dem Handy: "electron" durch den Ersatz tauschen, dann main.js starten.
+if (process.argv[2]) process.env.DECK_TOR_BIN = process.argv[2];
 const Module = require('module');
 const fs = require('fs');
 const path = require('path');

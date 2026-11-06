@@ -241,6 +241,23 @@ for (const h of ['example.com', '8.8.8.8', '172.32.0.1', 'abcdefghij234567.onion
   const got = await new Promise((r) => { sock.once('data', (d) => r(d.toString())); sock.write('ping'); });
   assert.equal(got, 'ping', 'Daten fließen durch den Proxy');
   sock.destroy(); proxy.close(); echo.close();
+  // CRX3-Entpacker für das Trezor-Tor-Paket
+  const zlib = require('zlib');
+  const rawBin = Buffer.from('#!/bin/sh\necho tor\n');
+  const deflated = zlib.deflateRawSync(rawBin);
+  const nameBuf = Buffer.from('tor-0.4.9.12-linux-brave-0');
+  const lfh = Buffer.alloc(30);
+  lfh.writeUInt32LE(0x04034b50, 0);
+  lfh.writeUInt16LE(8, 8); // deflate
+  lfh.writeUInt32LE(deflated.length, 18);
+  lfh.writeUInt32LE(rawBin.length, 22);
+  lfh.writeUInt16LE(nameBuf.length, 26);
+  const crxHdr = Buffer.alloc(16);
+  crxHdr.write('Cr24', 0);
+  crxHdr.writeUInt32LE(3, 4);
+  crxHdr.writeUInt32LE(4, 8); // 4 Bytes Dummy-Header
+  const fakeCrx = Buffer.concat([crxHdr, lfh, nameBuf, deflated]);
+  assert.deepEqual(torTools.extractCrxTor(fakeCrx), rawBin, 'CRX3-Tor-Paket wird sauber entpackt');
   console.log('tor ok');
 })().catch((e) => { console.error(e); process.exit(1); });
 
