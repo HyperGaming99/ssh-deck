@@ -219,9 +219,9 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input className="pl-9" placeholder={t('Suchen …')} value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
-        <Button variant="outline" onClick={() => exportConfig(current !== null ? inGroup : hosts, 'ssh_config')}><FileText className="size-4" />{t('Als SSH-Config exportieren')}</Button>
+        {!mobile && <Button variant="outline" onClick={() => exportConfig(current !== null ? inGroup : hosts, 'ssh_config')}><FileText className="size-4" />{t('Als SSH-Config exportieren')}</Button>}
         {writable && <>
-        <Button variant="outline" onClick={() => setImportOpen(true)}><Download className="size-4" />{t('Importieren')}</Button>
+        {!mobile && <Button variant="outline" onClick={() => setImportOpen(true)}><Download className="size-4" />{t('Importieren')}</Button>}
         <Button variant="outline" onClick={newGroup}><FolderPlus className="size-4" />{t('Neue Gruppe')}</Button>
         <Button onClick={() => edit()}><Plus className="size-4" />{t('Neuer Host')}</Button></>}
       </div>
@@ -249,7 +249,7 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
                 return (
                   <Item key={g.id} dark={dark} icon={<Folder className="size-5 text-primary" />} title={g.name} sub={t('{n} Server', { n })}
                     onClick={() => setCurrent(g.name)}
-                    actions={<><IconButton label={t('Als SSH-Config exportieren')} onClick={() => exportConfig(hosts.filter((h) => h.group === g.name), g.name)}><FileText className="size-3.5" /></IconButton>
+                    actions={<>{!mobile && <IconButton label={t('Als SSH-Config exportieren')} onClick={() => exportConfig(hosts.filter((h) => h.group === g.name), g.name)}><FileText className="size-3.5" /></IconButton>}
                       {writable && <><IconButton label={t('Umbenennen')} onClick={() => renameGroup(g)}><Pencil className="size-3.5" /></IconButton>
                       <IconButton label={t('Gruppe löschen')} onClick={() => removeGroup(g)}><Trash2 className="size-3.5" /></IconButton></>}</>} />
                 );
@@ -372,7 +372,7 @@ function KeychainView({ dark, openForm, toast }) {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>}
-        {vault === 'personal' && <Button variant="ghost" onClick={rescan}><RefreshCw className="size-4" />{t('~/.ssh einlesen')}</Button>}
+        {!mobile && vault === 'personal' && <Button variant="ghost" onClick={rescan}><RefreshCw className="size-4" />{t('~/.ssh einlesen')}</Button>}
         <div className="ms-auto flex items-center gap-1">
           <div className="relative">
             <Search className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -398,7 +398,7 @@ function KeychainView({ dark, openForm, toast }) {
               {k.publicKey && <IconButton label={t('Öffentlichen Schlüssel kopieren')} onClick={() => copy(k)}><Copy className="size-3.5" /></IconButton>}
               {k.publicKey && <IconButton label={t('Auf Host exportieren')} onClick={() => toHost(k)}><Send className="size-3.5" /></IconButton>}
               {writable && <IconButton label={t('Schlüssel umbenennen')} onClick={() => rename(k)}><Pencil className="size-3.5" /></IconButton>}
-              {!k.publicOnly && <IconButton label={t('Privaten Schlüssel speichern')} onClick={async () => { const err = await api.keys.exportPrivate(k.id); err && toast(err); }}><Download className="size-3.5" /></IconButton>}
+              {!mobile && !k.publicOnly && <IconButton label={t('Privaten Schlüssel speichern')} onClick={async () => { const err = await api.keys.exportPrivate(k.id); err && toast(err); }}><Download className="size-3.5" /></IconButton>}
               {writable && k.source !== 'imported' && <IconButton label={t('Löschen')} onClick={async () => { await api.keys.remove(k.id); load(); }}><Trash2 className="size-3.5" /></IconButton>}
             </>} />
         ))}
@@ -429,7 +429,7 @@ function KnownHostsView({ dark, toast, rev }) {
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input className="pl-9" placeholder={t('Suchen …')} value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
-        <Button variant="outline" onClick={importFile}><Download className="size-4" />{t('~/.ssh/known_hosts importieren')}</Button>
+        {!mobile && <Button variant="outline" onClick={importFile}><Download className="size-4" />{t('~/.ssh/known_hosts importieren')}</Button>}
         <CensorButton on={censor} toggle={toggleCensor} />
       </div>
       {!list.length && <Empty>{items.length ? t('Keine Treffer.') : t('Noch keine bekannten Hosts. Sie werden beim ersten Verbinden gespeichert.')}</Empty>}

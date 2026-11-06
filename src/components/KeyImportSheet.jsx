@@ -51,7 +51,7 @@ export default function KeyImportSheet({ open, onClose, onDone, toast, vault = '
               <div className="grid gap-1.5">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="kpriv">{t('Privater Schlüssel')}</Label>
-                  <Button type="button" variant="ghost" size="sm" className="h-7 gap-1.5 text-xs" onClick={pickFile}><FileUp className="size-3.5" />{t('Datei wählen …')}</Button>
+                  <Button type="button" variant="ghost" size="sm" className="mhide h-7 gap-1.5 text-xs" onClick={pickFile}><FileUp className="size-3.5" />{t('Datei wählen …')}</Button>
                 </div>
                 <textarea id="kpriv" dir="ltr" spellCheck={false} autoComplete="off" className={area} placeholder="-----BEGIN OPENSSH PRIVATE KEY-----" value={v.privateKey} onChange={set('privateKey')} />
               </div>
