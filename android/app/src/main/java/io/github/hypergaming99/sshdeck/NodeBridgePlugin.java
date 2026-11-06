@@ -1,6 +1,15 @@
 package io.github.hypergaming99.sshdeck;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Environment;
+import android.provider.Settings;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -28,6 +37,7 @@ public class NodeBridgePlugin extends Plugin {
   private static final String EVENTS = "_EVENTS_";
   private final RNNodeJsMobileModule node = new RNNodeJsMobileModule();
   private volatile boolean up = false; // erst wenn Node etwas gesendet hat, ist sein Kanal bereit
+  private volatile int pendingPermId = 0;
 
   @Override
   public void load() {
@@ -39,6 +49,7 @@ public class NodeBridgePlugin extends Plugin {
         if (!"message".equals(env.optString("event"))) return;
         String inner = new JSONArray(env.getString("payload")).getString(0);
         if (inner.startsWith("{\"t\":\"ks\"")) { keystore(new JSONObject(inner)); return; } // Schlüssel ein-/auspacken bleibt in Java
+        if (inner.startsWith("{\"t\":\"perm\"")) { storagePerm(new JSONObject(inner)); return; } // Speicherzugriff für SFTP-Lokal anfordern
         JSObject o = new JSObject();
         o.put("msg", inner);
         notifyListeners("message", o);
@@ -133,6 +144,60 @@ public class NodeBridgePlugin extends Plugin {
       try { res.put("error", String.valueOf(e.getMessage())); } catch (Exception x) { /* ignorieren */ }
     }
     toNode(res.toString());
+  }
+
+  private boolean hasStoragePermission() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      return Environment.isExternalStorageManager();
+    }
+    return ContextCompat.checkSelfPermission(getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
+  }
+
+  private void sendPermResult(int id, boolean ok) {
+    try {
+      JSONObject res = new JSONObject();
+      res.put("t", "permres").put("id", id).put("ok", ok);
+      toNode(res.toString());
+    } catch (Exception e) { /* ignorieren */ }
+  }
+
+  private void storagePerm(JSONObject req) {
+    try {
+      int id = req.getInt("id");
+      if (hasStoragePermission() || getActivity() == null) {
+        sendPermResult(id, hasStoragePermission());
+        return;
+      }
+      pendingPermId = id;
+      getActivity().runOnUiThread(() -> {
+        try {
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+              Intent i = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, Uri.parse("package:" + getContext().getPackageName()));
+              getActivity().startActivity(i);
+            } catch (Exception ex) {
+              Intent i = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+              getActivity().startActivity(i);
+            }
+          } else {
+            ActivityCompat.requestPermissions(getActivity(), new String[] { Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE }, 9001);
+          }
+        } catch (Exception e) {
+          pendingPermId = 0;
+          sendPermResult(id, false);
+        }
+      });
+    } catch (Exception e) { /* ignorieren */ }
+  }
+
+  @Override
+  protected void handleOnResume() {
+    super.handleOnResume();
+    int id = pendingPermId;
+    if (id != 0) {
+      pendingPermId = 0;
+      sendPermResult(id, hasStoragePermission());
+    }
   }
 
   @PluginMethod

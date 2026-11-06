@@ -17,6 +17,8 @@ const handlers = new Map(); // invoke
 const listeners = new Map(); // send
 const asks = new Map(); // Anfragen an das Handy (Dateiauswahl, Teilen, ...)
 let askId = 0;
+const permReq = new Map();
+let permId = 0;
 
 chan.on('message', (raw) => {
   let m; try { m = JSON.parse(raw); } catch { return; }
@@ -29,6 +31,7 @@ chan.on('message', (raw) => {
   } else if (m.t === 'send') (listeners.get(m.ch) || []).forEach((f) => f(ev, ...(m.args || [])));
   else if (m.t === 'res') { asks.get(m.id)?.(m.value); asks.delete(m.id); }
   else if (m.t === 'ksres') { ksReq.get(m.id)?.(m); ksReq.delete(m.id); }
+  else if (m.t === 'permres') { permReq.get(m.id)?.(!!m.ok); permReq.delete(m.id); }
 });
 
 const emit = (ch, ...args) => chan.send(JSON.stringify({ t: 'event', ch, args }));
@@ -47,6 +50,9 @@ class BrowserWindow { constructor() { return win; } static fromWebContents() { r
 
 const app = Object.assign(new EventEmitter(), {
   mobile: true,
+  ensureStorage: () => (process.platform === 'android'
+    ? new Promise((res) => { const id = ++permId; permReq.set(id, res); chan.send(JSON.stringify({ t: 'perm', id })); })
+    : Promise.resolve(true)),
   whenReady: () => Promise.resolve(),
   getPath: (n) => (n === 'temp' ? path.join(DATA, 'tmp') : DATA),
   getVersion: () => process.env.DECK_VERSION || '0.0.0',

@@ -1027,7 +1027,16 @@ app.whenReady().then(() => {
   const localOp = (name, fn) => handle(`local:${name}`, async (_, ...a) => {
     try { return { data: await fn(...a) }; } catch (e) { return { error: e.message }; }
   });
-  localOp('list', (d) => sftpTools.listLocal(d, os.homedir()));
+  const localHome = () => {
+    if (isMobile) {
+      try { fs.readdirSync('/storage/emulated/0'); return '/storage/emulated/0'; } catch { /* noch kein Zugriff */ }
+    }
+    return os.homedir();
+  };
+  localOp('list', async (d) => {
+    if (isMobile && app.ensureStorage) await app.ensureStorage();
+    return sftpTools.listLocal(d, localHome());
+  });
   localOp('mkdir', (p) => fs.mkdirSync(p));
   localOp('rename', (a, b) => fs.renameSync(a, b));
   localOp('open', (p, cmd) => launch(p, cmd));
