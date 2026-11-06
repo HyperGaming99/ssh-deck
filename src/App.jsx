@@ -527,20 +527,20 @@ function SyncView({ st, onLogin, onLogout, toast }) {
   );
 }
 
-// Tor: Sync und/oder Server-Verbindungen über einen lokalen SOCKS5-Proxy (Einstellungen liegen pro Gerät im Hauptprozess)
+// Tor: Sync und/oder Server-Verbindungen über den integrierten Tor-Daemon (Einstellungen liegen pro Gerät im Hauptprozess)
 function TorSettings() {
   const t = useT();
-  const [c, setC] = useState({ sync: false, servers: false, host: '127.0.0.1', port: 9050 });
+  const [c, setC] = useState({ sync: false, servers: false });
   const [res, setRes] = useState(null); // { ok, text }
   const [busy, setBusy] = useState(false);
-  useEffect(() => { api.settings.get().then((s) => s.tor && setC((o) => ({ ...o, ...s.tor }))); }, []);
+  useEffect(() => { api.settings.get().then((s) => s.tor && setC({ sync: !!s.tor.sync, servers: !!s.tor.servers })); }, []);
   const save = (patch) => { const n = { ...c, ...patch }; setC(n); setRes(null); api.settings.set({ tor: n }); };
   const test = async () => {
     setBusy(true); setRes(null);
     const r = await api.tor.test();
     setBusy(false);
     setRes(r.state === 'ok' ? { ok: true, text: t('Tor-Verbindung funktioniert. Ausgangs-IP: {ip}', { ip: r.ip }) }
-      : { text: r.state === 'notor' ? t('Der Proxy antwortet, aber die Verbindung läuft nicht über Tor.') : t('Tor-Proxy nicht erreichbar. Läuft Tor unter {address}?', { address: `${c.host}:${c.port}` }) });
+      : { text: r.state === 'notor' ? t('Der Proxy antwortet, aber die Verbindung läuft nicht über Tor.') : t('Server nicht erreichbar.') });
   };
   const row = 'mrow flex items-center justify-between gap-4 rounded-xl border bg-card p-4';
   return (
@@ -553,15 +553,9 @@ function TorSettings() {
         <div><p className="text-sm font-medium">{t('Server über Tor')}</p><p className="text-xs text-muted-foreground">{t('SSH-, SFTP- und Forwarding-Verbindungen zu deinen Hosts laufen über Tor.')}</p></div>
         <Switch checked={c.servers} onCheckedChange={(v) => save({ servers: v })} />
       </div>
-      <div className="space-y-3 rounded-xl border bg-card p-4">
-        <p className="text-sm font-medium">{t('Tor-Proxy (SOCKS5)')}</p>
-        <div className="mrow flex gap-2" dir="ltr">
-          <Input className="flex-1 font-mono" aria-label={t('Adresse')} value={c.host} onChange={(e) => save({ host: e.target.value })} />
-          <Input className="w-24 font-mono" type="number" min="1" max="65535" aria-label={t('Port')} value={c.port} onChange={(e) => save({ port: +e.target.value })} />
-          <Button variant="outline" onClick={test} disabled={busy}>{busy ? t('Bitte warten …') : t('Verbindung testen')}</Button>
-        </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button variant="outline" onClick={test} disabled={busy}>{busy ? t('Bitte warten …') : t('Verbindung testen')}</Button>
         {res && <p className={cn('text-sm', res.ok ? 'text-success' : 'text-destructive')}>{res.text}</p>}
-        <p className="text-xs text-muted-foreground">{t('Tor muss lokal laufen (Linux: „sudo apt install tor“, Port 9050; der Tor Browser nutzt 9150). Adressen im lokalen Netz, etwa 192.168.x.x, verbinden direkt, weil Tor sie nicht erreicht. Fällt Tor aus, schlägt die Verbindung fehl – es gibt keinen Rückfall auf eine direkte Verbindung. Gilt für neue Verbindungen.')}</p>
       </div>
     </>
   );

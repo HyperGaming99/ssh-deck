@@ -29,7 +29,7 @@ const sftps = new Map(); // sid -> { conn, sftp }
 const edits = new Map(); // sid -> [{ watcher, dir }] geöffnete Remote-Dateien
 const running = new Map(); // forward-id -> { conn, server }
 let hosts, snippets, forwards, keys, groups, known, overrides;
-let mainWin, dir;
+let mainWin;
 const crypt = {
   encrypt: (s) => safeStorage.encryptString(s).toString('base64'),
   decrypt: (s) => safeStorage.decryptString(Buffer.from(s, 'base64')),
@@ -40,7 +40,7 @@ const readSettings = () => { try { return JSON.parse(fs.readFileSync(settingsFil
 
 // ---- Tor (optional): Sync und/oder Server-Verbindungen über einen lokalen SOCKS5-Proxy ----------------
 // Kein Rückfall auf direkt: ist Tor an und nicht erreichbar, schlägt die Verbindung fehl. Lokale/private Ziele gehen direkt.
-const torCfg = () => { const s = readSettings().tor || {}; return { sync: !!s.sync, servers: !!s.servers, host: s.host || '127.0.0.1', port: +s.port || 9050 }; };
+const torCfg = () => { const s = readSettings().tor || {}; return { sync: !!s.sync, servers: !!s.servers, host: '127.0.0.1', port: 9050 }; };
 
 // Verbindungsweg zu host:port: Cloudflare Tunnel, sonst Proxy-Kette (Tor davor, wenn für Server aktiv); null = direkt
 async function dialVia(host, port, tp = {}) {
@@ -560,7 +560,7 @@ async function checkUpdate() {
 const publicUpd = (u) => { const { tarball, ...rest } = u; return rest; };
 
 app.whenReady().then(() => {
-  dir = app.getPath('userData');
+  const dir = app.getPath('userData');
   settingsFile = path.join(dir, 'settings.json');
   hosts = makeHosts(path.join(dir, 'hosts.json'), crypt);
   keys = makeKeys(path.join(dir, 'keys.json'), crypt);
