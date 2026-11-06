@@ -101,34 +101,52 @@ async function ensureTorBinary(dataDir) {
   return binPromise;
 }
 
+// Sucht einen freien lokalen TCP-Port, falls der Standardport 9050 bereits durch einen anderen Prozess belegt ist.
+function findFreePort(host = '127.0.0.1') {
+  return new Promise((resolve, reject) => {
+    const srv = net.createServer();
+    srv.once('error', reject);
+    srv.listen(0, host, () => {
+      const { port } = srv.address();
+      srv.close(() => resolve(port));
+    });
+  });
+}
+
 let daemonProc = null;
 let daemonPort = null;
+let daemonPortFile = null;
 let startPromise = null;
 
-// Stellt sicher, dass ein lokaler Tor-SOCKS5-Proxy läuft. Läuft weder auf proxy.port noch 9150 (Tor Browser) etwas,
-// wird automatisch der integrierte Tor-Daemon (Trezor-Paket / libtor.so) gestartet und bis zum Bootstrap abgewartet.
+// Startet den integrierten Tor-Daemon (Trezor-Paket auf Desktop / libtor.so auf Android) und wartet bis "Bootstrapped 100%".
 async function ensure(proxy = { host: '127.0.0.1', port: 9050 }, dataDir) {
   const host = proxy.host || '127.0.0.1';
   const port = +proxy.port || 9050;
-  if (await probePort(host, port)) return { host, port };
-  // Falls der Nutzer Standardport 9050 eingestellt hat, aber der Tor Browser auf 9150 offen ist
-  if ((host === '127.0.0.1' || host === 'localhost') && port === 9050 && await probePort(host, 9150)) {
-    return { host, port: 9150 };
-  }
-  if (host !== '127.0.0.1' && host !== 'localhost') return { host, port };
-  if (!dataDir) return { host, port };
-  if (startPromise && daemonPort === port) return startPromise;
+  if (!dataDir || (host !== '127.0.0.1' && host !== 'localhost')) return { host, port };
+  if (daemonProc && daemonPort && await probePort(host, daemonPort)) return { host, port: daemonPort };
+
+  const workDir = path.join(dataDir, 'tor-data');
+  const portFile = path.join(workDir, 'socks.port');
+  try {
+    const savedPort = +fs.readFileSync(portFile, 'utf8').trim();
+    if (savedPort > 0 && await probePort(host, savedPort)) return { host, port: savedPort };
+  } catch { /* noch kein laufender Daemon */ }
+
+  if (startPromise) return startPromise;
 
   startPromise = (async () => {
     stop();
     const bin = await ensureTorBinary(dataDir);
-    const workDir = path.join(dataDir, 'tor-data');
     fs.mkdirSync(workDir, { recursive: true });
-    daemonPort = port;
+    try { fs.rmSync(path.join(workDir, 'lock'), { force: true }); } catch { /* egal */ }
+    const listenPort = (await probePort(host, port)) ? await findFreePort(host) : port;
+    daemonPort = listenPort;
+    daemonPortFile = portFile;
     await new Promise((resolve, reject) => {
       const proc = spawn(bin, [
-        '--SocksPort', `${host}:${port}`,
+        '--SocksPort', `${host}:${listenPort}`,
         '--DataDirectory', workDir,
+        '__OwningControllerProcess', String(process.pid),
       ], { stdio: ['ignore', 'pipe', 'pipe'] });
       daemonProc = proc;
       let settled = false;
@@ -139,7 +157,7 @@ async function ensure(proxy = { host: '127.0.0.1', port: 9050 }, dataDir) {
         err ? reject(err) : resolve();
       };
       const timer = setTimeout(async () => {
-        if (await probePort(host, port)) finish();
+        if (await probePort(host, listenPort)) finish();
         else finish(new Error('Zeitüberschreitung beim Starten von Tor'));
       }, 45000);
       const onOut = (chunk) => {
@@ -157,13 +175,18 @@ async function ensure(proxy = { host: '127.0.0.1', port: 9050 }, dataDir) {
         if (!settled) finish(new Error(`Tor wurde vorzeitig beendet (Code ${code})`));
       });
     });
-    return { host, port };
+    try { fs.writeFileSync(portFile, String(listenPort)); } catch { /* egal */ }
+    return { host, port: listenPort };
   })().finally(() => { startPromise = null; });
 
   return startPromise;
 }
 
 function stop() {
+  if (daemonPortFile) {
+    try { fs.rmSync(daemonPortFile, { force: true }); } catch { /* egal */ }
+    daemonPortFile = null;
+  }
   if (daemonProc) {
     try { daemonProc.kill(); } catch { /* egal */ }
     daemonProc = null;
