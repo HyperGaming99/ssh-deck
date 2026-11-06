@@ -239,7 +239,7 @@ function TransferBanner({ transfer, onCancel }) {
   );
 }
 
-function Pane({ pane, hosts, editors, busy, onDropPane, onDropFiles, onTransfer, transferLabel, openForm, toast }) {
+function Pane({ pane, otherSrc, hosts, editors, busy, onDropPane, onDropFiles, onTransfer, transferLabel, openForm, toast }) {
   const t = useT();
   const lang = useLang();
   const [draft, setDraft] = useState(null);
@@ -371,9 +371,11 @@ function Pane({ pane, hosts, editors, busy, onDropPane, onDropFiles, onTransfer,
               </span>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="local">
-                <span className="flex items-center gap-2"><HardDrive className="size-3.5 text-primary" />{t('Lokal')}</span>
-              </SelectItem>
+              {otherSrc !== 'local' && (
+                <SelectItem value="local">
+                  <span className="flex items-center gap-2"><HardDrive className="size-3.5 text-primary" />{t('Lokal')}</span>
+                </SelectItem>
+              )}
               {hosts.filter((h) => h.protocol !== 'telnet').map((h) => (
                 <SelectItem key={h.id} value={h.id}>
                   <span className="flex items-center gap-2"><Server className="size-3.5 text-muted-foreground" />{h.name}</span>
@@ -554,6 +556,24 @@ function Pane({ pane, hosts, editors, busy, onDropPane, onDropFiles, onTransfer,
               <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
                 <p className="text-sm text-destructive">{t('Verbindungsfehler: {error}', { error: pane.status.error })}</p>
                 <Button variant="outline" size="sm" onClick={() => pane.setSrc(pane.src)}>{t('Aktualisieren')}</Button>
+              </div>
+            )}
+            {pane.status === 'ready' && pane.up() !== pane.path && (
+              <div
+                onClick={() => pane.go(pane.up())}
+                onDoubleClick={() => pane.go(pane.up())}
+                title={t('Übergeordneter Ordner')}
+                className="group flex cursor-pointer select-none items-center gap-2.5 px-3 py-1.5 text-sm transition-colors hover:bg-accent/60"
+              >
+                <span className="grid size-4 shrink-0 place-items-center text-muted-foreground">
+                  <ArrowUp className="size-3.5" />
+                </span>
+                <EntryIcon entry={{ dir: true, name: '..' }} />
+                <span className="min-w-0 flex-1 truncate font-medium text-muted-foreground group-hover:text-foreground">
+                  ..
+                </span>
+                <span className="w-20 shrink-0 text-right font-mono text-xs text-muted-foreground">—</span>
+                <span className="hidden w-28 shrink-0 text-right text-xs text-muted-foreground xl:block" />
               </div>
             )}
             {pane.status === 'ready' && pane.visible.map((e) => {
@@ -805,6 +825,7 @@ export default function SftpTab({ sid, hostId, active = true, toast, openForm })
       <div className="msftp flex min-h-0 flex-1 gap-2.5">
         <Pane
           pane={left}
+          otherSrc={right.src}
           hosts={hosts}
           editors={editors}
           busy={busy}
@@ -848,6 +869,7 @@ export default function SftpTab({ sid, hostId, active = true, toast, openForm })
         </div>
         <Pane
           pane={right}
+          otherSrc={left.src}
           hosts={hosts}
           editors={editors}
           busy={busy}
