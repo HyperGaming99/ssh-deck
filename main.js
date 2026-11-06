@@ -29,7 +29,7 @@ const sftps = new Map(); // sid -> { conn, sftp }
 const edits = new Map(); // sid -> [{ watcher, dir }] geöffnete Remote-Dateien
 const running = new Map(); // forward-id -> { conn, server }
 let hosts, snippets, forwards, keys, groups, known, overrides;
-let mainWin;
+let mainWin, dir;
 const crypt = {
   encrypt: (s) => safeStorage.encryptString(s).toString('base64'),
   decrypt: (s) => safeStorage.decryptString(Buffer.from(s, 'base64')),
@@ -560,7 +560,7 @@ async function checkUpdate() {
 const publicUpd = (u) => { const { tarball, ...rest } = u; return rest; };
 
 app.whenReady().then(() => {
-  const dir = app.getPath('userData');
+  dir = app.getPath('userData');
   settingsFile = path.join(dir, 'settings.json');
   hosts = makeHosts(path.join(dir, 'hosts.json'), crypt);
   keys = makeKeys(path.join(dir, 'keys.json'), crypt);
