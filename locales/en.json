@@ -568,5 +568,6 @@
   "Gespeichert.": "Saved.",
   "Schlüssellänge (Bits)": "Key length (bits)",
   "Kurve / Bits": "Curve / bits",
-  "Bits": "bits"
+  "Bits": "bits",
+  "Schlüssel generiert.": "Key generated."
 }

@@ -568,5 +568,6 @@
   "Gespeichert.": "已保存。",
   "Schlüssellänge (Bits)": "密钥长度（位）",
   "Kurve / Bits": "曲线 / 位",
-  "Bits": "位"
+  "Bits": "位",
+  "Schlüssel generiert.": "已生成密钥。"
 }

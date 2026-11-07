@@ -27,6 +27,7 @@ import NewTab from '@/components/NewTab';
 import HostKeyDialog from '@/components/HostKeyDialog';
 import ImportDialog from '@/components/ImportDialog';
 import KeyImportSheet from '@/components/KeyImportSheet';
+import KeyGenSheet from '@/components/KeyGenSheet';
 import { maskFingerprint, maskHost } from '@/lib/censor.mjs';
 import { sshCommand, sshConfig } from '@/lib/sshcmd.mjs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -287,6 +288,7 @@ function KeychainView({ dark, openForm, toast }) {
   const [items, setItems] = useState([]);
   const [q, setQ] = useState('');
   const [importOpen, setImportOpen] = useState(false);
+  const [genOpen, setGenOpen] = useState(false);
   const [censor, toggleCensor] = useCensor();
   const [layout, setLayoutState] = useState(() => { try { return localStorage.getItem('keyLayout') || 'grid'; } catch { return 'grid'; } });
   const setLayout = (v) => { setLayoutState(v); try { localStorage.setItem('keyLayout', v); } catch { /* egal */ } };
@@ -297,91 +299,7 @@ function KeychainView({ dark, openForm, toast }) {
     title: t('Schlüssel umbenennen'), values: { name: k.name }, fields: [{ name: 'name', label: t('Name'), required: true }],
     onSubmit: async (v) => { await api.keys.rename(k.id, v.name); load(); },
   });
-  const generate = () => openForm({
-    title: t('Schlüssel generieren'), description: t('Erzeugt ein neues Schlüsselpaar. Der private Teil wird verschlüsselt gespeichert.'),
-    values: { type: 'ed25519', rsaBits: '4096', ecdsaBits: '256' }, submitLabel: t('Generieren'),
-    fields: [
-      { name: 'name', label: t('Name'), required: true },
-      {
-        name: 'type',
-        label: t('Typ'),
-        segmented: true,
-        options: [
-          ['ed25519', 'ED25519'],
-          ['rsa', 'RSA'],
-          ['ecdsa', 'ECDSA'],
-        ],
-      },
-      {
-        name: 'bits',
-        render: (v, set) => {
-          if (v.type === 'rsa') {
-            return (
-              <div className="grid gap-1.5">
-                <Label>{t('Schlüssellänge (Bits)')}</Label>
-                <div className="flex gap-1.5 rounded-lg bg-muted p-1">
-                  {['2048', '3072', '4096'].map((b) => (
-                    <button
-                      key={b}
-                      type="button"
-                      onClick={() => set('rsaBits', b)}
-                      className={cn(
-                        'flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors text-center',
-                        (v.rsaBits || '4096') === b
-                          ? 'bg-background text-foreground shadow-xs font-semibold'
-                          : 'text-muted-foreground hover:text-foreground'
-                      )}
-                    >
-                      {b} {t('Bits')}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            );
-          }
-          if (v.type === 'ecdsa') {
-            return (
-              <div className="grid gap-1.5">
-                <Label>{t('Kurve / Bits')}</Label>
-                <div className="flex gap-1.5 rounded-lg bg-muted p-1">
-                  {[
-                    ['256', 'P-256 (256 Bits)'],
-                    ['384', 'P-384 (384 Bits)'],
-                    ['521', 'P-521 (521 Bits)'],
-                  ].map(([b, lab]) => (
-                    <button
-                      key={b}
-                      type="button"
-                      onClick={() => set('ecdsaBits', b)}
-                      className={cn(
-                        'flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors text-center',
-                        (v.ecdsaBits || '256') === b
-                          ? 'bg-background text-foreground shadow-xs font-semibold'
-                          : 'text-muted-foreground hover:text-foreground'
-                      )}
-                    >
-                      {lab}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            );
-          }
-          return null;
-        },
-      },
-      { name: 'comment', label: t('Kommentar (optional)') },
-      { name: 'passphrase', label: t('Passphrase (optional)'), type: 'password' },
-    ],
-    onSubmit: async (v) => {
-      const type = v.type || 'ed25519';
-      let bits;
-      if (type === 'rsa') bits = Number(v.rsaBits || 4096);
-      if (type === 'ecdsa') bits = Number(v.ecdsaBits || 256);
-      const err = await api.keys.generate({ ...v, type, bits, vault });
-      err ? toast(err) : load();
-    },
-  });
+  const generate = () => setGenOpen(true);
   // In einen anderen Tresor klonen/verschieben; im Team ist auch der private Teil für alle Mitglieder sichtbar
   const copyKey = async (k, target, move) => {
     if (target !== 'personal' && !confirm(t('Der private Schlüssel ist danach für alle Mitglieder des Teams sichtbar. Fortfahren?'))) return;
@@ -458,6 +376,7 @@ function KeychainView({ dark, openForm, toast }) {
         </div>
       </div>
       <KeyImportSheet open={importOpen} onClose={() => setImportOpen(false)} onDone={load} toast={toast} vault={vault} />
+      <KeyGenSheet open={genOpen} onClose={() => setGenOpen(false)} onDone={load} toast={toast} vault={vault} />
       <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('Schlüssel')}</h3>
       {!list.length && <Empty>{t('Keine Schlüssel. Generiere einen oder lege Schlüssel in ~/.ssh ab.')}</Empty>}
       <div className={layout === 'grid' ? 'grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-3' : 'space-y-2'}>
