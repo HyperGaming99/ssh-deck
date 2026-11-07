@@ -45,6 +45,9 @@ android {
         }
     }
     buildTypes {
+        debug {
+            if (ks('storeFile', 'SSHDECK_KEYSTORE')) signingConfig signingConfigs.release
+        }
         release {
             if (ks('storeFile', 'SSHDECK_KEYSTORE')) signingConfig signingConfigs.release
             minifyEnabled true // R8: Code verkleinern (Play-Empfehlung); Schutzregeln in proguard-rules.pro
