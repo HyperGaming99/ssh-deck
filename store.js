@@ -3,7 +3,11 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 const rd = (file) => { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return []; } };
-const wr = (file, d) => fs.writeFileSync(file, JSON.stringify(d, null, 2), { mode: 0o600 });
+const wr = (file, d) => {
+  const tmp = `${file}.tmp.${process.pid}.${Date.now()}`;
+  fs.writeFileSync(tmp, JSON.stringify(d, null, 2), { mode: 0o600 });
+  fs.renameSync(tmp, file);
+};
 
 // Einfache Sammlung. Jeder Eintrag trägt updatedAt; Löschen hinterlässt einen Marker { id, deleted, updatedAt } für den Cloud-Sync.
 const plain = (file) => {
