@@ -31,6 +31,14 @@ const fmtEta = (sec) => {
   const h = Math.floor(m / 60), rm = m % 60;
   return `${h}h ${rm}m`;
 };
+const fmtMode = (mode) => {
+  if (mode == null) return '—';
+  const m = mode & 0o777;
+  const rwx = [0o400, 0o200, 0o100, 0o040, 0o020, 0o010, 0o004, 0o002, 0o001]
+    .map((b, i) => (m & b ? 'rwx'[i % 3] : '-'))
+    .join('');
+  return `${rwx} ${m.toString(8).padStart(3, '0')}`;
+};
 
 const DRAG = 'application/x-deck-pane';
 const ARCHIVE_EXT = /\.(zip|tar|gz|tgz|bz2|xz|7z|rar|deb|rpm|iso|apk|dmg)$/i;
@@ -651,10 +659,12 @@ function Pane({ pane, otherPane, otherSrc, hosts, editors, onReloadEditors, show
             {pane.sortBy === 'size' && (pane.sortAsc ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />)}
           </button>
 
+          <span className="w-28 shrink-0 text-right">{t('Dateirechte')}</span>
+
           <button
             type="button"
             onClick={() => pane.toggleSort('mtime')}
-            className="hidden w-28 shrink-0 items-center justify-end gap-1 text-right hover:text-foreground xl:flex"
+            className="hidden w-24 shrink-0 items-center justify-end gap-1 text-right hover:text-foreground xl:flex"
           >
             <span>{t('Geändert')}</span>
             {pane.sortBy === 'mtime' && (pane.sortAsc ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />)}
@@ -706,7 +716,8 @@ function Pane({ pane, otherPane, otherSrc, hosts, editors, onReloadEditors, show
                   ..
                 </span>
                 <span className="w-20 shrink-0 text-right font-mono text-xs text-muted-foreground">—</span>
-                <span className="hidden w-28 shrink-0 text-right text-xs text-muted-foreground xl:block" />
+                <span className="w-28 shrink-0 text-right font-mono text-xs text-muted-foreground">—</span>
+                <span className="hidden w-24 shrink-0 text-right text-xs text-muted-foreground xl:block" />
               </div>
             )}
             {pane.status === 'ready' && pane.visible.map((e) => {
@@ -747,7 +758,24 @@ function Pane({ pane, otherPane, otherSrc, hosts, editors, onReloadEditors, show
                     {e.dir ? '—' : size(e.size)}
                   </span>
 
-                  <span className="hidden w-28 shrink-0 text-right text-xs text-muted-foreground xl:block">
+                  <button
+                    type="button"
+                    title={t('Dateirechte …')}
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      onOpenChmod({
+                        name: e.name,
+                        dir: e.dir,
+                        mode: e.mode,
+                        onSubmit: (mode) => act(() => pane.ops.chmod(pane.join(e.name), mode)),
+                      });
+                    }}
+                    className="w-28 shrink-0 rounded px-1 py-0.5 text-right font-mono text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  >
+                    {fmtMode(e.mode)}
+                  </button>
+
+                  <span className="hidden w-24 shrink-0 text-right text-xs text-muted-foreground xl:block">
                     {e.mtime ? new Date(e.mtime).toLocaleDateString(lang) : ''}
                   </span>
                 </div>
