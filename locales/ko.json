@@ -538,5 +538,7 @@
   "CPU, Arbeitsspeicher, Festplatte und Laufzeit im Terminal anzeigen": "터미널에 CPU, 메모리, 디스크 및 가동 시간 표시",
   "Docker-Container": "Docker 컨테이너",
   "Docker-Container im Server-Status anzeigen": "서버 상태에 Docker 컨테이너 표시",
-  "Terminal": "터미널"
+  "Terminal": "터미널",
+  "Kubernetes-Pods": "Kubernetes 파드",
+  "Kubernetes-Pods im Server-Status anzeigen": "서버 상태에 Kubernetes 파드 표시"
 }

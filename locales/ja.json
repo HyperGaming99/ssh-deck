@@ -538,5 +538,7 @@
   "CPU, Arbeitsspeicher, Festplatte und Laufzeit im Terminal anzeigen": "ターミナルにCPU、メモリ、ディスク、稼働時間を表示",
   "Docker-Container": "Dockerコンテナ",
   "Docker-Container im Server-Status anzeigen": "サーバーステータスにDockerコンテナを表示",
-  "Terminal": "ターミナル"
+  "Terminal": "ターミナル",
+  "Kubernetes-Pods": "Kubernetes Pod",
+  "Kubernetes-Pods im Server-Status anzeigen": "サーバーステータスにKubernetes Podを表示"
 }

@@ -538,5 +538,7 @@
   "CPU, Arbeitsspeicher, Festplatte und Laufzeit im Terminal anzeigen": "Mostrar CPU, memoria, disco y tiempo activo en la terminal",
   "Docker-Container": "Contenedores Docker",
   "Docker-Container im Server-Status anzeigen": "Mostrar contenedores Docker en el estado del servidor",
-  "Terminal": "Terminal"
+  "Terminal": "Terminal",
+  "Kubernetes-Pods": "Pods de Kubernetes",
+  "Kubernetes-Pods im Server-Status anzeigen": "Mostrar pods de Kubernetes en el estado del servidor"
 }

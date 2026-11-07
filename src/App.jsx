@@ -715,6 +715,7 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
   const [featTab, setFeatTab] = useState('server');
   const [srvStats, setSrvStats] = useState(() => { try { return localStorage.getItem('serverStats') !== '0'; } catch { return true; } });
   const [dkStats, setDkStats] = useState(() => { try { return localStorage.getItem('dockerStats') !== '0'; } catch { return true; } });
+  const [k8sStats, setK8sStats] = useState(() => { try { return localStorage.getItem('k8sStats') !== '0'; } catch { return true; } });
   const pickEditor = (v) => { setEditor(v); api.settings.set({ editor: v }); };
   const row = 'mrow flex items-center justify-between gap-4 rounded-xl border bg-card p-4';
   const seg = (opts, value, onChange) => (
@@ -774,6 +775,10 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
                 <div className={cn(row, !srvStats && 'opacity-50')}>
                   <div><p className="text-sm font-medium">{t('Docker-Container')}</p><p className="text-xs text-muted-foreground">{t('Docker-Container im Server-Status anzeigen')}</p></div>
                   <Switch disabled={!srvStats} checked={dkStats} onCheckedChange={(v) => { setDkStats(v); try { localStorage.setItem('dockerStats', v ? '1' : '0'); } catch { /* egal */ } }} />
+                </div>
+                <div className={cn(row, !srvStats && 'opacity-50')}>
+                  <div><p className="text-sm font-medium">{t('Kubernetes-Pods')}</p><p className="text-xs text-muted-foreground">{t('Kubernetes-Pods im Server-Status anzeigen')}</p></div>
+                  <Switch disabled={!srvStats} checked={k8sStats} onCheckedChange={(v) => { setK8sStats(v); try { localStorage.setItem('k8sStats', v ? '1' : '0'); } catch { /* egal */ } }} />
                 </div>
               </>
             )}

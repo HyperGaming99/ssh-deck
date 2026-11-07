@@ -538,5 +538,7 @@
   "CPU, Arbeitsspeicher, Festplatte und Laufzeit im Terminal anzeigen": "عرض المعالج والذاكرة والقرص ووقت التشغيل في الطرفية",
   "Docker-Container": "حاويات Docker",
   "Docker-Container im Server-Status anzeigen": "عرض حاويات Docker في حالة الخادم",
-  "Terminal": "الطرفية"
+  "Terminal": "الطرفية",
+  "Kubernetes-Pods": "وحدات Kubernetes",
+  "Kubernetes-Pods im Server-Status anzeigen": "عرض وحدات Kubernetes في حالة الخادم"
 }

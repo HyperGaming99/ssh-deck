@@ -22,7 +22,7 @@ const Swatch = ({ th }) => (
 const gb = (b) => (b / 1073741824).toFixed(1);
 const Bar = ({ pct }) => <div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className={cn('h-full rounded-full', pct > 90 ? 'bg-red-500' : pct > 70 ? 'bg-amber-500' : 'bg-primary')} style={{ width: `${Math.min(100, pct)}%` }} /></div>;
 const Stat = ({ title, value, pct }) => <div className="space-y-1.5 px-3 py-2"><div className="flex justify-between gap-2 text-sm"><span className="font-medium">{title}</span><span className="truncate text-muted-foreground tabular-nums">{value}</span></div>{pct != null && <Bar pct={pct} />}</div>;
-function StatusTab({ sid, dockerOn }) {
+function StatusTab({ sid, dockerOn, k8sOn }) {
   const t = useT();
   const [st, setSt] = useState(undefined); // undefined = lädt, null = nicht verfügbar
   useEffect(() => {
@@ -37,6 +37,8 @@ function StatusTab({ sid, dockerOn }) {
   const d = Math.floor(st.uptime / 86400), h = Math.floor((st.uptime % 86400) / 3600), m = Math.floor((st.uptime % 3600) / 60);
   const cs = dockerOn && Array.isArray(st.containers) ? st.containers : [];
   const running = cs.filter((c) => c.state === 'running').length;
+  const pods = k8sOn && Array.isArray(st.pods) ? st.pods : [];
+  const podsRunning = pods.filter((p) => p.phase === 'Running' || p.phase === 'Succeeded').length;
   return (
     <>
       <Stat title={t('CPU-Last')} value={`${st.load.map((x) => x.toFixed(2)).join(' · ')} (${st.cores} ${t('Kerne')})`} pct={(st.load[0] / st.cores) * 100} />
@@ -65,6 +67,28 @@ function StatusTab({ sid, dockerOn }) {
           </div>
         </div>
       )}
+      {k8sOn && pods.length > 0 && (
+        <div className="space-y-1.5 px-3 py-2">
+          <div className="flex justify-between gap-2 text-sm">
+            <span className="font-medium">{t('Kubernetes-Pods')}</span>
+            <span className="text-muted-foreground tabular-nums">{podsRunning} / {pods.length}</span>
+          </div>
+          <div className="space-y-1 pt-1">
+            {pods.map((p) => (
+              <div key={`${p.namespace}/${p.name}`} className="flex items-center gap-2 rounded-md border bg-card/60 px-2.5 py-1.5 text-xs">
+                <span className={cn('size-2 shrink-0 rounded-full', p.phase === 'Running' || p.phase === 'Succeeded' ? 'bg-emerald-500' : p.phase === 'Pending' ? 'bg-amber-500' : 'bg-muted-foreground/50')} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate font-medium">{p.name}</span>
+                    <span className="shrink-0 text-[11px] text-muted-foreground">{p.phase}</span>
+                  </div>
+                  <div className="truncate text-[11px] text-muted-foreground">{p.namespace}{p.image ? ` · ${p.image}` : ''}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -74,6 +98,7 @@ export default function TermPanel({ sid, hostId, dark, history, themeId, setThem
   const t = useT();
   const statsOn = (() => { try { return localStorage.getItem('serverStats') !== '0'; } catch { return true; } })();
   const dockerOn = (() => { try { return localStorage.getItem('dockerStats') !== '0'; } catch { return true; } })();
+  const k8sOn = (() => { try { return localStorage.getItem('k8sStats') !== '0'; } catch { return true; } })();
   const [tab, setTab] = useState(() => {
     try {
       const saved = localStorage.getItem('termPanelTab') || 'themes';
@@ -149,7 +174,7 @@ export default function TermPanel({ sid, hostId, dark, history, themeId, setThem
             {[...history].reverse().map((c, i) => <Row key={i} onClick={() => api.input(sid, c)}><span className="truncate font-mono text-xs">{c}</span></Row>)}
           </>
         )}
-        {tab === 'status' && statsOn && <StatusTab sid={sid} dockerOn={dockerOn} />}
+        {tab === 'status' && statsOn && <StatusTab sid={sid} dockerOn={dockerOn} k8sOn={k8sOn} />}
         {tab === 'fwd' && !telnet && (
           <>
             <Row onClick={async () => setSheet({ rule: { hostId }, hosts: await api.hosts.list(), onSave: async (v) => { await api.fwd.save(v); load(); } })}><Plus className="size-4 text-primary" /><span className="font-medium">{t('Neues Forwarding')}</span></Row>

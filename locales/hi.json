@@ -538,5 +538,7 @@
   "CPU, Arbeitsspeicher, Festplatte und Laufzeit im Terminal anzeigen": "टर्मिनल में CPU, मेमोरी, डिस्क और अपटाइम दिखाएँ",
   "Docker-Container": "Docker कंटेनर",
   "Docker-Container im Server-Status anzeigen": "सर्वर स्थिति में Docker कंटेनर दिखाएँ",
-  "Terminal": "टर्मिनल"
+  "Terminal": "टर्मिनल",
+  "Kubernetes-Pods": "Kubernetes पॉड्स",
+  "Kubernetes-Pods im Server-Status anzeigen": "सर्वर स्थिति में Kubernetes पॉड्स दिखाएँ"
 }

@@ -538,5 +538,7 @@
   "CPU, Arbeitsspeicher, Festplatte und Laufzeit im Terminal anzeigen": "Toon CPU, geheugen, schijf en uptime in de terminal",
   "Docker-Container": "Docker-containers",
   "Docker-Container im Server-Status anzeigen": "Toon Docker-containers in de serverstatus",
-  "Terminal": "Terminal"
+  "Terminal": "Terminal",
+  "Kubernetes-Pods": "Kubernetes-pods",
+  "Kubernetes-Pods im Server-Status anzeigen": "Toon Kubernetes-pods in de serverstatus"
 }

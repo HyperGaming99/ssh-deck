@@ -538,5 +538,7 @@
   "CPU, Arbeitsspeicher, Festplatte und Laufzeit im Terminal anzeigen": "Terminalde CPU, bellek, disk ve çalışma süresini göster",
   "Docker-Container": "Docker konteynerleri",
   "Docker-Container im Server-Status anzeigen": "Sunucu durumunda Docker konteynerlerini göster",
-  "Terminal": "Terminal"
+  "Terminal": "Terminal",
+  "Kubernetes-Pods": "Kubernetes pod’ları",
+  "Kubernetes-Pods im Server-Status anzeigen": "Sunucu durumunda Kubernetes pod’larını göster"
 }

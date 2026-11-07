@@ -538,5 +538,7 @@
   "CPU, Arbeitsspeicher, Festplatte und Laufzeit im Terminal anzeigen": "在终端中显示 CPU、内存、磁盘和运行时间",
   "Docker-Container": "Docker 容器",
   "Docker-Container im Server-Status anzeigen": "在服务器状态中显示 Docker 容器",
-  "Terminal": "终端"
+  "Terminal": "终端",
+  "Kubernetes-Pods": "Kubernetes Pod",
+  "Kubernetes-Pods im Server-Status anzeigen": "在服务器状态中显示 Kubernetes Pod"
 }

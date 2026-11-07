@@ -15,10 +15,15 @@ const serverStats = require('./serverstats');
   assert.equal(r.diskPct, 40);
   assert.equal(r.uptime, 90061.5);
   assert.deepEqual(r.containers, []);
-  const r2 = serverStats.parse(out + '---\nweb\trunning\tUp 2 hours\tnginx:alpine\ndb\texited\tExited (0) 5 minutes ago\tpostgres:16\n');
+  assert.deepEqual(r.pods, []);
+  const r2 = serverStats.parse(out + '---\nweb\trunning\tUp 2 hours\tnginx:alpine\ndb\texited\tExited (0) 5 minutes ago\tpostgres:16\n---\ndefault\tapi-7f8b\tRunning\tghcr.io/app/api:latest\nkube-system\tcoredns-123\tPending\tcoredns:1.11\n');
   assert.deepEqual(r2.containers, [
     { name: 'web', state: 'running', status: 'Up 2 hours', image: 'nginx:alpine' },
     { name: 'db', state: 'exited', status: 'Exited (0) 5 minutes ago', image: 'postgres:16' },
+  ]);
+  assert.deepEqual(r2.pods, [
+    { namespace: 'default', name: 'api-7f8b', phase: 'Running', image: 'ghcr.io/app/api:latest' },
+    { namespace: 'kube-system', name: 'coredns-123', phase: 'Pending', image: 'coredns:1.11' },
   ]);
   assert.equal(serverStats.parse('Darwin'), null, 'kein Linux -> null');
   assert.equal(serverStats.parse(''), null);
