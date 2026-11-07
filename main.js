@@ -23,6 +23,7 @@ const { createAuth } = require('./auth');
 const updater = require('./updater');
 const teamTools = require('./teams');
 const kcTools = require('./keyvault');
+const k8sTools = require('./k8s');
 
 const sessions = new Map(); // sid -> { conn, stream }
 const sftps = new Map(); // sid -> { conn, sftp }
@@ -194,7 +195,7 @@ async function runSync() {
 const scheduleSync = () => { if (!loadSyncCfg()) return; clearTimeout(syncTimer); syncTimer = setTimeout(runSync, 3000); };
 
 // Änderungen über diese Kanäle lösen einen Sync aus
-const MUTATING = new Set(['hosts:save', 'hosts:copy', 'hosts:remove', 'override:set', 'keys:copy', 'keys:generate', 'keys:import', 'keys:remove', 'keys:rename', 'keys:setPassphrase', 'groups:create', 'groups:rename', 'groups:remove', 'snippets:save', 'snippets:remove', 'fwd:save', 'fwd:remove', 'known:remove', 'known:import', 'import:commit']);
+const MUTATING = new Set(['hosts:save', 'hosts:copy', 'hosts:remove', 'hosts:reorder', 'override:set', 'keys:copy', 'keys:generate', 'keys:import', 'keys:remove', 'keys:rename', 'keys:setPassphrase', 'groups:create', 'groups:rename', 'groups:remove', 'snippets:save', 'snippets:remove', 'fwd:save', 'fwd:remove', 'known:remove', 'known:import', 'import:commit']);
 const handle = (ch, fn) => ipcMain.handle(ch, MUTATING.has(ch) ? async (...a) => { const r = await fn(...a); scheduleSync(); return r; } : fn);
 
 
@@ -434,7 +435,7 @@ function connect(win, sid, h, cols, rows) {
   const log = (m) => { logs.push(m); status('connecting'); };
   const fail = (m) => { logs.push(`Connection failed: ${m}`); status('failed'); };
   const ask = (kind, extra) => new Promise((res) => { pending.set(sid, res); status('ask', { ask: { kind, ...extra } }); });
-  sessions.set(sid, { conn });
+  sessions.set(sid, { conn, hostId: h.id });
   let shell = false; // Shell lief schon: ein Ende ohne Nutzer-Aktion ist ein Verbindungsabbruch
   (async () => {
     h = { ...h };
@@ -453,7 +454,7 @@ function connect(win, sid, h, cols, rows) {
       if (stale()) { sock.destroy(); return endAll(conn); }
       conn.sock = sock;
       const stream = telnetTools.session(sock, { cols, rows });
-      sessions.set(sid, { conn, stream });
+      sessions.set(sid, { conn, stream, hostId: h.id });
       status('ready');
       stream.on('data', (d) => send('ssh:data', d.toString('utf8')));
       stream.on('close', () => { endAll(conn); if (!stale()) { sessions.delete(sid); send('ssh:closed'); } });
@@ -472,7 +473,7 @@ function connect(win, sid, h, cols, rows) {
       detectOs(win, conn, h);
       conn.shell({ term: 'xterm-256color', cols, rows }, (err, stream) => {
         if (err) return fail(err.message);
-        sessions.set(sid, { conn, stream });
+        sessions.set(sid, { conn, stream, hostId: h.id });
         shell = true;
         status('ready');
         stream.on('data', (d) => send('ssh:data', d.toString('utf8')));
@@ -867,6 +868,7 @@ app.whenReady().then(() => {
     try { fs.writeFileSync(filePath, text); return null; } catch (e) { return e.message; }
   });
   handle('hosts:remove', (_, id) => hosts.remove(id));
+  handle('hosts:reorder', (_, ids) => hosts.reorder(ids));
   // Gruppen: Rückgabe null oder Fehlertext. Namen sind je Tresor eindeutig.
   const reGroup = (from, to, vault) => hosts.list().filter((h) => h.group === from && vOf(h) === vault).forEach((h) => hosts.save({ ...h, group: to }));
   // ---- Host-Import (Vorschau, dann übernehmen). Die geparsten Hosts bleiben im Hauptprozess; die Oberfläche sieht keine Passwörter. ----
@@ -1174,6 +1176,106 @@ app.whenReady().then(() => {
     if (!filePath) return null;
     fs.writeFileSync(filePath, text);
     return filePath;
+  });
+
+  // Kubernetes Management: lokal oder per SSH-Befehl
+  const execK8s = async (hostId, cmd) => {
+    if (!hostId || hostId === 'local') {
+      return new Promise((resolve) => {
+        const p = spawn('sh', ['-c', cmd], { stdio: ['ignore', 'pipe', 'pipe'] });
+        let stdout = '', stderr = '';
+        p.stdout.on('data', (d) => { if (stdout.length < 10485760) stdout += d; });
+        p.stderr.on('data', (d) => { if (stderr.length < 65536) stderr += d; });
+        p.on('error', (err) => resolve({ error: err.message }));
+        p.on('close', (code) => resolve({ code, stdout, stderr }));
+      });
+    }
+    const h = hosts.get(hostId);
+    if (!h) return { error: 'Host nicht gefunden' };
+    if (h.protocol === 'telnet') return { error: 'Nicht unterstützt für Telnet' };
+
+    for (const sess of sessions.values()) {
+      if (sess.conn && sess.hostId === hostId) {
+        return new Promise((resolve) => {
+          sess.conn.exec(cmd, (err, stream) => {
+            if (err) return resolve({ error: err.message });
+            let stdout = '', stderr = '';
+            stream.on('data', (d) => { if (stdout.length < 10485760) stdout += d; });
+            stream.stderr.on('data', (d) => { if (stderr.length < 65536) stderr += d; });
+            stream.on('close', (code) => resolve({ code, stdout, stderr }));
+          });
+        });
+      }
+    }
+
+    const done = await completeCreds(h, dialogAsk(h.name));
+    if (!done) return { error: 'Abgebrochen' };
+    const target = done.h;
+    return new Promise((resolve) => {
+      const conn = new Client();
+      const auth = withAuth(conn, target, dialogAsk(target.name));
+      const timer = setTimeout(() => { conn.end(); resolve({ error: 'Timeout beim Verbinden' }); }, 15000);
+      conn.on('ready', () => {
+        clearTimeout(timer);
+        auth.persist();
+        conn.exec(cmd, (err, stream) => {
+          if (err) { conn.end(); return resolve({ error: err.message }); }
+          let stdout = '', stderr = '';
+          stream.on('data', (d) => { if (stdout.length < 10485760) stdout += d; });
+          stream.stderr.on('data', (d) => { if (stderr.length < 65536) stderr += d; });
+          stream.on('close', (code) => {
+            conn.end();
+            resolve({ code, stdout, stderr });
+          });
+        });
+      }).on('error', (e) => {
+        clearTimeout(timer);
+        resolve({ error: e.message });
+      });
+      sshConnectJump(conn, target, sshConfig(target, auth), dialogAsk(target.name), () => {}, false);
+    });
+  };
+
+  ipcMain.handle('k8s:overview', async (_, hostId) => {
+    const res = await execK8s(hostId, k8sTools.overviewCmd());
+    if (res.error) return { error: res.error };
+    const parsed = k8sTools.parseOverview(res.stdout);
+    if (!parsed) return { error: res.stderr || 'Kein Kubernetes-Cluster gefunden oder kubectl nicht erreichbar.' };
+    return { data: parsed };
+  });
+  ipcMain.handle('k8s:run', async (_, hostId, spec) => {
+    const res = await execK8s(hostId, k8sTools.runCmd(spec));
+    if (res.error) return { error: res.error };
+    if (res.code !== 0) return { error: res.stderr || 'Befehl fehlgeschlagen' };
+    return { data: res.stdout };
+  });
+  ipcMain.handle('k8s:scale', async (_, hostId, spec) => {
+    const res = await execK8s(hostId, k8sTools.scaleCmd(spec));
+    if (res.error) return { error: res.error };
+    if (res.code !== 0) return { error: res.stderr || 'Skalieren fehlgeschlagen' };
+    return { data: res.stdout };
+  });
+  ipcMain.handle('k8s:restart', async (_, hostId, spec) => {
+    const res = await execK8s(hostId, k8sTools.restartCmd(spec));
+    if (res.error) return { error: res.error };
+    if (res.code !== 0) return { error: res.stderr || 'Neustart fehlgeschlagen' };
+    return { data: res.stdout };
+  });
+  ipcMain.handle('k8s:delete', async (_, hostId, spec) => {
+    const res = await execK8s(hostId, k8sTools.deleteCmd(spec));
+    if (res.error) return { error: res.error };
+    if (res.code !== 0) return { error: res.stderr || 'Löschen fehlgeschlagen' };
+    return { data: res.stdout };
+  });
+  ipcMain.handle('k8s:logs', async (_, hostId, spec) => {
+    const res = await execK8s(hostId, k8sTools.logsCmd(spec));
+    if (res.error) return { error: res.error };
+    return { data: res.stdout || res.stderr || 'Keine Logs vorhanden' };
+  });
+  ipcMain.handle('k8s:describe', async (_, hostId, spec) => {
+    const res = await execK8s(hostId, k8sTools.describeCmd(spec));
+    if (res.error) return { error: res.error };
+    return { data: res.stdout || res.stderr || 'Keine Ausgabe' };
   });
   ipcMain.on('ssh:input', (_, sid, d) => sessions.get(sid)?.stream?.write(d));
   ipcMain.on('cred:answer', (_, id, a) => { credAsks.get(id)?.(a); credAsks.delete(id); });

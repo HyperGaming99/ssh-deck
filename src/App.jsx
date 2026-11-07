@@ -1,5 +1,5 @@
 import { Fragment, Suspense, createContext, lazy, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronLeft, Eye, EyeOff, LayoutGrid, List, Cloud, CloudOff, Fingerprint, Languages, ShieldCheck, Check, FileText, Palette, Settings as SettingsIcon, SlidersHorizontal, User, Folder, FolderPlus, Menu, Minus, Square, ArrowLeftRight, Code2, Copy, Star, Download, Ellipsis, FileUp, FolderOpen, KeyRound, Lock, Moon, Pencil, Circle, Plus, RefreshCw, Search, Send, Server, Sun, PanelRight, QrCode, Terminal as TermIcon, Trash2, Users, X } from 'lucide-react';
+import { ChevronDown, ChevronLeft, Eye, EyeOff, LayoutGrid, List, Cloud, CloudOff, Fingerprint, Languages, ShieldCheck, Check, FileText, Palette, Settings as SettingsIcon, SlidersHorizontal, User, Folder, FolderPlus, GripVertical, Menu, Minus, Square, ArrowLeftRight, Code2, Copy, Star, Download, Ellipsis, FileUp, FolderOpen, KeyRound, Lock, Moon, Pencil, Circle, Plus, RefreshCw, Search, Send, Server, Sun, PanelRight, QrCode, Terminal as TermIcon, Trash2, Users, X, PenLine, Boxes } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -26,8 +26,8 @@ import HostSheet from '@/components/HostSheet';
 import NewTab from '@/components/NewTab';
 import HostKeyDialog from '@/components/HostKeyDialog';
 import ImportDialog from '@/components/ImportDialog';
-import KeyImportSheet from '@/components/KeyImportSheet';
-import KeyGenSheet from '@/components/KeyGenSheet';
+import KeyModalSheet from '@/components/KeyModalSheet';
+import K8sTab from '@/components/K8sTab';
 import { maskFingerprint, maskHost } from '@/lib/censor.mjs';
 import { sshCommand, sshConfig } from '@/lib/sshcmd.mjs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -46,6 +46,7 @@ const Wrap = mobile ? 'div' : Fragment; // Handy: Terminal und Tastenleiste unte
 
 const SECTIONS = [
   ['hosts', T('Hosts'), Server],
+  ['k8s', T('Kubernetes'), Boxes],
   ['keychain', T('Keychain'), KeyRound],
   ['known', T('Known Hosts'), Fingerprint],
   ['snippets', T('Snippets'), Code2],
@@ -71,17 +72,25 @@ function IconButton({ label, onClick, children }) {
 }
 
 // Karte mit Spotlight; icon darf beliebiger Node sein
-function Item({ icon, title, sub, onClick, actions, dark, compact }) {
+function Item({ icon, title, sub, onClick, actions, dark, compact, leading, className, ...rest }) {
   return (
-    <SpotlightCard theme={dark ? 'dark' : 'light'} className="cursor-pointer p-0!" onClick={onClick} style={{ borderRadius: 18 }}>
+    <SpotlightCard theme={dark ? 'dark' : 'light'} className={cn('cursor-pointer p-0!', className)} onClick={onClick} style={{ borderRadius: 18 }} {...rest}>
       <div className={cn('group relative flex items-center mcard', compact ? 'gap-3 p-3' : 'gap-4 p-5')}>
+        {leading}
         <div className={cn('grid shrink-0 place-items-center', compact ? 'size-11 rounded-lg bg-primary/10 text-primary' : 'size-14 rounded-xl bg-secondary [&>img]:size-9 [&>svg]:size-7')}>{icon}</div>
         <div className={cn('min-w-0 flex-1', compact ? 'space-y-0.5' : 'space-y-1')}>
           <div className={cn('truncate font-semibold', compact ? 'text-sm' : 'text-base')}>{title}</div>
           <div className={cn('truncate text-muted-foreground', compact ? 'text-xs' : 'text-sm')}>{sub}</div>
         </div>
         {/* Aktionen schweben über der Karte statt Platz zu belegen: so bleibt der Text voll lesbar */}
-        <div className="mact absolute end-3 top-1/2 flex -translate-y-1/2 rounded-xl border bg-card/95 p-0.5 opacity-0 shadow-sm backdrop-blur transition-opacity group-hover:opacity-100">{actions}</div>
+        <div
+          className="mact absolute end-3 top-1/2 flex -translate-y-1/2 rounded-xl border bg-card/95 p-0.5 opacity-0 shadow-sm backdrop-blur transition-opacity group-hover:opacity-100"
+          draggable={false}
+          onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {actions}
+        </div>
       </div>
     </SpotlightCard>
   );
@@ -122,9 +131,102 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
   const [q, setQ] = useState('');
   const [current, setCurrent] = useState(null); // Gruppenname oder null (oberste Ebene)
   const [importOpen, setImportOpen] = useState(false);
+  const [draggedHost, setDraggedHost] = useState(null);
+  const [dropTarget, setDropTarget] = useState(null); // { id, pos: 'before' | 'after' }
+  const [dragOverGroup, setDragOverGroup] = useState(null);
+  const [dragOverBreadcrumb, setDragOverBreadcrumb] = useState(false);
   const load = useCallback(() => { api.hosts.list().then((l) => setHosts(l.filter((h) => inV(h, vault)))); api.groups.list().then((l) => setGroups(l.filter((g) => inV(g, vault)))); }, [vault]);
   useEffect(() => { load(); }, [load, rev]);
   useEffect(() => setCurrent(null), [vault]);
+
+  const reorderHost = async (sourceId, targetId, pos = 'before') => {
+    const currentHosts = [...hosts];
+    const sIdx = currentHosts.findIndex((h) => h.id === sourceId);
+    const tIdx = currentHosts.findIndex((h) => h.id === targetId);
+    if (sIdx === -1 || tIdx === -1) return;
+
+    const [moved] = currentHosts.splice(sIdx, 1);
+    const newTIdx = currentHosts.findIndex((h) => h.id === targetId);
+    const insertIdx = pos === 'after' ? newTIdx + 1 : newTIdx;
+    currentHosts.splice(insertIdx, 0, moved);
+
+    setHosts(currentHosts);
+
+    const ids = currentHosts.map((h) => h.id);
+    await api.hosts.reorder(ids);
+    load();
+  };
+
+  const onDragStartHost = (e, h) => {
+    e.dataTransfer.setData('text/plain', h.id);
+    e.dataTransfer.setData('application/x-deck-host', h.id);
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedHost(h);
+  };
+
+  const onDragOverHost = (e, targetH) => {
+    if (!draggedHost || draggedHost.id === targetH.id) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const rect = e.currentTarget.getBoundingClientRect();
+    const midX = rect.left + rect.width / 2;
+    const pos = e.clientX < midX ? 'before' : 'after';
+    if (dropTarget?.id !== targetH.id || dropTarget?.pos !== pos) {
+      setDropTarget({ id: targetH.id, pos });
+    }
+  };
+
+  const onDragLeaveHost = (e, targetH) => {
+    if (e.currentTarget.contains(e.relatedTarget)) return;
+    if (dropTarget?.id === targetH.id) {
+      setDropTarget(null);
+    }
+  };
+
+  const onDropHost = async (e, targetH) => {
+    e.preventDefault();
+    const sId = draggedHost?.id || e.dataTransfer.getData('application/x-deck-host');
+    const pos = dropTarget?.pos || 'before';
+    setDraggedHost(null);
+    setDropTarget(null);
+    setDragOverGroup(null);
+    if (!sId || sId === targetH.id) return;
+    await reorderHost(sId, targetH.id, pos);
+  };
+
+  const onDragEnd = () => {
+    setDraggedHost(null);
+    setDropTarget(null);
+    setDragOverGroup(null);
+    setDragOverBreadcrumb(false);
+  };
+
+  const onDragOverGroupCard = (e, g) => {
+    if (!draggedHost) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverGroup !== g.id) setDragOverGroup(g.id);
+  };
+
+  const onDragLeaveGroupCard = (e, g) => {
+    if (e.currentTarget.contains(e.relatedTarget)) return;
+    if (dragOverGroup === g.id) setDragOverGroup(null);
+  };
+
+  const onDropGroupCard = async (e, g) => {
+    e.preventDefault();
+    const sId = draggedHost?.id || e.dataTransfer.getData('application/x-deck-host');
+    setDraggedHost(null);
+    setDropTarget(null);
+    setDragOverGroup(null);
+    if (!sId) return;
+    const h = hosts.find((x) => x.id === sId);
+    if (h && h.group !== g.name) {
+      await api.hosts.save({ ...h, group: g.name });
+      toast(t('Host „{host}“ in Gruppe „{group}“ verschoben.', { host: h.name, group: g.name }));
+      load();
+    }
+  };
 
   const edit = async (h = { port: 22, group: current ?? '', vault }) => {
     const values = h.id ? { ...h, ...(await api.hosts.get(h.id)) } : h;
@@ -194,15 +296,47 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
       </DropdownMenu>
     );
   };
-  const hostCard = (h) => (
-    <Item key={h.id} dark={dark} icon={<HostIcon slug={h.icon || h.autoIcon} />} sub={h.protocol === 'telnet' ? `telnet://${h.host}:${h.port}` : `${h.user}@${h.host}:${h.port}`}
-      title={<span className="flex items-center gap-2">{h.name}{(h.tags || []).slice(0, 2).map((tg) => <Badge key={tg} variant="secondary" className="px-1.5 py-0 text-xs">{tg}</Badge>)}</span>}
-      onClick={() => connect(h)}
-      actions={<>{h.protocol !== 'telnet' && <IconButton label="SFTP" onClick={() => openSftp(h)}><FolderOpen className="size-3.5" /></IconButton>}
-        {hostMenu(h)}
-        {writable && <><IconButton label={t('Favorit')} onClick={() => toggleFav(h)}><Star className={cn('size-3.5', h.fav && 'fill-current text-primary')} /></IconButton><IconButton label={t('Bearbeiten')} onClick={() => edit(h)}><Pencil className="size-3.5" /></IconButton>
-        <IconButton label={t('Löschen')} onClick={async () => { await api.hosts.remove(h.id); load(); }}><Trash2 className="size-3.5" /></IconButton></>}</>} />
-  );
+  const hostCard = (h) => {
+    const isDragging = draggedHost?.id === h.id;
+    const isTarget = dropTarget?.id === h.id;
+    const canDrag = writable && !searching && !mobile;
+
+    return (
+      <Item
+        key={h.id}
+        dark={dark}
+        leading={
+          canDrag ? (
+            <div
+              className="drag-handle -ml-1 mr-0.5 flex shrink-0 cursor-grab items-center text-muted-foreground/35 transition-colors hover:text-foreground active:cursor-grabbing"
+              title={t('Ziehen zum Sortieren')}
+            >
+              <GripVertical className="size-4" />
+            </div>
+          ) : null
+        }
+        draggable={canDrag}
+        onDragStart={(e) => onDragStartHost(e, h)}
+        onDragOver={(e) => onDragOverHost(e, h)}
+        onDragLeave={(e) => onDragLeaveHost(e, h)}
+        onDrop={(e) => onDropHost(e, h)}
+        onDragEnd={onDragEnd}
+        className={cn(
+          'transition-all duration-150',
+          isDragging && 'opacity-35 scale-[0.98] border-dashed',
+          isTarget && 'ring-2 ring-primary border-primary bg-primary/5 shadow-md scale-[1.01]',
+        )}
+        icon={<HostIcon slug={h.icon || h.autoIcon} />}
+        sub={h.protocol === 'telnet' ? `telnet://${h.host}:${h.port}` : `${h.user}@${h.host}:${h.port}`}
+        title={<span className="flex items-center gap-2">{h.name}{(h.tags || []).slice(0, 2).map((tg) => <Badge key={tg} variant="secondary" className="px-1.5 py-0 text-xs">{tg}</Badge>)}</span>}
+        onClick={() => connect(h)}
+        actions={<>{h.protocol !== 'telnet' && <IconButton label="SFTP" onClick={() => openSftp(h)}><FolderOpen className="size-3.5" /></IconButton>}
+          {hostMenu(h)}
+          {writable && <><IconButton label={t('Favorit')} onClick={() => toggleFav(h)}><Star className={cn('size-3.5', h.fav && 'fill-current text-primary')} /></IconButton><IconButton label={t('Bearbeiten')} onClick={() => edit(h)}><Pencil className="size-3.5" /></IconButton>
+          <IconButton label={t('Löschen')} onClick={async () => { await api.hosts.remove(h.id); load(); }}><Trash2 className="size-3.5" /></IconButton></>}</>}
+      />
+    );
+  };
   const grid = (kids) => <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4">{kids}</div>;
   const heading = (text) => <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{text}</h3>;
 
@@ -232,7 +366,34 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
         <>{!found.length && <Empty>{t('Keine Treffer.')}</Empty>}{grid(found.map(hostCard))}</>
       ) : current !== null ? (
         <>
-          <button className="mb-4 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground" onClick={() => setCurrent(null)}>
+          <button
+            className={cn(
+              'mb-4 flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-muted-foreground transition-all hover:text-foreground',
+              dragOverBreadcrumb && 'bg-primary/15 text-primary ring-2 ring-primary',
+            )}
+            onClick={() => setCurrent(null)}
+            onDragOver={(e) => {
+              if (draggedHost) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                setDragOverBreadcrumb(true);
+              }
+            }}
+            onDragLeave={() => setDragOverBreadcrumb(false)}
+            onDrop={async (e) => {
+              e.preventDefault();
+              setDragOverBreadcrumb(false);
+              const sId = draggedHost?.id || e.dataTransfer.getData('application/x-deck-host');
+              setDraggedHost(null);
+              if (!sId) return;
+              const h = hosts.find((x) => x.id === sId);
+              if (h && h.group) {
+                await api.hosts.save({ ...h, group: '' });
+                toast(t('Host „{host}“ aus Gruppe entfernt.', { host: h.name }));
+                load();
+              }
+            }}
+          >
             <ChevronLeft className="size-4" />{t('Alle Hosts')}<span className="mx-1">/</span><span className="font-medium text-foreground">{current}</span>
           </button>
           {!inGroup.length && <Empty>{t('Diese Gruppe ist leer. Weise einem Host über „Bearbeiten“ diese Gruppe zu.')}</Empty>}
@@ -248,11 +409,24 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
               {grid(groups.map((g) => {
                 const n = hosts.filter((h) => h.group === g.name).length;
                 return (
-                  <Item key={g.id} dark={dark} icon={<Folder className="size-5 text-primary" />} title={g.name} sub={t('{n} Server', { n })}
+                  <Item
+                    key={g.id}
+                    dark={dark}
+                    icon={<Folder className="size-5 text-primary" />}
+                    title={g.name}
+                    sub={t('{n} Server', { n })}
                     onClick={() => setCurrent(g.name)}
+                    onDragOver={(e) => onDragOverGroupCard(e, g)}
+                    onDragLeave={(e) => onDragLeaveGroupCard(e, g)}
+                    onDrop={(e) => onDropGroupCard(e, g)}
+                    className={cn(
+                      'transition-all duration-150',
+                      dragOverGroup === g.id && 'ring-2 ring-primary bg-primary/10 border-primary scale-[1.02]',
+                    )}
                     actions={<>{!mobile && <IconButton label={t('Als SSH-Config exportieren')} onClick={() => exportConfig(hosts.filter((h) => h.group === g.name), g.name)}><FileText className="size-3.5" /></IconButton>}
                       {writable && <><IconButton label={t('Umbenennen')} onClick={() => renameGroup(g)}><Pencil className="size-3.5" /></IconButton>
-                      <IconButton label={t('Gruppe löschen')} onClick={() => removeGroup(g)}><Trash2 className="size-3.5" /></IconButton></>}</>} />
+                      <IconButton label={t('Gruppe löschen')} onClick={() => removeGroup(g)}><Trash2 className="size-3.5" /></IconButton></>}</>}
+                  />
                 );
               }))}
             </section>
@@ -287,8 +461,8 @@ function KeychainView({ dark, openForm, toast }) {
   useEffect(() => { if (vault === 'personal') api.kc.status().then(setKc).catch(() => {}); }, [vault]);
   const [items, setItems] = useState([]);
   const [q, setQ] = useState('');
-  const [importOpen, setImportOpen] = useState(false);
-  const [genOpen, setGenOpen] = useState(false);
+  const [keySheetOpen, setKeySheetOpen] = useState(false);
+  const [keySheetTab, setKeySheetTab] = useState('generate');
   const [censor, toggleCensor] = useCensor();
   const [layout, setLayoutState] = useState(() => { try { return localStorage.getItem('keyLayout') || 'grid'; } catch { return 'grid'; } });
   const setLayout = (v) => { setLayoutState(v); try { localStorage.setItem('keyLayout', v); } catch { /* egal */ } };
@@ -299,7 +473,8 @@ function KeychainView({ dark, openForm, toast }) {
     title: t('Schlüssel umbenennen'), values: { name: k.name }, fields: [{ name: 'name', label: t('Name'), required: true }],
     onSubmit: async (v) => { await api.keys.rename(k.id, v.name); load(); },
   });
-  const generate = () => setGenOpen(true);
+  const generate = () => { setKeySheetTab('generate'); setKeySheetOpen(true); };
+  const openImport = () => { setKeySheetTab('import'); setKeySheetOpen(true); };
   // In einen anderen Tresor klonen/verschieben; im Team ist auch der private Teil für alle Mitglieder sichtbar
   const copyKey = async (k, target, move) => {
     if (target !== 'personal' && !confirm(t('Der private Schlüssel ist danach für alle Mitglieder des Teams sichtbar. Fortfahren?'))) return;
@@ -360,7 +535,7 @@ function KeychainView({ dark, openForm, toast }) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
               <DropdownMenuItem onSelect={generate}><Plus className="size-4" />{t('Schlüssel generieren')}</DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setImportOpen(true)}><FileUp className="size-4" />{t('Schlüssel importieren')}</DropdownMenuItem>
+              <DropdownMenuItem onSelect={openImport}><PenLine className="size-4" />{t('Schlüssel manuell eingeben')}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>}
@@ -375,8 +550,7 @@ function KeychainView({ dark, openForm, toast }) {
           <IconButton label={t('Listenansicht')} onClick={() => setLayout('list')}><List className={cn('size-4', layout === 'list' ? 'text-foreground' : 'text-muted-foreground')} /></IconButton>
         </div>
       </div>
-      <KeyImportSheet open={importOpen} onClose={() => setImportOpen(false)} onDone={load} toast={toast} vault={vault} />
-      <KeyGenSheet open={genOpen} onClose={() => setGenOpen(false)} onDone={load} toast={toast} vault={vault} />
+      <KeyModalSheet open={keySheetOpen} initialTab={keySheetTab} onClose={() => setKeySheetOpen(false)} onDone={load} toast={toast} vault={vault} />
       <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('Schlüssel')}</h3>
       {!list.length && <Empty>{t('Keine Schlüssel. Generiere einen oder lege Schlüssel in ~/.ssh ab.')}</Empty>}
       <div className={layout === 'grid' ? 'grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-3' : 'space-y-2'}>
@@ -1103,6 +1277,14 @@ function ForwardsView({ dark, toast, rev }) {
   );
 }
 
+function K8sView({ dark, connect, toast }) {
+  const [hosts, setHosts] = useState([]);
+  useEffect(() => {
+    api.hosts.list().then(setHosts).catch(() => {});
+  }, []);
+  return <K8sTab hosts={hosts} connect={connect} toast={toast} dark={dark} />;
+}
+
 export default function App() {
   const [dark, setDark] = useState(() => { try { return localStorage.getItem('dark') === '1'; } catch { return false; } });
   const [section, setSection] = useState('hosts');
@@ -1294,7 +1476,7 @@ export default function App() {
   }, []);
   const gate = st && lang !== null && !st.configured && !skip;
   readyRef.current = !!st && lang !== null && !gate; // ohne Konto zuerst der Login-Bildschirm
-  const view = { hosts: HostsView, keychain: KeychainView, known: KnownHostsView, settings: SettingsView, snippets: SnippetsView, forwards: ForwardsView }[section];
+  const view = { hosts: HostsView, k8s: K8sView, keychain: KeychainView, known: KnownHostsView, settings: SettingsView, snippets: SnippetsView, forwards: ForwardsView }[section];
   const View = view;
   return (
     <I18nContext.Provider value={i18n}>

@@ -47,6 +47,15 @@ assert.equal(s.list()[0].group, 'prod');
 s.remove(id);
 assert.equal(s.list().length, 0);
 
+// Hosts reorder
+const h1 = s.save({ name: 'h1', host: '1' });
+const h2 = s.save({ name: 'h2', host: '2' });
+const h3 = s.save({ name: 'h3', host: '3' });
+assert.deepEqual(s.list().map((x) => x.id), [h1, h2, h3]);
+s.reorder([h3, h1, h2]);
+assert.deepEqual(s.list().map((x) => x.id), [h3, h1, h2]);
+s.remove(h1); s.remove(h2); s.remove(h3);
+
 const p = plain(path.join(dir, 'sn.json'));
 const sid = p.save({ name: 'ls', cmd: 'ls -la' });
 p.save({ id: sid, name: 'ls2', cmd: 'ls' });

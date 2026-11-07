@@ -15,7 +15,7 @@ const unwrap = async (promise) => {
 const sftpCall = (name) => (sid, ...a) => unwrap(ipcRenderer.invoke(`sftp:${name}`, sid, ...a));
 
 contextBridge.exposeInMainWorld('api', {
-  hosts: { ...coll('hosts'), get: (id) => ipcRenderer.invoke('hosts:get', id), copy: (id, vault, move, name) => ipcRenderer.invoke('hosts:copy', id, vault, move, name), jumpCandidates: (id, vault) => ipcRenderer.invoke('hosts:jumpCandidates', id, vault) },
+  hosts: { ...coll('hosts'), get: (id) => ipcRenderer.invoke('hosts:get', id), copy: (id, vault, move, name) => ipcRenderer.invoke('hosts:copy', id, vault, move, name), jumpCandidates: (id, vault) => ipcRenderer.invoke('hosts:jumpCandidates', id, vault), reorder: (ids) => ipcRenderer.invoke('hosts:reorder', ids) },
   saveText: (name, text) => ipcRenderer.invoke('saveText', name, text),
   win: {
     minimize: () => ipcRenderer.send('win:minimize'),
@@ -101,6 +101,15 @@ contextBridge.exposeInMainWorld('api', {
   platform: process.platform, // 'win32' | 'darwin' | 'linux': für Pfad-Trenner, Fensterknöpfe, Tastenkürzel
   pathOf: (file) => webUtils.getPathForFile(file), // Pfad einer aus dem Dateimanager gezogenen Datei
   fwd: { ...coll('fwd'), toggle: (id) => ipcRenderer.invoke('fwd:toggle', id) },
+  k8s: {
+    overview: (hostId) => unwrap(ipcRenderer.invoke('k8s:overview', hostId)),
+    run: (hostId, spec) => unwrap(ipcRenderer.invoke('k8s:run', hostId, spec)),
+    scale: (hostId, spec) => unwrap(ipcRenderer.invoke('k8s:scale', hostId, spec)),
+    restart: (hostId, spec) => unwrap(ipcRenderer.invoke('k8s:restart', hostId, spec)),
+    delete: (hostId, spec) => unwrap(ipcRenderer.invoke('k8s:delete', hostId, spec)),
+    logs: (hostId, spec) => unwrap(ipcRenderer.invoke('k8s:logs', hostId, spec)),
+    describe: (hostId, spec) => unwrap(ipcRenderer.invoke('k8s:describe', hostId, spec)),
+  },
   open: (sid, id, cols, rows) => ipcRenderer.send('ssh:open', sid, id, cols, rows),
   stats: (sid) => ipcRenderer.invoke('stats:get', sid),
   input: (sid, d) => ipcRenderer.send('ssh:input', sid, d),
