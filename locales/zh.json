@@ -529,5 +529,6 @@
  "Verbleibend: {time}": "剩余：{time}",
  "{done} von {total} Dateien": "{done} / {total} 个文件",
  "Übergeordneter Ordner": "上级文件夹",
- "Startverzeichnis": "主目录"
+ "Startverzeichnis": "主目录",
+ "Mit Google fortfahren": "通过 Google 继续"
 }

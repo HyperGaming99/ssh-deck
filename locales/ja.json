@@ -529,5 +529,6 @@
  "Verbleibend: {time}": "残り: {time}",
  "{done} von {total} Dateien": "{done} / {total} ファイル",
  "Übergeordneter Ordner": "上のフォルダ",
- "Startverzeichnis": "ホームディレクトリ"
+ "Startverzeichnis": "ホームディレクトリ",
+ "Mit Google fortfahren": "Google で続行"
 }

@@ -529,5 +529,6 @@
  "Verbleibend: {time}": "Resterend: {time}",
  "{done} von {total} Dateien": "{done} van {total} bestanden",
  "Übergeordneter Ordner": "Bovenliggende map",
- "Startverzeichnis": "Thuismap"
+ "Startverzeichnis": "Thuismap",
+ "Mit Google fortfahren": "Doorgaan met Google"
 }

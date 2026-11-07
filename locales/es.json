@@ -529,5 +529,6 @@
  "Verbleibend: {time}": "Restante: {time}",
  "{done} von {total} Dateien": "{done} de {total} archivos",
  "Übergeordneter Ordner": "Carpeta superior",
- "Startverzeichnis": "Directorio de inicio"
+ "Startverzeichnis": "Directorio de inicio",
+ "Mit Google fortfahren": "Continuar con Google"
 }

@@ -529,5 +529,6 @@
  "Verbleibend: {time}": "Remaining: {time}",
  "{done} von {total} Dateien": "{done} of {total} files",
  "Übergeordneter Ordner": "Parent folder",
- "Startverzeichnis": "Home directory"
+ "Startverzeichnis": "Home directory",
+ "Mit Google fortfahren": "Continue with Google"
 }

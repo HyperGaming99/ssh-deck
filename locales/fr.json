@@ -529,5 +529,6 @@
  "Verbleibend: {time}": "Restant : {time}",
  "{done} von {total} Dateien": "{done} sur {total} fichiers",
  "Übergeordneter Ordner": "Dossier parent",
- "Startverzeichnis": "Dossier personnel"
+ "Startverzeichnis": "Dossier personnel",
+ "Mit Google fortfahren": "Continuer avec Google"
 }

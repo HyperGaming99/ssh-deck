@@ -529,5 +529,6 @@
  "Verbleibend: {time}": "Залишилося: {time}",
  "{done} von {total} Dateien": "{done} з {total} файлів",
  "Übergeordneter Ordner": "Батьківська папка",
- "Startverzeichnis": "Домашня папка"
+ "Startverzeichnis": "Домашня папка",
+ "Mit Google fortfahren": "Продовжити з Google"
 }

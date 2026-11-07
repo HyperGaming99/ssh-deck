@@ -127,6 +127,31 @@ const listen = (opts) => new Promise((res) => { const srv = createServer({ db: o
     assert((await bk().login('e@x.de', kE.auth)), 'andere Konten bleiben');
     s2.srv.close();
   }
+  { // Google-Login + Tresor-Passwort (Zero-Knowledge): nur wenn google konfiguriert ist
+    await assert.rejects(new sync.Backend({ url }).googleStart(), /Aktion fehlgeschlagen/, 'ohne GOOGLE_CLIENT_ID abgelehnt');
+    const gSrv = await listen({ verify: true, google: { clientId: 'cid-123', exchange: async (code) => { if (code === 'bad') throw new Error('nope'); return 'Google.User@x.de'; } } });
+    const bg = new sync.Backend({ url: gSrv.url });
+    const start1 = await bg.googleStart();
+    assert(start1.state && start1.url.includes('client_id=cid-123'), 'OAuth-URL erzeugt');
+    assert.deepEqual(await bg.googlePoll(start1.state), { done: false }, 'vor Callback noch offen');
+    const cbRes = await fetch(`${gSrv.url}/api/google/callback?state=${encodeURIComponent(start1.state)}&code=ok-code`);
+    assert.equal(cbRes.status, 200);
+    const poll1 = await bg.googlePoll(start1.state);
+    assert.deepEqual(poll1, { done: true, email: 'google.user@x.de', exists: false }, 'neuer Nutzer erkannt, E-Mail normalisiert');
+    const kG = sync.deriveKeys('google.user@x.de', 'mein-tresor-pw'), kWrong = sync.deriveKeys('google.user@x.de', 'falsch-pw');
+    const tokG1 = await bg.googleComplete(start1.state, kG.auth);
+    assert(tokG1.length > 20, 'Konto per Google + Tresor-Passwort angelegt und direkt bestätigt');
+    await assert.rejects(bg.googleComplete(start1.state, kG.auth), /ungültig|abgelaufen/, 'State nur einmal nutzbar');
+    // Bestehendes Konto: erneuter Google-Login prüft das Tresor-Passwort
+    const start2 = await bg.googleStart();
+    await fetch(`${gSrv.url}/api/google/callback?state=${encodeURIComponent(start2.state)}&code=ok-code`);
+    const poll2 = await bg.googlePoll(start2.state);
+    assert.deepEqual(poll2, { done: true, email: 'google.user@x.de', exists: true }, 'bestehendes Konto erkannt');
+    await assert.rejects(bg.googleComplete(start2.state, kWrong.auth), /falsch/, 'falsches Tresor-Passwort wird abgelehnt');
+    const tokG2 = await bg.googleComplete(start2.state, kG.auth);
+    assert(tokG2.length > 20, 'richtiges Tresor-Passwort liefert Sitzung');
+    gSrv.srv.close();
+  }
 
 
   // Zwei Geräte gleichen ab: beide loggen sich mit denselben Daten ein

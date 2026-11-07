@@ -529,5 +529,6 @@
  "Verbleibend: {time}": "남은 시간: {time}",
  "{done} von {total} Dateien": "파일 {done} / {total}개",
  "Übergeordneter Ordner": "상위 폴더",
- "Startverzeichnis": "홈 디렉터리"
+ "Startverzeichnis": "홈 디렉터리",
+ "Mit Google fortfahren": "Google로 계속하기"
 }

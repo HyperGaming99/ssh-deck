@@ -529,5 +529,6 @@
  "Verbleibend: {time}": "المتبقي: {time}",
  "{done} von {total} Dateien": "{done} من {total} ملفات",
  "Übergeordneter Ordner": "المجلد الأعلى",
- "Startverzeichnis": "المجلد الرئيسي"
+ "Startverzeichnis": "المجلد الرئيسي",
+ "Mit Google fortfahren": "المتابعة باستخدام Google"
 }

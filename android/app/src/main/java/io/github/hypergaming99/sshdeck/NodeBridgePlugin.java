@@ -50,6 +50,7 @@ public class NodeBridgePlugin extends Plugin {
         String inner = new JSONArray(env.getString("payload")).getString(0);
         if (inner.startsWith("{\"t\":\"ks\"")) { keystore(new JSONObject(inner)); return; } // Schlüssel ein-/auspacken bleibt in Java
         if (inner.startsWith("{\"t\":\"perm\"")) { storagePerm(new JSONObject(inner)); return; } // Speicherzugriff für SFTP-Lokal anfordern
+        if (inner.startsWith("{\"t\":\"openurl\"")) { openUrl(new JSONObject(inner)); return; } // Externe URL im System-Browser öffnen (z. B. Google-Login)
         JSObject o = new JSObject();
         o.put("msg", inner);
         notifyListeners("message", o);
@@ -188,6 +189,16 @@ public class NodeBridgePlugin extends Plugin {
           sendPermResult(id, false);
         }
       });
+    } catch (Exception e) { /* ignorieren */ }
+  }
+
+  private void openUrl(JSONObject req) {
+    try {
+      String url = req.optString("url", "");
+      if (!url.startsWith("https://") && !url.startsWith("http://")) return;
+      Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+      i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+      getContext().startActivity(i);
     } catch (Exception e) { /* ignorieren */ }
   }
 

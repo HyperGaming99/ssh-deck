@@ -529,5 +529,6 @@
  "Verbleibend: {time}": "शेष समय: {time}",
  "{done} von {total} Dateien": "{total} में से {done} फ़ाइलें",
  "Übergeordneter Ordner": "ऊपरी फ़ोल्डर",
- "Startverzeichnis": "होम फ़ोल्डर"
+ "Startverzeichnis": "होम फ़ोल्डर",
+ "Mit Google fortfahren": "Google के साथ जारी रखें"
 }

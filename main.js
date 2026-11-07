@@ -733,18 +733,36 @@ app.whenReady().then(() => {
     send('sync:status', syncStatus());
     return { ok: true };
   });
-  // Anmelden / Registrieren / Code bestätigen. Rückgabe: { ok } | { needsCode } | { error }
+  // Anmelden / Registrieren / Code bestätigen / Google-Login (nur Hauptserver). Rückgabe: { ok } | { needsCode } | { google, state, email, exists } | { error }
+  let googlePollSeq = 0;
   handle('auth:submit', async (_, o) => {
     try {
       const url = String(o.server).trim().replace(/\/+$/, '');
       if (!validServer(url)) return { error: 'Die Server-Adresse muss mit https:// beginnen.' };
+      const b = new syncTools.Backend({ url }, backendOpts(url));
+      if (o.mode === 'googleStart') {
+        if (url !== DEFAULT_SERVER.replace(/\/+$/, '')) return { error: 'Aktion fehlgeschlagen' };
+        const seq = ++googlePollSeq;
+        const { state, url: authUrl } = await b.googleStart();
+        shell.openExternal(authUrl);
+        for (let i = 0; i < 80; i++) {
+          await new Promise((r) => setTimeout(r, 1500));
+          if (seq !== googlePollSeq) return { error: 'Abgebrochen' };
+          const p = await b.googlePoll(state);
+          if (p.done) return { google: true, state, email: p.email, exists: !!p.exists };
+        }
+        return { error: 'Code ungültig oder abgelaufen' };
+      }
+      googlePollSeq++;
       const email = String(o.email).trim().toLowerCase();
       if (!email || !o.password) return { error: 'Bitte E-Mail und Passwort eingeben.' };
-      if (o.mode === 'register' && o.password.length < 8) return { error: 'Das Passwort braucht mindestens 8 Zeichen.' };
+      if ((o.mode === 'register' || (o.mode === 'google' && !o.exists)) && o.password.length < 8) return { error: 'Das Passwort braucht mindestens 8 Zeichen.' };
       const keys = syncTools.deriveKeys(email, o.password);
-      const b = new syncTools.Backend({ url }, backendOpts(url));
       let token;
-      if (o.mode === 'register') {
+      if (o.mode === 'google') {
+        if (url !== DEFAULT_SERVER.replace(/\/+$/, '')) return { error: 'Aktion fehlgeschlagen' };
+        token = await b.googleComplete(o.state, keys.auth);
+      } else if (o.mode === 'register') {
         const r = await b.register(email, keys.auth);
         if (r.needsVerification) return { needsCode: true };
         token = r.token;

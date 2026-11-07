@@ -529,5 +529,6 @@
  "Verbleibend: {time}": "Rimanente: {time}",
  "{done} von {total} Dateien": "{done} di {total} file",
  "Übergeordneter Ordner": "Cartella superiore",
- "Startverzeichnis": "Cartella iniziale"
+ "Startverzeichnis": "Cartella iniziale",
+ "Mit Google fortfahren": "Continua con Google"
 }

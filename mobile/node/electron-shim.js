@@ -98,7 +98,7 @@ const dialog = {
   showSaveDialog: async (_w, o = {}) => { const r = await ask('save', o.defaultPath ? path.basename(o.defaultPath) : 'datei'); return { canceled: !r, filePath: r || undefined }; },
   showOpenDialog: async (_w, o = {}) => { const r = await ask('open', o.properties || [], o.filters || []); return { canceled: !r || !r.length, filePaths: r || [] }; },
 };
-const shell = { openExternal: (u) => ask('openExternal', u), openPath: (p) => ask('openPath', p), trashItem: async (p) => fs.rmSync(p, { recursive: true, force: true }) };
+const shell = { openExternal: async (u) => { chan.send(JSON.stringify({ t: 'openurl', url: String(u || '') })); }, openPath: (p) => ask('openPath', p), trashItem: async (p) => fs.rmSync(p, { recursive: true, force: true }) };
 const session = { fromPartition: () => ({ setProxy: async () => {} }) };
 
 module.exports = { go: () => { live = true; }, keyReady, app, BrowserWindow, ipcMain, safeStorage, dialog, shell, session, emit, ask, DATA };

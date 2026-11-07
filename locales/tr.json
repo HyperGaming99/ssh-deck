@@ -529,5 +529,6 @@
  "Verbleibend: {time}": "Kalan: {time}",
  "{done} von {total} Dateien": "{done} / {total} dosya",
  "Übergeordneter Ordner": "Üst klasör",
- "Startverzeichnis": "Başlangıç klasörü"
+ "Startverzeichnis": "Başlangıç klasörü",
+ "Mit Google fortfahren": "Google ile devam et"
 }
