@@ -43,7 +43,18 @@ spec:
             - { name: code, mountPath: /app, readOnly: true }
             - { name: data, mountPath: /data }
       volumes:
-        - { name: code, configMap: { name: ssh-deck-server-code } }
+        - name: code
+          configMap:
+            name: ssh-deck-server-code
+            items:
+              - { key: server.js, path: server.js }
+              - { key: db.js, path: db.js }
+              - { key: lib__crypto.js, path: lib/crypto.js }
+              - { key: lib__http.js, path: lib/http.js }
+              - { key: routes__auth.js, path: routes/auth.js }
+              - { key: routes__google.js, path: routes/google.js }
+              - { key: routes__vault.js, path: routes/vault.js }
+              - { key: routes__teams.js, path: routes/teams.js }
         - { name: data, hostPath: { path: /var/lib/ssh-deck, type: DirectoryOrCreate } }
 ---
 apiVersion: v1

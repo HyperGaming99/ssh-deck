@@ -224,7 +224,7 @@ const listen = (opts) => new Promise((res) => { const srv = createServer({ db: o
     for (const m of s.matchAll(/\b[tT]\(\s*'((?:[^'\\]|\\.)*)'/g)) used.add(m[1].replace(/\\'/g, "'"));
     for (const m of s.matchAll(/\bt\(\s*"((?:[^"\\]|\\.)*)"/g)) used.add(m[1]);
   }
-  const srv = fs.readFileSync('server/server.js', 'utf8'), mainJs = fs.readFileSync('main.js', 'utf8');
+  const srv = walk('server').filter((f) => f.endsWith('.js')).map((f) => fs.readFileSync(f, 'utf8')).join('\n'), mainJs = fs.readFileSync('main.js', 'utf8');
   const msgs = new Set([
     ...[...srv.matchAll(/fail\(\d+, '([^']+)'/g)].map((m) => m[1]).filter((m) => m !== 'blob fehlt'),
     ...[...mainJs.matchAll(/(?:error: |new Error\()'([^']+)'/g)].map((m) => m[1]),
