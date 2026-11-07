@@ -693,6 +693,51 @@ const getAnim = () => { try { return localStorage.getItem('anim') || 'on'; } cat
 const applyAnim = (v) => { document.documentElement.dataset.anim = v; try { localStorage.setItem('anim', v); } catch { /* egal */ } };
 applyAnim(getAnim());
 
+async function hashPin(pin) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`ssh-deck-lock:${pin}`));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function LockScreen({ onUnlock }) {
+  const t = useT();
+  const [pin, setPin] = useState('');
+  const [err, setErr] = useState('');
+  const submit = async (e) => {
+    e.preventDefault();
+    const saved = localStorage.getItem('lockPinHash') || '';
+    if (!saved || (await hashPin(pin)) === saved) {
+      setPin('');
+      setErr('');
+      onUnlock();
+    } else {
+      setErr(t('Passwort falsch'));
+    }
+  };
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/95 p-4 backdrop-blur-md">
+      <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-2xl border bg-card p-6 text-center shadow-xl">
+        <div className="mx-auto grid size-12 place-items-center rounded-2xl bg-primary/15 text-primary">
+          <Lock className="size-6" />
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold">{t('App gesperrt')}</h2>
+          <p className="text-xs text-muted-foreground">{t('Bitte Sperr-Passwort oder PIN eingeben, um fortzufahren.')}</p>
+        </div>
+        <Input
+          type="password"
+          autoFocus
+          value={pin}
+          onChange={(e) => { setPin(e.target.value); setErr(''); }}
+          placeholder={t('Sperr-Passwort / PIN')}
+          className="text-center"
+        />
+        {err && <p className="text-xs text-destructive">{err}</p>}
+        <Button type="submit" className="w-full" disabled={!pin}>{t('Entsperren')}</Button>
+      </form>
+    </div>
+  );
+}
+
 // Einstellungen mit eigener Seitenleiste (links Kategorien, rechts Inhalt)
 function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lang, setLang, settingsTab, teams, refreshTeams, vault, setVault, toast }) {
   const t = useT();
@@ -716,6 +761,10 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
   const [srvStats, setSrvStats] = useState(() => { try { return localStorage.getItem('serverStats') !== '0'; } catch { return true; } });
   const [dkStats, setDkStats] = useState(() => { try { return localStorage.getItem('dockerStats') !== '0'; } catch { return true; } });
   const [k8sStats, setK8sStats] = useState(() => { try { return localStorage.getItem('k8sStats') !== '0'; } catch { return true; } });
+  const [dotfiles, setDotfiles] = useState(() => { try { return localStorage.getItem('sftpDotfiles') !== '0'; } catch { return true; } });
+  const [autoLockMin, setAutoLockMin] = useState(() => { try { return localStorage.getItem('autoLockMin') || '0'; } catch { return '0'; } });
+  const [hasLockPin, setHasLockPin] = useState(() => { try { return !!localStorage.getItem('lockPinHash'); } catch { return false; } });
+  const [newPin, setNewPin] = useState('');
   const pickEditor = (v) => { setEditor(v); api.settings.set({ editor: v }); };
   const row = 'mrow flex items-center justify-between gap-4 rounded-xl border bg-card p-4';
   const seg = (opts, value, onChange) => (
@@ -758,8 +807,8 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
         )}
         {tab === 'features' && (
           <>
-            <div className="flex gap-1 rounded-xl border bg-card p-1">
-              {[['server', t('Server'), Server], ['terminal', t('Terminal'), TermIcon]].map(([id, label, Icon]) => (
+            <div className="flex flex-wrap gap-1 rounded-xl border bg-card p-1">
+              {[['server', t('Server'), Server], ['terminal', t('Terminal'), TermIcon], ['sftp', 'SFTP', FolderOpen], ['security', t('Sicherheit'), Lock]].map(([id, label, Icon]) => (
                 <button key={id} type="button" onClick={() => setFeatTab(id)}
                   className={cn('flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors', featTab === id ? 'bg-primary/15 font-medium text-primary' : 'text-muted-foreground hover:bg-accent')}>
                   <Icon className="size-4" />{label}
@@ -795,6 +844,76 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
                 <div className={row}>
                   <div><p className="text-sm font-medium">{t('Automatisch neu verbinden')}</p><p className="text-xs text-muted-foreground">{t('Bei unerwartet getrennter Verbindung erneut versuchen')}</p></div>
                   <Switch checked={autoRe} onCheckedChange={(v) => { setAutoRe(v); try { localStorage.setItem('autoReconnect', v ? '1' : '0'); } catch { /* egal */ } }} />
+                </div>
+              </>
+            )}
+            {featTab === 'sftp' && (
+              <>
+                <div className={row}>
+                  <div><p className="text-sm font-medium">{t('Versteckte Dateien anzeigen')}</p><p className="text-xs text-muted-foreground">{t('Dateien und Ordner mit führendem Punkt (.env, .ssh, .git) im SFTP einblenden')}</p></div>
+                  <Switch checked={dotfiles} onCheckedChange={(v) => { setDotfiles(v); try { localStorage.setItem('sftpDotfiles', v ? '1' : '0'); window.dispatchEvent(new Event('sftp-dotfiles')); } catch { /* egal */ } }} />
+                </div>
+              </>
+            )}
+            {featTab === 'security' && (
+              <>
+                <div className={row}>
+                  <div><p className="text-sm font-medium">{t('App-Sperre nach Inaktivität')}</p><p className="text-xs text-muted-foreground">{t('Sperrt die Oberfläche automatisch bei Inaktivität, ohne laufende Sitzungen zu trennen')}</p></div>
+                  <Select value={autoLockMin} onValueChange={(v) => { setAutoLockMin(v); try { localStorage.setItem('autoLockMin', v); window.dispatchEvent(new Event('lock-cfg')); } catch { /* egal */ } }}>
+                    <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">{t('Aus')}</SelectItem>
+                      <SelectItem value="5">5 min</SelectItem>
+                      <SelectItem value="15">15 min</SelectItem>
+                      <SelectItem value="30">30 min</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className={cn(row, 'flex-col items-stretch')}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-medium">{t('Sperr-Passwort / PIN')}</p>
+                      <p className="text-xs text-muted-foreground">{t('Wird zum Entsperren der App nach Inaktivität oder manuellem Sperren benötigt')}</p>
+                    </div>
+                    {hasLockPin && (
+                      <Button variant="outline" size="sm" onClick={() => window.dispatchEvent(new Event('app-lock-now'))}>
+                        <Lock className="size-3.5" />{t('Jetzt sperren')}
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      type="password"
+                      value={newPin}
+                      onChange={(e) => setNewPin(e.target.value)}
+                      placeholder={t('Sperr-Passwort / PIN')}
+                    />
+                    <Button
+                      disabled={!newPin.trim()}
+                      onClick={async () => {
+                        const h = await hashPin(newPin.trim());
+                        try { localStorage.setItem('lockPinHash', h); } catch { /* egal */ }
+                        setHasLockPin(true);
+                        setNewPin('');
+                        window.dispatchEvent(new Event('lock-cfg'));
+                        toast(t('Gespeichert.'));
+                      }}
+                    >
+                      {t('Speichern')}
+                    </Button>
+                    {hasLockPin && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          try { localStorage.removeItem('lockPinHash'); } catch { /* egal */ }
+                          setHasLockPin(false);
+                          window.dispatchEvent(new Event('lock-cfg'));
+                        }}
+                      >
+                        {t('Entfernen')}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </>
             )}
@@ -1093,6 +1212,31 @@ export default function App() {
 
   useEffect(() => { if (st) hideSplash(); }, [st]); // erst wenn der Status da ist, ist die Oberfläche bereit
   const [pairOpen, setPairOpen] = useState(false);
+  const [locked, setLocked] = useState(false);
+  const [canLock, setCanLock] = useState(() => { try { return !!localStorage.getItem('lockPinHash'); } catch { return false; } });
+  useEffect(() => {
+    let timer = null;
+    const resetTimer = () => {
+      clearTimeout(timer);
+      let mins = 0, hasPin = false;
+      try {
+        mins = Number(localStorage.getItem('autoLockMin') || '0');
+        hasPin = !!localStorage.getItem('lockPinHash');
+      } catch { /* egal */ }
+      setCanLock(hasPin);
+      if (mins > 0 && hasPin) timer = setTimeout(() => setLocked(true), mins * 60000);
+    };
+    const lockNow = () => { if (localStorage.getItem('lockPinHash')) setLocked(true); };
+    const evs = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'wheel', 'lock-cfg'];
+    evs.forEach((ev) => window.addEventListener(ev, resetTimer, { passive: true }));
+    window.addEventListener('app-lock-now', lockNow);
+    resetTimer();
+    return () => {
+      clearTimeout(timer);
+      evs.forEach((ev) => window.removeEventListener(ev, resetTimer));
+      window.removeEventListener('app-lock-now', lockNow);
+    };
+  }, []);
   const gate = st && lang !== null && !st.configured && !skip;
   readyRef.current = !!st && lang !== null && !gate; // ohne Konto zuerst der Login-Bildschirm
   const view = { hosts: HostsView, keychain: KeychainView, known: KnownHostsView, settings: SettingsView, snippets: SnippetsView, forwards: ForwardsView }[section];
@@ -1127,6 +1271,7 @@ export default function App() {
             {tabs.find((x) => x.sid === active && x.panes) && <SplitTools tab={tabs.find((x) => x.sid === active)} split={split} bc={bc} setBc={setBc} sessions={sessions} />}
             {tabs.find((x) => x.sid === active && (x.kind === 'ssh' || !x.kind)) && (() => { const tb = tabs.find((x) => x.sid === active); const on = recs[tb.focus || tb.panes[0].sid]; return <Button variant="ghost" size="icon" className={cn('mhide mr-1 size-8', on && 'text-red-500')} onClick={() => toggleRec(tb)} aria-label={on ? t('Aufzeichnung beenden') : t('Aufzeichnen')} title={on ? t('Aufzeichnung beenden') : t('Aufzeichnen')}><Circle className={cn('size-4', on && 'fill-current')} /></Button>; })()}
             {tabs.find((x) => x.sid === active && (x.kind === 'ssh' || !x.kind)) && <Button variant="ghost" size="icon" className={cn('mr-1 size-8', panel && 'text-primary')} onClick={togglePanel} aria-label={t('Seitenleiste ein-/ausblenden')}><PanelRight className="size-4" /></Button>}
+            {canLock && <Button variant="ghost" size="icon" className="mr-1 size-8" onClick={() => setLocked(true)} aria-label={t('Jetzt sperren')} title={t('Jetzt sperren')}><Lock className="size-4" /></Button>}
             <Button variant="ghost" size="icon" className="mr-1 size-8" onClick={() => setPairOpen(true)} aria-label={t('QR-Code koppeln')}><QrCode className="size-4" /></Button>
             <Button variant="ghost" size="icon" className="mr-1 size-8" onClick={() => setDark(!dark)} aria-label={t('Theme wechseln')}>
               {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
@@ -1139,6 +1284,7 @@ export default function App() {
           </div>
         </header>
         <PairSheet open={pairOpen} onClose={() => setPairOpen(false)} signedIn={!!st?.configured} toast={toast} />
+        {locked && <LockScreen onUnlock={() => setLocked(false)} />}
 
         {!mobile && upd && !gate && <UpdateBanner upd={upd} onClose={() => setUpd(null)} />}
         {st === null ? <div className="flex-1" /> : lang === null ? <LanguageSetup onPick={setLang} /> : gate ? <LoginScreen status={st} dark={dark} onSkip={() => chooseSkip(true)} onPair={() => setPairOpen(true)} /> : <div className="mroot flex min-h-0 flex-1">

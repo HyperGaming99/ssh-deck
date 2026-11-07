@@ -1052,6 +1052,43 @@ app.whenReady().then(() => {
   sftpOp('mkdir', sftpTools.mkdir);
   sftpOp('rename', sftpTools.rename);
   sftpOp('remove', sftpTools.remove);
+  sftpOp('chmod', sftpTools.chmod);
+  const execSftp = (conn, cmd) => new Promise((res, rej) => conn.exec(cmd, (err, stream) => {
+    if (err) return rej(err);
+    let stderr = '';
+    stream.stderr.on('data', (d) => { if (stderr.length < 4096) stderr += d; });
+    stream.on('close', (code) => (code === 0 ? res(null) : rej(new Error(stderr.trim() || 'Aktion fehlgeschlagen')))).resume();
+  }));
+  handle('sftp:archive', async (_, sid, dir, names, format) => {
+    const s = sftps.get(sid);
+    if (!s) return { error: 'Nicht verbunden' };
+    try { const { outName, cmd } = sftpTools.archiveCmd(dir, names, format); await execSftp(s.conn, cmd); return { data: outName }; } catch (e) { return { error: e.message }; }
+  });
+  handle('sftp:extract', async (_, sid, dir, name) => {
+    const s = sftps.get(sid);
+    if (!s) return { error: 'Nicht verbunden' };
+    try { await execSftp(s.conn, sftpTools.extractCmd(dir, name)); return { data: null }; } catch (e) { return { error: e.message }; }
+  });
+  handle('sftp:downloadArchive', async (_, sid, dir, names, localDir) => {
+    const s = sftps.get(sid);
+    if (!s) return { error: 'Nicht verbunden' };
+    try {
+      const list = (Array.isArray(names) ? names : [names]).filter(Boolean);
+      if (!list.length || !list.every(sftpTools.safeName)) return { error: 'Ungültiger Dateiname' };
+      const outName = `${list.length === 1 ? list[0] : 'archive'}.tar.gz`;
+      const target = path.join(localDir || localHome(), outName);
+      const cmd = `tar -czf - -C ${sftpTools.shQuote(dir)} -- ${list.map(sftpTools.shQuote).join(' ')}`;
+      await new Promise((res, rej) => s.conn.exec(cmd, (err, stream) => {
+        if (err) return rej(err);
+        const w = fs.createWriteStream(target);
+        stream.pipe(w);
+        stream.stderr.resume();
+        w.on('error', rej);
+        stream.on('close', (code) => (code === 0 ? res() : rej(new Error('Aktion fehlgeschlagen'))));
+      }));
+      return { data: outName };
+    } catch (e) { return { error: e.message }; }
+  });
   handle('sftp:upload', async (_, sid, local, remoteDir) => {
     const s = sftps.get(sid);
     if (!s) return { error: 'Nicht verbunden' };
@@ -1103,6 +1140,19 @@ app.whenReady().then(() => {
   });
   localOp('mkdir', (p) => fs.mkdirSync(p));
   localOp('rename', (a, b) => fs.renameSync(a, b));
+  localOp('chmod', (p, mode) => fs.chmodSync(p, Number(mode) & 0o777));
+  const execLocal = (cmd) => new Promise((res, rej) => {
+    const p = spawn('sh', ['-c', cmd], { stdio: ['ignore', 'ignore', 'pipe'] });
+    let stderr = '';
+    p.stderr.on('data', (d) => { if (stderr.length < 4096) stderr += d; });
+    p.on('error', rej).on('close', (code) => (code === 0 ? res(null) : rej(new Error(stderr.trim() || 'Aktion fehlgeschlagen'))));
+  });
+  localOp('archive', async (dir, names, format) => {
+    const { outName, cmd } = sftpTools.archiveCmd(dir, names, format);
+    await execLocal(cmd);
+    return outName;
+  });
+  localOp('extract', (dir, name) => execLocal(sftpTools.extractCmd(dir, name)));
   localOp('open', (p, cmd) => launch(p, cmd));
   localOp('remove', (p) => shell.trashItem(p)); // Papierkorb statt endgültig löschen
   ipcMain.on('ssh:open', (_, sid, id, cols, rows) => { const h = hosts.get(id); if (h) hosts.touch(id); if (h) connect(win, sid, h, cols, rows); });

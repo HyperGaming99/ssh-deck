@@ -549,6 +549,11 @@ const mock = {
   ac.abort();
   await assert.rejects(sftpTools.upload(mock, path.join(src, 'proj'), remote, { signal: ac.signal }), /Abgebrochen/);
   assert(!sftpTools.safeName('../x') && !sftpTools.safeName('..') && sftpTools.safeName('ok.txt'));
+  assert.equal(sftpTools.archiveCmd('/var/www', ['app'], 'tar.gz').outName, 'app.tar.gz');
+  assert(sftpTools.archiveCmd('/var/www', ['a', 'b'], 'zip').cmd.includes("'archive.zip'"));
+  assert(sftpTools.extractCmd('/var/www', 'app.tar.gz').includes('tar -xzf'));
+  assert(sftpTools.extractCmd('/var/www', 'app.zip').includes('unzip -oq'));
+  assert.throws(() => sftpTools.archiveCmd('/var/www', ['../evil']), /Ungültiger Dateiname/);
   assert(sftpTools.listLocal('', os.homedir()).entries.length >= 0);
   console.log('ok');
 })();

@@ -8,7 +8,7 @@ const safeName = (n) => n && n !== '.' && n !== '..' && !n.includes('/') && !n.i
 async function list(sftp, dir) {
   const real = await call(sftp, 'realpath', dir);
   const entries = (await call(sftp, 'readdir', real)).map((e) => ({
-    name: e.filename, dir: e.attrs.isDirectory(), size: e.attrs.size, mtime: e.attrs.mtime * 1000,
+    name: e.filename, dir: e.attrs.isDirectory(), size: e.attrs.size, mtime: e.attrs.mtime * 1000, mode: (e.attrs.mode || 0) & 0o777,
   }));
   entries.sort((a, b) => b.dir - a.dir || a.name.localeCompare(b.name));
   return { path: real, entries };
@@ -331,6 +331,35 @@ async function remove(sftp, p) {
 const put = (sftp, local, remotePath) => call(sftp, 'fastPut', local, remotePath);
 const mkdir = (sftp, p) => call(sftp, 'mkdir', p);
 const rename = (sftp, a, b) => call(sftp, 'rename', a, b);
+const chmod = (sftp, p, mode) => call(sftp, 'chmod', p, Number(mode) & 0o777);
+
+const shQuote = (s) => `'${String(s).replace(/'/g, "'\\''")}'`;
+
+// Baut den Shell-Befehl zum Packen (.tar.gz / .zip) ausgewählter Einträge in dir.
+function archiveCmd(dir, names, format = 'tar.gz', outName = '') {
+  const list = (Array.isArray(names) ? names : [names]).filter(Boolean);
+  if (!list.length || !list.every(safeName)) throw new Error('Ungültiger Dateiname');
+  const ext = format === 'zip' ? '.zip' : '.tar.gz';
+  const base = outName || `${list.length === 1 ? list[0] : 'archive'}${ext}`;
+  if (!safeName(base)) throw new Error('Ungültiger Dateiname');
+  const args = list.map(shQuote).join(' ');
+  if (format === 'zip') {
+    return { outName: base, cmd: `cd ${shQuote(dir)} && (zip -rq ${shQuote(base)} -- ${args} 2>/dev/null || python3 -m zipfile -c ${shQuote(base)} ${args})` };
+  }
+  return { outName: base, cmd: `tar -czf ${shQuote(path.posix.join(dir, base))} -C ${shQuote(dir)} -- ${args}` };
+}
+
+// Baut den Shell-Befehl zum Entpacken eines Archivs (.tar.gz, .tgz, .tar, .zip) in dir.
+function extractCmd(dir, name) {
+  if (!safeName(name)) throw new Error('Ungültiger Dateiname');
+  const full = path.posix.join(dir, name);
+  if (/\.zip$/i.test(name)) {
+    return `cd ${shQuote(dir)} && (unzip -oq ${shQuote(name)} 2>/dev/null || python3 -m zipfile -e ${shQuote(name)} .)`;
+  }
+  if (/\.(tar\.gz|tgz)$/i.test(name)) return `tar -xzf ${shQuote(full)} -C ${shQuote(dir)}`;
+  if (/\.tar$/i.test(name)) return `tar -xf ${shQuote(full)} -C ${shQuote(dir)}`;
+  throw new Error('Archivformat wird nicht unterstützt.');
+}
 
 // Verfügbare Laufwerke unter Windows ("C:\\", "D:\\", …)
 function listDrives(exists = fs.existsSync) {
@@ -339,18 +368,18 @@ function listDrives(exists = fs.existsSync) {
 
 function listLocal(dir, home, { platform = process.platform, exists = fs.existsSync } = {}) {
   if (platform === 'win32' && dir === '::drives') {
-    return { path: '::drives', entries: listDrives(exists).map((name) => ({ name, dir: true, size: 0, mtime: 0 })) };
+    return { path: '::drives', entries: listDrives(exists).map((name) => ({ name, dir: true, size: 0, mtime: 0, mode: 0o755 })) };
   }
   const real = fs.realpathSync(path.resolve(dir || home));
   const entries = [];
   for (const d of fs.readdirSync(real, { withFileTypes: true })) {
     try {
       const st = fs.statSync(path.join(real, d.name));
-      entries.push({ name: d.name, dir: st.isDirectory(), size: st.size, mtime: st.mtimeMs });
+      entries.push({ name: d.name, dir: st.isDirectory(), size: st.size, mtime: st.mtimeMs, mode: (st.mode || 0) & 0o777 });
     } catch { /* kaputter Symlink o. ä. */ }
   }
   entries.sort((a, b) => b.dir - a.dir || a.name.localeCompare(b.name));
   return { path: real, entries };
 }
 
-module.exports = { list, upload, download, copy, put, remove, mkdir, rename, listLocal, listDrives, safeName, scanLocal, scanRemote };
+module.exports = { list, upload, download, copy, put, remove, mkdir, rename, chmod, archiveCmd, extractCmd, shQuote, listLocal, listDrives, safeName, scanLocal, scanRemote };
