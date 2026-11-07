@@ -29,6 +29,10 @@ spec:
             - { name: HOST, value: "0.0.0.0" }
             - { name: DB_PATH, value: /data/deck.db }
             - { name: ALLOW_REGISTRATION, value: "1" }   # nach der Anmeldung der eigenen Konten auf "0" stellen
+            - { name: GOOGLE_CLIENT_ID, value: "805140702984-5l9ub46c6anecbqnkfepcfmothf9k56j.apps.googleusercontent.com" }
+            - { name: GOOGLE_REDIRECT_URI, value: "https://ssh.arolg.dev/api/google/callback" }
+          envFrom:
+            - secretRef: { name: ssh-deck-google-oauth, optional: true }
           ports: [{ containerPort: 8787 }]
           readinessProbe: { tcpSocket: { port: 8787 }, periodSeconds: 10 }
           livenessProbe: { tcpSocket: { port: 8787 }, initialDelaySeconds: 10, periodSeconds: 20 }
