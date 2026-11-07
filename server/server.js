@@ -132,7 +132,9 @@ function createServer({ db, verify = false, sendMail = async () => {}, allowRegi
           const r = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
           const tok = await r.json();
           const verified = tok.email_verified === true || tok.email_verified === 'true';
-          if (!r.ok || tok.aud !== google.clientId || !verified || !tok.email) throw new Error('Ungültiges Token');
+          const allowed = [google.clientId, google.androidClientId].filter(Boolean);
+          const okAud = allowed.includes(tok.aud) && (!tok.azp || allowed.includes(tok.azp));
+          if (!r.ok || !okAud || !verified || !tok.email) throw new Error('Ungültiges Token');
           return tok.email;
         })();
       } catch { throw fail(401, 'Anmeldung fehlgeschlagen'); }
@@ -419,7 +421,7 @@ if (require.main === module) {
   const dbFile = env.DB_PATH || './data/deck.db';
   fs.mkdirSync(path.dirname(dbFile), { recursive: true });
   const db = openDb(dbFile);
-  const google = env.GOOGLE_CLIENT_ID ? { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET || '', redirectUri: env.GOOGLE_REDIRECT_URI || 'https://ssh.arolg.dev/api/google/callback' } : null;
+  const google = env.GOOGLE_CLIENT_ID ? { clientId: env.GOOGLE_CLIENT_ID, androidClientId: env.GOOGLE_ANDROID_CLIENT_ID || '', clientSecret: env.GOOGLE_CLIENT_SECRET || '', redirectUri: env.GOOGLE_REDIRECT_URI || 'https://ssh.arolg.dev/api/google/callback' } : null;
   createServer({ db, verify, sendMail, allowRegistration: (env.ALLOW_REGISTRATION ?? '1') === '1', trustProxy: env.TRUST_PROXY === '1', pagesDir: env.PAGES_DIR || '', contactEmail: env.CONTACT_EMAIL || '', google })
     .listen(+env.PORT || 8787, env.HOST || '0.0.0.0', () => console.log(`SSH-Deck-Server läuft auf Port ${+env.PORT || 8787} (E-Mail-Code: ${verify ? 'an' : 'aus'})`));
 }
