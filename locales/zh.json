@@ -530,5 +530,7 @@
  "{done} von {total} Dateien": "{done} / {total} 个文件",
  "Übergeordneter Ordner": "上级文件夹",
  "Startverzeichnis": "主目录",
- "Mit Google fortfahren": "通过 Google 继续"
+ "Mit Google fortfahren": "通过 Google 继续",
+ "Programm wählen …": "选择程序 …",
+ "Eigenes Programm": "自定义程序"
 }

@@ -530,5 +530,7 @@
  "{done} von {total} Dateien": "{total} में से {done} फ़ाइलें",
  "Übergeordneter Ordner": "ऊपरी फ़ोल्डर",
  "Startverzeichnis": "होम फ़ोल्डर",
- "Mit Google fortfahren": "Google के साथ जारी रखें"
+ "Mit Google fortfahren": "Google के साथ जारी रखें",
+ "Programm wählen …": "प्रोग्राम चुनें …",
+ "Eigenes Programm": "कस्टम प्रोग्राम"
 }

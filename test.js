@@ -483,6 +483,8 @@ assert.equal(editors.pick('default', 'gedit', found).cmd, 'gedit', 'Einstellung 
 assert.equal(editors.pick('default', 'system', found), null);
 assert.equal(editors.pick('default', 'weg', found), null, 'unbekannter Editor: Systemstandard');
 assert.equal(editors.pick('gedit', 'code', found).cmd, 'gedit', 'explizite Wahl schlägt Einstellung');
+assert.deepEqual(editors.pick('default', 'custom', found, '/usr/bin/myedit', { platform: 'linux' }), { cmd: 'custom', name: 'myedit', bin: '/usr/bin/myedit' }, 'eigenes Programm');
+assert.deepEqual(editors.customEntry('/Applications/Zed.app', { platform: 'darwin' }), { cmd: 'custom', name: 'Zed', bin: '/usr/bin/open', args: ['-a', '/Applications/Zed.app'] });
 // Windows/macOS: feste Orte bzw. Programme in /Applications (Dateisystem ersetzt)
 const winEnv = { LOCALAPPDATA: 'C:\\Users\\u\\AppData\\Local', ProgramFiles: 'C:\\Program Files', SystemRoot: 'C:\\Windows' };
 const winHas = new Set(['C:\\Users\\u\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe', 'C:\\Windows\\System32\\notepad.exe']);

@@ -699,7 +699,11 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
   useEffect(() => { if (settingsTab) setTab(settingsTab); }, [settingsTab]);
   const [editors, setEditors] = useState([]);
   const [editor, setEditor] = useState('auto');
-  useEffect(() => { api.editors.list().then(setEditors); api.settings.get().then((s) => setEditor(s.editor || 'auto')); }, []);
+  const [customEditor, setCustomEditor] = useState('');
+  useEffect(() => {
+    api.editors.list().then(setEditors);
+    api.settings.get().then((s) => { setEditor(s.editor || 'auto'); setCustomEditor(s.customEditor || ''); });
+  }, []);
   const [sg, setSg] = useState(getSuggest);
   const pickSg = (v) => { setSg(v); setSuggest(v); };
   const [paste, setPasteState] = useState(getPaste);
@@ -779,17 +783,47 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
         {tab === 'teams' && <TeamsSettings st={st} teams={teams} refresh={refreshTeams} vault={vault} setVault={setVault} toast={toast} goAccount={() => setTab('account')} />}
         {!mobile && tab === 'updates' && <UpdatesSettings />}
         {!mobile && tab === 'files' && (
-          <div className={row}>
-            <div><p className="text-sm font-medium">{t('Standard-Editor')}</p><p className="text-xs text-muted-foreground">{t('Für „Öffnen“ und Doppelklick auf Dateien im SFTP')}</p></div>
-            <Select value={editor} onValueChange={pickEditor}>
-              <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="auto">{t('Automatisch (VS Code, sonst System)')}</SelectItem>
-                {editors.map((e) => <SelectItem key={e.cmd} value={e.cmd}>{e.name}</SelectItem>)}
-                <SelectItem value="system">{t('Systemstandard')}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <>
+            <div className={row}>
+              <div><p className="text-sm font-medium">{t('Standard-Editor')}</p><p className="text-xs text-muted-foreground">{t('Für „Öffnen“ und Doppelklick auf Dateien im SFTP')}</p></div>
+              <Select value={editor} onValueChange={pickEditor}>
+                <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">{t('Automatisch (VS Code, sonst System)')}</SelectItem>
+                  {editors.filter((e) => e.cmd !== 'custom').map((e) => <SelectItem key={e.cmd} value={e.cmd}>{e.name}</SelectItem>)}
+                  <SelectItem value="custom">{t('Eigenes Programm')}</SelectItem>
+                  <SelectItem value="system">{t('Systemstandard')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className={cn(row, 'flex-col items-stretch')}>
+              <div>
+                <p className="text-sm font-medium">{t('Eigenes Programm')}</p>
+                <p className="text-xs text-muted-foreground">{t('Öffnen mit')}</p>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  value={customEditor}
+                  placeholder="/usr/bin/kate"
+                  autoComplete="off"
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCustomEditor(v);
+                    setEditor('custom');
+                    api.settings.set({ editor: 'custom', customEditor: v });
+                  }}
+                />
+                <Button variant="outline" onClick={async () => {
+                  const r = await api.editors.pick?.();
+                  if (r?.path) {
+                    setCustomEditor(r.path);
+                    setEditor('custom');
+                    api.editors.list().then(setEditors);
+                  }
+                }}>{t('Programm wählen …')}</Button>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>

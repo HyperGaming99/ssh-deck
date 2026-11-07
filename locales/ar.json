@@ -530,5 +530,7 @@
  "{done} von {total} Dateien": "{done} من {total} ملفات",
  "Übergeordneter Ordner": "المجلد الأعلى",
  "Startverzeichnis": "المجلد الرئيسي",
- "Mit Google fortfahren": "المتابعة باستخدام Google"
+ "Mit Google fortfahren": "المتابعة باستخدام Google",
+ "Programm wählen …": "اختيار برنامج …",
+ "Eigenes Programm": "برنامج مخصص"
 }

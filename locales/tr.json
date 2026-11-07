@@ -530,5 +530,7 @@
  "{done} von {total} Dateien": "{done} / {total} dosya",
  "Übergeordneter Ordner": "Üst klasör",
  "Startverzeichnis": "Başlangıç klasörü",
- "Mit Google fortfahren": "Google ile devam et"
+ "Mit Google fortfahren": "Google ile devam et",
+ "Programm wählen …": "Program seç …",
+ "Eigenes Programm": "Özel program"
 }

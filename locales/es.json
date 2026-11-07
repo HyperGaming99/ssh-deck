@@ -530,5 +530,7 @@
  "{done} von {total} Dateien": "{done} de {total} archivos",
  "Übergeordneter Ordner": "Carpeta superior",
  "Startverzeichnis": "Directorio de inicio",
- "Mit Google fortfahren": "Continuar con Google"
+ "Mit Google fortfahren": "Continuar con Google",
+ "Programm wählen …": "Elegir programa …",
+ "Eigenes Programm": "Programa personalizado"
 }

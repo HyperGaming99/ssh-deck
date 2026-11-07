@@ -281,11 +281,25 @@ function installKey(k, h) {
   });
 }
 
-// Öffnet file mit 'default' (laut Einstellung, sonst VS Code, sonst System), 'system' oder einem erkannten Editor. Nie beliebige Befehle aus dem Renderer.
-function launch(file, cmd) {
-  const ed = editors.pick(cmd, readSettings().editor, editors.detect());
+// Öffnet file mit 'default' (laut Einstellung, sonst VS Code, sonst System), 'system', 'custom', 'choose' (Dateidialog) oder einem erkannten Editor.
+async function resolveEditor(cmd) {
+  if (cmd === 'choose') {
+    const r = await dialog.showOpenDialog(mainWin, { properties: ['openFile'] });
+    if (r.canceled || !r.filePaths?.[0]) return { canceled: true };
+    const picked = r.filePaths[0];
+    try { fs.writeFileSync(settingsFile, JSON.stringify({ ...readSettings(), customEditor: picked })); } catch { /* egal */ }
+    return { ed: editors.customEntry(picked) };
+  }
+  const s = readSettings();
+  return { ed: editors.pick(cmd, s.editor, editors.detect(), s.customEditor) };
+}
+
+async function launch(file, cmd) {
+  const { ed, canceled } = await resolveEditor(cmd);
+  if (canceled) return false;
   if (ed) spawn(ed.bin, [...(ed.args || []), file], { detached: true, stdio: 'ignore' }).unref();
   else shell.openPath(file);
+  return true;
 }
 
 // Remote-Datei bearbeiten: in Temp-Ordner laden, öffnen, bei jedem Speichern zurück hochladen.
@@ -294,6 +308,8 @@ async function editRemote(win, sid, remotePath, cmd) {
   if (!s) throw new Error('Nicht verbunden');
   const base = path.posix.basename(remotePath);
   if (!sftpTools.safeName(base)) throw new Error('Ungültiger Dateiname');
+  const { ed, canceled } = await resolveEditor(cmd);
+  if (canceled) return false;
   const dir = fs.mkdtempSync(path.join(app.getPath('temp'), 'deck-edit-'));
   await sftpTools.download(s.sftp, remotePath, dir);
   let timer;
@@ -307,7 +323,10 @@ async function editRemote(win, sid, remotePath, cmd) {
     }, 500);
   });
   edits.set(sid, [...(edits.get(sid) || []), { watcher, dir }]);
-  launch(path.join(dir, base), cmd);
+  const file = path.join(dir, base);
+  if (ed) spawn(ed.bin, [...(ed.args || []), file], { detached: true, stdio: 'ignore' }).unref();
+  else shell.openPath(file);
+  return true;
 }
 function stopEdits(sid) {
   for (const { watcher, dir } of edits.get(sid) || []) { watcher.close(); fs.rmSync(dir, { recursive: true, force: true }); }
@@ -1047,8 +1066,21 @@ app.whenReady().then(() => {
     for (const [k, ac] of sftpAborts) if (!sid || k === sid || k.startsWith(`${sid}:`)) ac.abort();
   });
   ipcMain.on('sftp:close', (_, sid) => { sftpAborts.get(sid)?.abort(); sftpAborts.delete(sid); stopEdits(sid); const s = sftps.get(sid); if (s) endAll(s.conn); sftps.delete(sid); });
-  handle('sftp:edit', async (_, sid, p, cmd) => { try { await editRemote(win, sid, p, cmd); return { data: null }; } catch (e) { return { error: e.message }; } });
-  handle('editors:list', () => editors.detect().map(({ cmd, name }) => ({ cmd, name })));
+  handle('sftp:edit', async (_, sid, p, cmd) => { try { return { data: await editRemote(win, sid, p, cmd) }; } catch (e) { return { error: e.message }; } });
+  handle('editors:list', () => {
+    const list = editors.detect().map(({ cmd, name }) => ({ cmd, name }));
+    const custom = editors.customEntry(readSettings().customEditor);
+    if (custom) list.push({ cmd: 'custom', name: custom.name, path: custom.bin });
+    return list;
+  });
+  handle('editors:pick', async () => {
+    const r = await dialog.showOpenDialog(mainWin, { properties: ['openFile'] });
+    if (r.canceled || !r.filePaths?.[0]) return null;
+    const picked = r.filePaths[0];
+    fs.writeFileSync(settingsFile, JSON.stringify({ ...readSettings(), editor: 'custom', customEditor: picked }));
+    const entry = editors.customEntry(picked);
+    return { path: picked, name: entry?.name || picked };
+  });
   handle('sftp:copy', async (_, a, pa, b, db) => {
     const x = sftps.get(a), y = sftps.get(b);
     if (!x || !y) return { error: 'Nicht verbunden' };

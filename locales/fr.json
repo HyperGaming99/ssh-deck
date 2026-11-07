@@ -530,5 +530,7 @@
  "{done} von {total} Dateien": "{done} sur {total} fichiers",
  "Übergeordneter Ordner": "Dossier parent",
  "Startverzeichnis": "Dossier personnel",
- "Mit Google fortfahren": "Continuer avec Google"
+ "Mit Google fortfahren": "Continuer avec Google",
+ "Programm wählen …": "Choisir un programme …",
+ "Eigenes Programm": "Programme personnalisé"
 }

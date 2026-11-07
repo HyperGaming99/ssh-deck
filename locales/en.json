@@ -530,5 +530,7 @@
  "{done} von {total} Dateien": "{done} of {total} files",
  "Übergeordneter Ordner": "Parent folder",
  "Startverzeichnis": "Home directory",
- "Mit Google fortfahren": "Continue with Google"
+ "Mit Google fortfahren": "Continue with Google",
+ "Programm wählen …": "Choose program …",
+ "Eigenes Programm": "Custom program"
 }

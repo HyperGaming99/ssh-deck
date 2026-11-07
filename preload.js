@@ -92,7 +92,7 @@ contextBridge.exposeInMainWorld('api', {
     remove: (p) => unwrap(ipcRenderer.invoke('local:remove', p)),
     open: (p, cmd) => unwrap(ipcRenderer.invoke('local:open', p, cmd)),
   },
-  editors: { list: () => ipcRenderer.invoke('editors:list') },
+  editors: { list: () => ipcRenderer.invoke('editors:list'), pick: () => ipcRenderer.invoke('editors:pick') },
   onEdit: (cb) => { ipcRenderer.on('edit:saved', (_, n) => cb(`${n} gespeichert und hochgeladen.`)); ipcRenderer.on('edit:error', (_, m) => cb(m)); },
   platform: process.platform, // 'win32' | 'darwin' | 'linux': für Pfad-Trenner, Fensterknöpfe, Tastenkürzel
   pathOf: (file) => webUtils.getPathForFile(file), // Pfad einer aus dem Dateimanager gezogenen Datei

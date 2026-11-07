@@ -530,5 +530,7 @@
  "{done} von {total} Dateien": "{done} z {total} plików",
  "Übergeordneter Ordner": "Folder nadrzędny",
  "Startverzeichnis": "Katalog domowy",
- "Mit Google fortfahren": "Kontynuuj z Google"
+ "Mit Google fortfahren": "Kontynuuj z Google",
+ "Programm wählen …": "Wybierz program …",
+ "Eigenes Programm": "Własny program"
 }

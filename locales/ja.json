@@ -530,5 +530,7 @@
  "{done} von {total} Dateien": "{done} / {total} ファイル",
  "Übergeordneter Ordner": "上のフォルダ",
  "Startverzeichnis": "ホームディレクトリ",
- "Mit Google fortfahren": "Google で続行"
+ "Mit Google fortfahren": "Google で続行",
+ "Programm wählen …": "プログラムを選択 …",
+ "Eigenes Programm": "カスタムプログラム"
 }

@@ -239,7 +239,7 @@ function TransferBanner({ transfer, onCancel }) {
   );
 }
 
-function Pane({ pane, otherSrc, hosts, editors, busy, onDropPane, onDropFiles, onTransfer, transferLabel, openForm, toast }) {
+function Pane({ pane, otherSrc, hosts, editors, onReloadEditors, busy, onDropPane, onDropFiles, onTransfer, transferLabel, openForm, toast }) {
   const t = useT();
   const lang = useLang();
   const [draft, setDraft] = useState(null);
@@ -261,13 +261,15 @@ function Pane({ pane, otherSrc, hosts, editors, busy, onDropPane, onDropFiles, o
     const msg = pane.remote ? t('{n} Element(e) auf dem Server endgültig löschen (Ordner samt Inhalt)?', { n }) : t('{n} Element(e) in den Papierkorb verschieben?', { n });
     if (confirm(msg)) act(async () => { for (const n of pane.sel) await pane.ops.remove(pane.join(n)); });
   };
-  // Dateien öffnen: cmd = 'default' (VS Code, sonst System) | 'system' | Editor-Befehl. Remote: Änderungen werden automatisch hochgeladen.
+  // Dateien öffnen: cmd = 'default' (VS Code, sonst System) | 'system' | 'custom' | 'choose' | Editor-Befehl. Remote: Änderungen werden automatisch hochgeladen.
   const openWith = async (cmd, names = [...pane.sel]) => {
     for (const n of names) {
       if (pane.entries.find((e) => e.name === n)?.dir) continue;
       const p = pane.join(n);
       try {
-        await (pane.remote ? api.sftp.edit(pane.psid, p, cmd) : api.local.open(p, cmd));
+        const ok = await (pane.remote ? api.sftp.edit(pane.psid, p, cmd) : api.local.open(p, cmd));
+        if (ok === false) return;
+        if (cmd === 'choose') onReloadEditors?.();
         if (pane.remote) toast(t('{name} geöffnet – Speichern lädt automatisch hoch.', { name: n }));
       } catch (e) { toast(e.message); }
     }
@@ -646,6 +648,8 @@ function Pane({ pane, otherSrc, hosts, editors, busy, onDropPane, onDropFiles, o
                   <ContextMenuSubContent>
                     {editors.map((ed) => <ContextMenuItem key={ed.cmd} onSelect={() => openWith(ed.cmd)}>{ed.name}</ContextMenuItem>)}
                     <ContextMenuItem onSelect={() => openWith('system')}>{t('Standardprogramm')}</ContextMenuItem>
+                    <ContextMenuSeparator />
+                    <ContextMenuItem onSelect={() => openWith('choose')}>{t('Programm wählen …')}</ContextMenuItem>
                   </ContextMenuSubContent>
                 </ContextMenuSub>
               )}
@@ -828,6 +832,7 @@ export default function SftpTab({ sid, hostId, active = true, toast, openForm })
           otherSrc={right.src}
           hosts={hosts}
           editors={editors}
+          onReloadEditors={() => api.editors.list().then(setEditors)}
           busy={busy}
           onDropPane={onDropPane}
           onDropFiles={onDropFiles}
@@ -872,6 +877,7 @@ export default function SftpTab({ sid, hostId, active = true, toast, openForm })
           otherSrc={left.src}
           hosts={hosts}
           editors={editors}
+          onReloadEditors={() => api.editors.list().then(setEditors)}
           busy={busy}
           onDropPane={onDropPane}
           onDropFiles={onDropFiles}

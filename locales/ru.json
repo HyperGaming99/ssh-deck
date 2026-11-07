@@ -530,5 +530,7 @@
  "{done} von {total} Dateien": "{done} из {total} файлов",
  "Übergeordneter Ordner": "Родительская папка",
  "Startverzeichnis": "Домашняя папка",
- "Mit Google fortfahren": "Продолжить с Google"
+ "Mit Google fortfahren": "Продолжить с Google",
+ "Programm wählen …": "Выбрать программу …",
+ "Eigenes Programm": "Другая программа"
 }
