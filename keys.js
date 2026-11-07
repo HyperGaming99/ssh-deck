@@ -10,8 +10,8 @@ const keyType = (blob) => blob.subarray(4, 4 + blob.readUInt32BE(0)).toString();
 
 function generate({ type = 'ed25519', bits, comment = '', passphrase }) {
   const opts = { comment };
-  if (type === 'rsa') opts.bits = bits || 4096;
-  if (type === 'ecdsa') opts.bits = 256;
+  if (type === 'rsa') opts.bits = Number(bits) || 4096;
+  if (type === 'ecdsa') opts.bits = Number(bits) || 256;
   if (passphrase) Object.assign(opts, { passphrase, cipher: 'aes256-ctr', rounds: 16 }); // ssh2 verlangt bei Passphrase einen Cipher
   // ssh2-Bug umgehen: beginnt der öffentliche Ed25519-Schlüssel zufällig mit 0x00 (1:256), schneidet ssh2 das Byte ab und erzeugt einen ungültigen Schlüssel
   let pair;

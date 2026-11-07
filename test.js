@@ -56,6 +56,10 @@ assert.equal(p.list()[0].name, 'ls2');
 // Keychain: generieren, aus Verzeichnis importieren, Passphrase verschlüsselt, Install-Befehl
 const g = keyTools.generate({ type: 'ed25519', comment: 'test' });
 assert(g.fingerprint.startsWith('SHA256:') && g.publicKey.startsWith('ssh-ed25519 '));
+const gRsa2048 = keyTools.generate({ type: 'rsa', bits: 2048, comment: 'rsa2048' });
+assert(gRsa2048.publicKey.startsWith('ssh-rsa '));
+const gEcdsa = keyTools.generate({ type: 'ecdsa', bits: 384, comment: 'ecdsa384' });
+assert(gEcdsa.publicKey.startsWith('ecdsa-sha2-nistp384 '));
 const sshDir = path.join(dir, 'ssh');
 fs.mkdirSync(sshDir);
 fs.writeFileSync(path.join(sshDir, 'id_test'), g.privateKey);
