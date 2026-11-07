@@ -275,10 +275,12 @@ public class NodeBridgePlugin extends Plugin {
       }
     } catch (ApiException e) {
       int code = e.getStatusCode();
-      boolean canceled = code == GoogleSignInStatusCodes.SIGN_IN_CANCELLED || code == GoogleSignInStatusCodes.SIGN_IN_CURRENTLY_IN_PROGRESS || resultCode == Activity.RESULT_CANCELED;
+      android.util.Log.w("SSHDeck", "GoogleSignIn ApiException code=" + code, e);
+      boolean canceled = code == GoogleSignInStatusCodes.SIGN_IN_CANCELLED;
       inst.sendGoogleResult(id, null, canceled, canceled ? null : ("api_" + code));
     } catch (Exception e) {
-      inst.sendGoogleResult(id, null, resultCode == Activity.RESULT_CANCELED, "error");
+      android.util.Log.w("SSHDeck", "GoogleSignIn error", e);
+      inst.sendGoogleResult(id, null, false, "error");
     }
   }
 
