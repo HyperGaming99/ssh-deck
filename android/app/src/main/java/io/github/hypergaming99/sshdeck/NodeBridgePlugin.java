@@ -1,5 +1,6 @@
 package io.github.hypergaming99.sshdeck;
 
+import android.app.Activity;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
@@ -15,6 +16,13 @@ import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.tasks.Task;
 import com.janeasystems.rn_nodejs_mobile.RNNodeJsMobileModule;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -38,9 +46,12 @@ public class NodeBridgePlugin extends Plugin {
   private final RNNodeJsMobileModule node = new RNNodeJsMobileModule();
   private volatile boolean up = false; // erst wenn Node etwas gesendet hat, ist sein Kanal bereit
   private volatile int pendingPermId = 0;
+  private static volatile NodeBridgePlugin activeInstance;
+  private volatile int pendingGoogleId = 0;
 
   @Override
   public void load() {
+    activeInstance = this;
     RNNodeJsMobileModule.listener = (channel, msg) -> {
       up = true;
       if (!EVENTS.equals(channel)) return;
@@ -51,6 +62,7 @@ public class NodeBridgePlugin extends Plugin {
         if (inner.startsWith("{\"t\":\"ks\"")) { keystore(new JSONObject(inner)); return; } // Schlüssel ein-/auspacken bleibt in Java
         if (inner.startsWith("{\"t\":\"perm\"")) { storagePerm(new JSONObject(inner)); return; } // Speicherzugriff für SFTP-Lokal anfordern
         if (inner.startsWith("{\"t\":\"openurl\"")) { openUrl(new JSONObject(inner)); return; } // Externe URL im System-Browser öffnen (z. B. Google-Login)
+        if (inner.startsWith("{\"t\":\"gsignin\"")) { googleSignIn(new JSONObject(inner)); return; } // Nativer Google-Login über Google Play Services
         JSObject o = new JSObject();
         o.put("msg", inner);
         notifyListeners("message", o);
@@ -200,6 +212,74 @@ public class NodeBridgePlugin extends Plugin {
       i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
       getContext().startActivity(i);
     } catch (Exception e) { /* ignorieren */ }
+  }
+
+  private void sendGoogleResult(int id, String idToken, boolean canceled, String error) {
+    try {
+      JSONObject res = new JSONObject();
+      res.put("t", "gres").put("id", id);
+      if (idToken != null) res.put("idToken", idToken);
+      if (canceled) res.put("canceled", true);
+      if (error != null) res.put("error", error);
+      toNode(res.toString());
+    } catch (Exception e) { /* ignorieren */ }
+  }
+
+  private void googleSignIn(JSONObject req) {
+    try {
+      int id = req.getInt("id");
+      String clientId = req.optString("clientId", "");
+      Activity act = getActivity();
+      if (act == null || clientId.isEmpty()) {
+        sendGoogleResult(id, null, false, "unavailable");
+        return;
+      }
+      pendingGoogleId = id;
+      act.runOnUiThread(() -> {
+        try {
+          GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestEmail()
+            .requestIdToken(clientId)
+            .build();
+          GoogleSignInClient client = GoogleSignIn.getClient(act, gso);
+          client.signOut().addOnCompleteListener(t -> {
+            try {
+              act.startActivityForResult(client.getSignInIntent(), 9002);
+            } catch (Exception ex) {
+              pendingGoogleId = 0;
+              sendGoogleResult(id, null, false, "start_failed");
+            }
+          });
+        } catch (Exception e) {
+          pendingGoogleId = 0;
+          sendGoogleResult(id, null, false, "init_failed");
+        }
+      });
+    } catch (Exception e) { /* ignorieren */ }
+  }
+
+  public static void onGoogleResult(int resultCode, Intent data) {
+    NodeBridgePlugin inst = activeInstance;
+    if (inst == null) return;
+    int id = inst.pendingGoogleId;
+    inst.pendingGoogleId = 0;
+    if (id == 0) return;
+    try {
+      Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+      GoogleSignInAccount account = task.getResult(ApiException.class);
+      String token = account != null ? account.getIdToken() : null;
+      if (token != null && !token.isEmpty()) {
+        inst.sendGoogleResult(id, token, false, null);
+      } else {
+        inst.sendGoogleResult(id, null, false, "no_token");
+      }
+    } catch (ApiException e) {
+      int code = e.getStatusCode();
+      boolean canceled = code == GoogleSignInStatusCodes.SIGN_IN_CANCELLED || code == GoogleSignInStatusCodes.SIGN_IN_CURRENTLY_IN_PROGRESS || resultCode == Activity.RESULT_CANCELED;
+      inst.sendGoogleResult(id, null, canceled, canceled ? null : ("api_" + code));
+    } catch (Exception e) {
+      inst.sendGoogleResult(id, null, resultCode == Activity.RESULT_CANCELED, "error");
+    }
   }
 
   @Override

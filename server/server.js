@@ -118,7 +118,31 @@ function createServer({ db, verify = false, sendMail = async () => {}, allowRegi
       const url = 'https://accounts.google.com/o/oauth2/v2/auth?' + new URLSearchParams({
         client_id: google.clientId, redirect_uri: redirectUri, response_type: 'code', scope: 'openid email', state, prompt: 'select_account',
       }).toString();
-      return { state, url };
+      return { state, url, clientId: google.clientId };
+    },
+    // Nativer Android-Google-Login (Google Play Services): prüft das vom Android-Client ausgestellte idToken direkt gegen Google
+    'POST /api/google/token': async (req, b) => {
+      if (!google?.clientId) throw fail(400, 'Aktion fehlgeschlagen');
+      if (limited(`gt:${ip(req)}`)) throw fail(429, 'Zu viele Versuche, bitte später erneut');
+      const idToken = String(b.idToken || '').trim();
+      if (!idToken) throw fail(400, 'Anmeldung fehlgeschlagen');
+      let email;
+      try {
+        email = google.verifyIdToken ? await google.verifyIdToken(idToken) : await (async () => {
+          const r = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
+          const tok = await r.json();
+          const verified = tok.email_verified === true || tok.email_verified === 'true';
+          if (!r.ok || tok.aud !== google.clientId || !verified || !tok.email) throw new Error('Ungültiges Token');
+          return tok.email;
+        })();
+      } catch { throw fail(401, 'Anmeldung fehlgeschlagen'); }
+      const norm = String(email || '').trim().toLowerCase();
+      if (!EMAIL.test(norm)) throw fail(400, 'Ungültige E-Mail-Adresse');
+      const t = now();
+      const state = crypto.randomBytes(24).toString('base64url');
+      googleStates.set(state, { created: t, email: norm, done: true });
+      const u = db.prepare('select id, verified from users where email = ?').get(norm);
+      return { state, email: norm, exists: !!(u && u.verified) };
     },
     'GET /api/google/poll': async (req, b, url) => {
       const state = String(url.searchParams.get('state') || '');

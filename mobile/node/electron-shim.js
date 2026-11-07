@@ -19,6 +19,8 @@ const asks = new Map(); // Anfragen an das Handy (Dateiauswahl, Teilen, ...)
 let askId = 0;
 const permReq = new Map();
 let permId = 0;
+const gReq = new Map();
+let gId = 0;
 
 chan.on('message', (raw) => {
   let m; try { m = JSON.parse(raw); } catch { return; }
@@ -32,6 +34,7 @@ chan.on('message', (raw) => {
   else if (m.t === 'res') { asks.get(m.id)?.(m.value); asks.delete(m.id); }
   else if (m.t === 'ksres') { ksReq.get(m.id)?.(m); ksReq.delete(m.id); }
   else if (m.t === 'permres') { permReq.get(m.id)?.(!!m.ok); permReq.delete(m.id); }
+  else if (m.t === 'gres') { gReq.get(m.id)?.(m); gReq.delete(m.id); }
 });
 
 const emit = (ch, ...args) => chan.send(JSON.stringify({ t: 'event', ch, args }));
@@ -53,6 +56,9 @@ const app = Object.assign(new EventEmitter(), {
   ensureStorage: () => (process.platform === 'android'
     ? new Promise((res) => { const id = ++permId; permReq.set(id, res); chan.send(JSON.stringify({ t: 'perm', id })); })
     : Promise.resolve(true)),
+  googleSignIn: (clientId) => (process.platform === 'android'
+    ? new Promise((res) => { const id = ++gId; gReq.set(id, res); chan.send(JSON.stringify({ t: 'gsignin', id, clientId: String(clientId || '') })); })
+    : Promise.resolve({ error: 'unsupported' })),
   whenReady: () => Promise.resolve(),
   getPath: (n) => (n === 'temp' ? path.join(DATA, 'tmp') : DATA),
   getVersion: () => process.env.DECK_VERSION || '0.0.0',

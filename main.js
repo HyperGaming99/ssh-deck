@@ -743,7 +743,15 @@ app.whenReady().then(() => {
       if (o.mode === 'googleStart') {
         if (url !== DEFAULT_SERVER.replace(/\/+$/, '')) return { error: 'Aktion fehlgeschlagen' };
         const seq = ++googlePollSeq;
-        const { state, url: authUrl } = await b.googleStart();
+        const { state, url: authUrl, clientId } = await b.googleStart();
+        if (app.googleSignIn && clientId) {
+          const g = await app.googleSignIn(clientId);
+          if (g?.canceled) return { error: 'Abgebrochen' };
+          if (g?.idToken) {
+            const p = await b.googleToken(g.idToken);
+            return { google: true, state: p.state, email: p.email, exists: !!p.exists };
+          }
+        }
         shell.openExternal(authUrl);
         for (let i = 0; i < 80; i++) {
           await new Promise((r) => setTimeout(r, 1500));

@@ -129,10 +129,17 @@ const listen = (opts) => new Promise((res) => { const srv = createServer({ db: o
   }
   { // Google-Login + Tresor-Passwort (Zero-Knowledge): nur wenn google konfiguriert ist
     await assert.rejects(new sync.Backend({ url }).googleStart(), /Aktion fehlgeschlagen/, 'ohne GOOGLE_CLIENT_ID abgelehnt');
-    const gSrv = await listen({ verify: true, google: { clientId: 'cid-123', exchange: async (code) => { if (code === 'bad') throw new Error('nope'); return 'Google.User@x.de'; } } });
+    const gSrv = await listen({
+      verify: true,
+      google: {
+        clientId: 'cid-123',
+        exchange: async (code) => { if (code === 'bad') throw new Error('nope'); return 'Google.User@x.de'; },
+        verifyIdToken: async (tok) => { if (tok !== 'valid-android-idtoken') throw new Error('bad'); return 'Google.User@x.de'; },
+      },
+    });
     const bg = new sync.Backend({ url: gSrv.url });
     const start1 = await bg.googleStart();
-    assert(start1.state && start1.url.includes('client_id=cid-123'), 'OAuth-URL erzeugt');
+    assert(start1.state && start1.clientId === 'cid-123' && start1.url.includes('client_id=cid-123'), 'OAuth-URL erzeugt');
     assert.deepEqual(await bg.googlePoll(start1.state), { done: false }, 'vor Callback noch offen');
     const cbRes = await fetch(`${gSrv.url}/api/google/callback?state=${encodeURIComponent(start1.state)}&code=ok-code`);
     assert.equal(cbRes.status, 200);
@@ -150,6 +157,13 @@ const listen = (opts) => new Promise((res) => { const srv = createServer({ db: o
     await assert.rejects(bg.googleComplete(start2.state, kWrong.auth), /falsch/, 'falsches Tresor-Passwort wird abgelehnt');
     const tokG2 = await bg.googleComplete(start2.state, kG.auth);
     assert(tokG2.length > 20, 'richtiges Tresor-Passwort liefert Sitzung');
+    // Nativer Android-Flow (idToken direkt von Google Play Services)
+    await assert.rejects(bg.googleToken('bad-token'), /Anmeldung fehlgeschlagen/);
+    const androidRes = await bg.googleToken('valid-android-idtoken');
+    assert.equal(androidRes.email, 'google.user@x.de');
+    assert.equal(androidRes.exists, true);
+    const tokG3 = await bg.googleComplete(androidRes.state, kG.auth);
+    assert(tokG3.length > 20, 'Android-idToken + Tresor-Passwort liefert Sitzung');
     gSrv.srv.close();
   }
 

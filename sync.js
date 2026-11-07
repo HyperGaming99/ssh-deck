@@ -81,6 +81,7 @@ class Backend {
   async verify(email, code) { return (await this.#req('POST', 'verify', { email, code })).token; }
   async login(email, auth) { return (await this.#req('POST', 'login', { email, auth })).token; }
   googleStart() { return this.#req('POST', 'google/start', {}); }
+  googleToken(idToken) { return this.#req('POST', 'google/token', { idToken }); }
   googlePoll(state) { return this.#req('GET', `google/poll?state=${encodeURIComponent(state)}`); }
   async googleComplete(state, auth) { return (await this.#req('POST', 'google/complete', { state, auth })).token; }
   logout() { return this.#req('POST', 'logout', {}); }
