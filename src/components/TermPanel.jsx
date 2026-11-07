@@ -22,7 +22,7 @@ const Swatch = ({ th }) => (
 const gb = (b) => (b / 1073741824).toFixed(1);
 const Bar = ({ pct }) => <div className="h-1.5 overflow-hidden rounded-full bg-muted"><div className={cn('h-full rounded-full', pct > 90 ? 'bg-red-500' : pct > 70 ? 'bg-amber-500' : 'bg-primary')} style={{ width: `${Math.min(100, pct)}%` }} /></div>;
 const Stat = ({ title, value, pct }) => <div className="space-y-1.5 px-3 py-2"><div className="flex justify-between gap-2 text-sm"><span className="font-medium">{title}</span><span className="truncate text-muted-foreground tabular-nums">{value}</span></div>{pct != null && <Bar pct={pct} />}</div>;
-function StatusTab({ sid }) {
+function StatusTab({ sid, dockerOn }) {
   const t = useT();
   const [st, setSt] = useState(undefined); // undefined = lädt, null = nicht verfügbar
   useEffect(() => {
@@ -35,12 +35,36 @@ function StatusTab({ sid }) {
   if (st === undefined) return <p className="p-3 text-sm text-muted-foreground">{t('Lädt …')}</p>;
   if (!st) return <p className="p-3 text-sm text-muted-foreground">{t('Server-Status nicht verfügbar (nur Linux).')}</p>;
   const d = Math.floor(st.uptime / 86400), h = Math.floor((st.uptime % 86400) / 3600), m = Math.floor((st.uptime % 3600) / 60);
+  const cs = dockerOn && Array.isArray(st.containers) ? st.containers : [];
+  const running = cs.filter((c) => c.state === 'running').length;
   return (
     <>
       <Stat title={t('CPU-Last')} value={`${st.load.map((x) => x.toFixed(2)).join(' · ')} (${st.cores} ${t('Kerne')})`} pct={(st.load[0] / st.cores) * 100} />
       <Stat title={t('Arbeitsspeicher')} value={`${gb(st.memUsed)} / ${gb(st.memTotal)} GB`} pct={(st.memUsed / st.memTotal) * 100} />
       <Stat title={t('Festplatte (/)')} value={`${gb(st.diskUsed)} / ${gb(st.diskTotal)} GB`} pct={st.diskPct} />
       <Stat title={t('Laufzeit')} value={`${d} ${t('Tage')} ${h} h ${m} min`} />
+      {dockerOn && cs.length > 0 && (
+        <div className="space-y-1.5 px-3 py-2">
+          <div className="flex justify-between gap-2 text-sm">
+            <span className="font-medium">{t('Docker-Container')}</span>
+            <span className="text-muted-foreground tabular-nums">{running} / {cs.length}</span>
+          </div>
+          <div className="space-y-1 pt-1">
+            {cs.map((c) => (
+              <div key={c.name} className="flex items-center gap-2 rounded-md border bg-card/60 px-2.5 py-1.5 text-xs">
+                <span className={cn('size-2 shrink-0 rounded-full', c.state === 'running' ? 'bg-emerald-500' : c.state === 'paused' || c.state === 'restarting' ? 'bg-amber-500' : 'bg-muted-foreground/50')} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate font-medium">{c.name}</span>
+                    <span className="shrink-0 text-[11px] text-muted-foreground">{c.state}</span>
+                  </div>
+                  <div className="truncate text-[11px] text-muted-foreground">{c.image}{c.status ? ` · ${c.status}` : ''}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -48,7 +72,14 @@ function StatusTab({ sid }) {
 // Seitenleiste neben dem Terminal: Forwarding dieses Hosts, Snippets, Verlauf, Themes + Schrift
 export default function TermPanel({ sid, hostId, dark, history, themeId, setThemeId, font, setFont, toast, rev, onClose }) {
   const t = useT();
-  const [tab, setTab] = useState(() => { try { return localStorage.getItem('termPanelTab') || 'themes'; } catch { return 'themes'; } });
+  const statsOn = (() => { try { return localStorage.getItem('serverStats') !== '0'; } catch { return true; } })();
+  const dockerOn = (() => { try { return localStorage.getItem('dockerStats') !== '0'; } catch { return true; } })();
+  const [tab, setTab] = useState(() => {
+    try {
+      const saved = localStorage.getItem('termPanelTab') || 'themes';
+      return !statsOn && saved === 'status' ? 'themes' : saved;
+    } catch { return 'themes'; }
+  });
   const [fontOpen, setFontOpen] = useState(false);
   const [rules, setRules] = useState([]);
   const [snippets, setSnippets] = useState([]);
@@ -65,7 +96,7 @@ export default function TermPanel({ sid, hostId, dark, history, themeId, setThem
   const load = useCallback(() => { api.fwd.list().then((l) => setRules(l.filter((r) => r.hostId === hostId))); api.snippets.list().then(setSnippets); }, [hostId]);
   useEffect(() => { load(); }, [load, rev]);
   useEffect(() => { api.hosts.get(hostId).then((x) => setTelnet(x?.protocol === 'telnet')); }, [hostId, rev]);
-  const TABS = [...(telnet ? [] : [['fwd', t('Forwarding'), ArrowLeftRight]]), ['snip', t('Snippets'), Code2], ['hist', t('Verlauf'), Clock], ['status', t('Status'), Activity], ['themes', t('Terminal-Themes'), Palette]];
+  const TABS = [...(telnet ? [] : [['fwd', t('Forwarding'), ArrowLeftRight]]), ['snip', t('Snippets'), Code2], ['hist', t('Verlauf'), Clock], ...(statsOn ? [['status', t('Status'), Activity]] : []), ['themes', t('Terminal-Themes'), Palette]];
   const label = (r) => r.label || `${r.type} ${r.bindPort}`;
   const Row = ({ onClick, children }) => <button type="button" onClick={onClick} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-start text-sm hover:bg-accent">{children}</button>;
 
@@ -118,7 +149,7 @@ export default function TermPanel({ sid, hostId, dark, history, themeId, setThem
             {[...history].reverse().map((c, i) => <Row key={i} onClick={() => api.input(sid, c)}><span className="truncate font-mono text-xs">{c}</span></Row>)}
           </>
         )}
-        {tab === 'status' && <StatusTab sid={sid} />}
+        {tab === 'status' && statsOn && <StatusTab sid={sid} dockerOn={dockerOn} />}
         {tab === 'fwd' && !telnet && (
           <>
             <Row onClick={async () => setSheet({ rule: { hostId }, hosts: await api.hosts.list(), onSave: async (v) => { await api.fwd.save(v); load(); } })}><Plus className="size-4 text-primary" /><span className="font-medium">{t('Neues Forwarding')}</span></Row>

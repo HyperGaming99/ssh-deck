@@ -1,5 +1,5 @@
 import { Fragment, Suspense, createContext, lazy, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown, ChevronLeft, Eye, EyeOff, LayoutGrid, List, Cloud, CloudOff, Fingerprint, Languages, ShieldCheck, Check, FileText, Palette, Settings as SettingsIcon, User, Folder, FolderPlus, Menu, Minus, Square, ArrowLeftRight, Code2, Copy, Star, Download, Ellipsis, FileUp, FolderOpen, KeyRound, Lock, Moon, Pencil, Circle, Plus, RefreshCw, Search, Send, Server, Sun, PanelRight, QrCode, Terminal as TermIcon, Trash2, Users, X } from 'lucide-react';
+import { ChevronDown, ChevronLeft, Eye, EyeOff, LayoutGrid, List, Cloud, CloudOff, Fingerprint, Languages, ShieldCheck, Check, FileText, Palette, Settings as SettingsIcon, SlidersHorizontal, User, Folder, FolderPlus, Menu, Minus, Square, ArrowLeftRight, Code2, Copy, Star, Download, Ellipsis, FileUp, FolderOpen, KeyRound, Lock, Moon, Pencil, Circle, Plus, RefreshCw, Search, Send, Server, Sun, PanelRight, QrCode, Terminal as TermIcon, Trash2, Users, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -564,6 +564,7 @@ function TorSettings() {
 const SETTINGS_TABS = [ // Updates/Editor gibt es nur am Desktop
   ['account', T('Konto & Sync'), User],
   ['appearance', T('Darstellung'), Palette],
+  ['features', T('Funktionen'), SlidersHorizontal],
   ['language', T('Sprache'), Languages],
   ['privacy', T('Datenschutz'), ShieldCheck],
   ['keychain', T('Cloud-Schlüsselbund'), KeyRound],
@@ -711,6 +712,9 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
   const [anim, setAnim] = useState(getAnim);
   const pickAnim = (v) => { setAnim(v); applyAnim(v); };
   const [autoRe, setAutoRe] = useState(() => { try { return localStorage.getItem('autoReconnect') !== '0'; } catch { return true; } });
+  const [featTab, setFeatTab] = useState('server');
+  const [srvStats, setSrvStats] = useState(() => { try { return localStorage.getItem('serverStats') !== '0'; } catch { return true; } });
+  const [dkStats, setDkStats] = useState(() => { try { return localStorage.getItem('dockerStats') !== '0'; } catch { return true; } });
   const pickEditor = (v) => { setEditor(v); api.settings.set({ editor: v }); };
   const row = 'mrow flex items-center justify-between gap-4 rounded-xl border bg-card p-4';
   const seg = (opts, value, onChange) => (
@@ -749,18 +753,46 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
               <div><p className="text-sm font-medium">{t('Animationen')}</p><p className="text-xs text-muted-foreground">{t('Glow bei Hosts und Gruppen sowie Übergänge')}</p></div>
               {seg([['on', t('An')], ['off', t('Aus')]], anim, pickAnim)}
             </div>
-            <div className={row}>
-              <div><p className="text-sm font-medium">{t('Befehlsvorschläge')}</p><p className="text-xs text-muted-foreground">{t('Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.')}</p></div>
-              {seg([['on', t('An')], ['off', t('Aus')]], sg, pickSg)}
+          </>
+        )}
+        {tab === 'features' && (
+          <>
+            <div className="flex gap-1 rounded-xl border bg-card p-1">
+              {[['server', t('Server'), Server], ['terminal', t('Terminal'), TermIcon]].map(([id, label, Icon]) => (
+                <button key={id} type="button" onClick={() => setFeatTab(id)}
+                  className={cn('flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors', featTab === id ? 'bg-primary/15 font-medium text-primary' : 'text-muted-foreground hover:bg-accent')}>
+                  <Icon className="size-4" />{label}
+                </button>
+              ))}
             </div>
-            <div className={row}>
-              <div><p className="text-sm font-medium">{t('Einfügen im Terminal')}</p><p className="text-xs text-muted-foreground">{t('Strg+V und Rechtsklick fügen die Zwischenablage ein')}</p></div>
-              {seg([['ask', t('Nachfragen')], ['on', t('Erlauben')], ['off', t('Aus')]], paste, pickPaste)}
-            </div>
-            <div className={row}>
-              <div><p className="text-sm font-medium">{t('Automatisch neu verbinden')}</p><p className="text-xs text-muted-foreground">{t('Bei unerwartet getrennter Verbindung erneut versuchen')}</p></div>
-              <Switch checked={autoRe} onCheckedChange={(v) => { setAutoRe(v); try { localStorage.setItem('autoReconnect', v ? '1' : '0'); } catch { /* egal */ } }} />
-            </div>
+            {featTab === 'server' && (
+              <>
+                <div className={row}>
+                  <div><p className="text-sm font-medium">{t('Server-Status')}</p><p className="text-xs text-muted-foreground">{t('CPU, Arbeitsspeicher, Festplatte und Laufzeit im Terminal anzeigen')}</p></div>
+                  <Switch checked={srvStats} onCheckedChange={(v) => { setSrvStats(v); try { localStorage.setItem('serverStats', v ? '1' : '0'); } catch { /* egal */ } }} />
+                </div>
+                <div className={cn(row, !srvStats && 'opacity-50')}>
+                  <div><p className="text-sm font-medium">{t('Docker-Container')}</p><p className="text-xs text-muted-foreground">{t('Docker-Container im Server-Status anzeigen')}</p></div>
+                  <Switch disabled={!srvStats} checked={dkStats} onCheckedChange={(v) => { setDkStats(v); try { localStorage.setItem('dockerStats', v ? '1' : '0'); } catch { /* egal */ } }} />
+                </div>
+              </>
+            )}
+            {featTab === 'terminal' && (
+              <>
+                <div className={row}>
+                  <div><p className="text-sm font-medium">{t('Befehlsvorschläge')}</p><p className="text-xs text-muted-foreground">{t('Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.')}</p></div>
+                  {seg([['on', t('An')], ['off', t('Aus')]], sg, pickSg)}
+                </div>
+                <div className={row}>
+                  <div><p className="text-sm font-medium">{t('Einfügen im Terminal')}</p><p className="text-xs text-muted-foreground">{t('Strg+V und Rechtsklick fügen die Zwischenablage ein')}</p></div>
+                  {seg([['ask', t('Nachfragen')], ['on', t('Erlauben')], ['off', t('Aus')]], paste, pickPaste)}
+                </div>
+                <div className={row}>
+                  <div><p className="text-sm font-medium">{t('Automatisch neu verbinden')}</p><p className="text-xs text-muted-foreground">{t('Bei unerwartet getrennter Verbindung erneut versuchen')}</p></div>
+                  <Switch checked={autoRe} onCheckedChange={(v) => { setAutoRe(v); try { localStorage.setItem('autoReconnect', v ? '1' : '0'); } catch { /* egal */ } }} />
+                </div>
+              </>
+            )}
           </>
         )}
         {tab === 'language' && (
