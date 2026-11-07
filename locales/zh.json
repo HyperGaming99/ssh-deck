@@ -629,5 +629,10 @@
   "Timeout beim Verbinden": "连接超时",
   "Ziehen zum Sortieren": "拖动以重新排序",
   "Host „{host}“ in Gruppe „{group}“ verschoben.": "主机“{host}”已移至分组“{group}”。",
-  "Host „{host}“ aus Gruppe entfernt.": "主机“{host}”已从分组中移除。"
+  "Host „{host}“ aus Gruppe entfernt.": "主机“{host}”已从分组中移除。",
+  "Version wählen …": "选择版本 …",
+  "Aktuell": "当前",
+  "Keine Versionen verfügbar": "没有可用版本",
+  "Zeigt nur Dev-Versionen.": "仅显示开发版本。",
+  "Zeigt nur stabile Versionen.": "仅显示稳定版本。"
 }

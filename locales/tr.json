@@ -629,5 +629,10 @@
   "Timeout beim Verbinden": "Bağlantı zaman aşımı",
   "Ziehen zum Sortieren": "Yeniden sıralamak için sürükleyin",
   "Host „{host}“ in Gruppe „{group}“ verschoben.": "“{host}” sunucusu “{group}” grubuna taşındı.",
-  "Host „{host}“ aus Gruppe entfernt.": "“{host}” sunucusu gruptan çıkarıldı."
+  "Host „{host}“ aus Gruppe entfernt.": "“{host}” sunucusu gruptan çıkarıldı.",
+  "Version wählen …": "Sürüm seçin …",
+  "Aktuell": "Geçerli",
+  "Keine Versionen verfügbar": "Kullanılabilir sürüm yok",
+  "Zeigt nur Dev-Versionen.": "Yalnızca geliştirici sürümlerini gösterir.",
+  "Zeigt nur stabile Versionen.": "Yalnızca kararlı sürümleri gösterir."
 }

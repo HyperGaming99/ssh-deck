@@ -629,5 +629,10 @@
   "Timeout beim Verbinden": "Verbindingstime-out",
   "Ziehen zum Sortieren": "Slepen om te sorteren",
   "Host „{host}“ in Gruppe „{group}“ verschoben.": "Host '{host}' verplaatst naar groep '{group}'.",
-  "Host „{host}“ aus Gruppe entfernt.": "Host '{host}' uit groep verwijderd."
+  "Host „{host}“ aus Gruppe entfernt.": "Host '{host}' uit groep verwijderd.",
+  "Version wählen …": "Versie selecteren …",
+  "Aktuell": "Huidig",
+  "Keine Versionen verfügbar": "Geen versies beschikbaar",
+  "Zeigt nur Dev-Versionen.": "Toont alleen dev-versies.",
+  "Zeigt nur stabile Versionen.": "Toont alleen stabiele versies."
 }

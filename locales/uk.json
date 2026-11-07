@@ -629,5 +629,10 @@
   "Timeout beim Verbinden": "Таймаут підключення",
   "Ziehen zum Sortieren": "Перетягніть для зміни порядку",
   "Host „{host}“ in Gruppe „{group}“ verschoben.": "Хост «{host}» переміщено в групу «{group}».",
-  "Host „{host}“ aus Gruppe entfernt.": "Хост «{host}» вилучено з групи."
+  "Host „{host}“ aus Gruppe entfernt.": "Хост «{host}» вилучено з групи.",
+  "Version wählen …": "Виберіть версію …",
+  "Aktuell": "Поточна",
+  "Keine Versionen verfügbar": "Немає доступних версій",
+  "Zeigt nur Dev-Versionen.": "Показує лише dev-версії.",
+  "Zeigt nur stabile Versionen.": "Показує лише стабільні версії."
 }

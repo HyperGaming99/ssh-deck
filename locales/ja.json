@@ -629,5 +629,10 @@
   "Timeout beim Verbinden": "接続タイムアウト",
   "Ziehen zum Sortieren": "ドラッグして並べ替え",
   "Host „{host}“ in Gruppe „{group}“ verschoben.": "ホスト「{host}」をグループ「{group}」に移動しました。",
-  "Host „{host}“ aus Gruppe entfernt.": "ホスト「{host}」をグループから削除しました。"
+  "Host „{host}“ aus Gruppe entfernt.": "ホスト「{host}」をグループから削除しました。",
+  "Version wählen …": "バージョンを選択 …",
+  "Aktuell": "現在",
+  "Keine Versionen verfügbar": "利用可能なバージョンはありません",
+  "Zeigt nur Dev-Versionen.": "開発版のみを表示します。",
+  "Zeigt nur stabile Versionen.": "安定版のみを表示します。"
 }

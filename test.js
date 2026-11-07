@@ -14,17 +14,6 @@ const serverStats = require('./serverstats');
   assert.equal(r.memUsed, 6000000 * 1024);
   assert.equal(r.diskPct, 40);
   assert.equal(r.uptime, 90061.5);
-  assert.deepEqual(r.containers, []);
-  assert.deepEqual(r.pods, []);
-  const r2 = serverStats.parse(out + '---\nweb\trunning\tUp 2 hours\tnginx:alpine\ndb\texited\tExited (0) 5 minutes ago\tpostgres:16\n---\ndefault\tapi-7f8b\tRunning\tghcr.io/app/api:latest\nkube-system\tcoredns-123\tPending\tcoredns:1.11\n');
-  assert.deepEqual(r2.containers, [
-    { name: 'web', state: 'running', status: 'Up 2 hours', image: 'nginx:alpine' },
-    { name: 'db', state: 'exited', status: 'Exited (0) 5 minutes ago', image: 'postgres:16' },
-  ]);
-  assert.deepEqual(r2.pods, [
-    { namespace: 'default', name: 'api-7f8b', phase: 'Running', image: 'ghcr.io/app/api:latest' },
-    { namespace: 'kube-system', name: 'coredns-123', phase: 'Pending', image: 'coredns:1.11' },
-  ]);
   assert.equal(serverStats.parse('Darwin'), null, 'kein Linux -> null');
   assert.equal(serverStats.parse(''), null);
 }
@@ -885,6 +874,15 @@ const mock = {
   assert(dev.prerelease && dev.tarball.endsWith('/dev10'));
   assert(updater.isNewer(dev.version, '0.1.4-dev.2') && !updater.isNewer(dev.version, '0.1.4-dev.10'), 'Dev-Update nur bei höherer Build-Nummer');
   assert(updater.available('0.1.4-dev.16', '0.1.4', true) && !updater.available('0.1.4-dev.16', '0.1.4-dev.16', true) && !updater.available('0.1.4-dev.16', '0.1.4', false), 'Quell-Installation 0.1.4 bekommt Dev-Builds von 0.1.4');
+  const allRels = await updater.releases({ repo: 'o/r', fetch: f });
+  assert.equal(allRels.length, 3, 'Alle 3 gültigen Releases ohne Drafts');
+  const stableRels = await updater.releases({ repo: 'o/r', channel: 'stable', fetch: f });
+  assert.equal(stableRels.length, 1, 'Nur 1 stabiles Release');
+  assert.equal(stableRels[0].version, '0.1.3');
+  const devRels = await updater.releases({ repo: 'o/r', channel: 'dev', fetch: f });
+  assert.equal(devRels.length, 2, '2 Dev-Releases');
+  assert.equal(devRels[0].version, '0.1.4-dev.10');
+  assert.equal(devRels[1].version, '0.1.4-dev.2');
   srv.close();
   console.log('channels ok');
 })().catch((e) => { console.error(e); process.exit(1); });

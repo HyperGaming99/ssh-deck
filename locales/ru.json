@@ -629,5 +629,10 @@
   "Timeout beim Verbinden": "Тайм-аут подключения",
   "Ziehen zum Sortieren": "Перетащите для изменения порядка",
   "Host „{host}“ in Gruppe „{group}“ verschoben.": "Хост «{host}» перемещен в группу «{group}».",
-  "Host „{host}“ aus Gruppe entfernt.": "Хост «{host}» удален из группы."
+  "Host „{host}“ aus Gruppe entfernt.": "Хост «{host}» удален из группы.",
+  "Version wählen …": "Выберите версию …",
+  "Aktuell": "Текущая",
+  "Keine Versionen verfügbar": "Нет доступных версий",
+  "Zeigt nur Dev-Versionen.": "Показывает только dev-версии.",
+  "Zeigt nur stabile Versionen.": "Показывает только стабильные версии."
 }

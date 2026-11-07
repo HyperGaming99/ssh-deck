@@ -629,5 +629,10 @@
   "Timeout beim Verbinden": "Tiempo de espera de conexión",
   "Ziehen zum Sortieren": "Arrastrar para reordenar",
   "Host „{host}“ in Gruppe „{group}“ verschoben.": "Host «{host}» movido al grupo «{group}».",
-  "Host „{host}“ aus Gruppe entfernt.": "Host «{host}» eliminado del grupo."
+  "Host „{host}“ aus Gruppe entfernt.": "Host «{host}» eliminado del grupo.",
+  "Version wählen …": "Seleccionar versión …",
+  "Aktuell": "Actual",
+  "Keine Versionen verfügbar": "No hay versiones disponibles",
+  "Zeigt nur Dev-Versionen.": "Muestra solo versiones de desarrollo.",
+  "Zeigt nur stabile Versionen.": "Muestra solo versiones estables."
 }

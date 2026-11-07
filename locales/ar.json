@@ -629,5 +629,10 @@
   "Timeout beim Verbinden": "مهلة الاتصال",
   "Ziehen zum Sortieren": "اسحب لإعادة الترتيب",
   "Host „{host}“ in Gruppe „{group}“ verschoben.": "تم نقل المضيف «{host}» إلى المجموعة «{group}».",
-  "Host „{host}“ aus Gruppe entfernt.": "تمت إزالة المضيف «{host}» من المجموعة."
+  "Host „{host}“ aus Gruppe entfernt.": "تمت إزالة المضيف «{host}» من المجموعة.",
+  "Version wählen …": "اختر الإصدار …",
+  "Aktuell": "الحالي",
+  "Keine Versionen verfügbar": "لا توجد إصدارات متاحة",
+  "Zeigt nur Dev-Versionen.": "يعرض إصدارات التطوير فقط.",
+  "Zeigt nur stabile Versionen.": "يعرض الإصدارات المستقرة فقط."
 }

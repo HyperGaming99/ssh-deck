@@ -629,5 +629,10 @@
   "Timeout beim Verbinden": "कनेक्शन टाइमआउट",
   "Ziehen zum Sortieren": "पुनः व्यवस्थित करने के लिए खींचें",
   "Host „{host}“ in Gruppe „{group}“ verschoben.": "होस्ट “{host}” को समूह “{group}” में ले जाया गया।",
-  "Host „{host}“ aus Gruppe entfernt.": "होस्ट “{host}” को समूह से हटा दिया गया।"
+  "Host „{host}“ aus Gruppe entfernt.": "होस्ट “{host}” को समूह से हटा दिया गया।",
+  "Version wählen …": "संस्करण चुनें …",
+  "Aktuell": "वर्तमान",
+  "Keine Versionen verfügbar": "कोई संस्करण उपलब्ध नहीं",
+  "Zeigt nur Dev-Versionen.": "केवल देव संस्करण दिखाता है।",
+  "Zeigt nur stabile Versionen.": "केवल स्थिर संस्करण दिखाता है।"
 }

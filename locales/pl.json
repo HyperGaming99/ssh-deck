@@ -629,5 +629,10 @@
   "Timeout beim Verbinden": "Przekroczono limit czasu połączenia",
   "Ziehen zum Sortieren": "Przeciągnij, aby zmienić kolejność",
   "Host „{host}“ in Gruppe „{group}“ verschoben.": "Host „{host}” przeniesiony do grupy „{group}”.",
-  "Host „{host}“ aus Gruppe entfernt.": "Host „{host}” usunięty z grupy."
+  "Host „{host}“ aus Gruppe entfernt.": "Host „{host}” usunięty z grupy.",
+  "Version wählen …": "Wybierz wersję …",
+  "Aktuell": "Aktualna",
+  "Keine Versionen verfügbar": "Brak dostępnych wersji",
+  "Zeigt nur Dev-Versionen.": "Pokazuje tylko wersje deweloperskie.",
+  "Zeigt nur stabile Versionen.": "Pokazuje tylko stabilne wersje."
 }

@@ -629,5 +629,10 @@
   "Timeout beim Verbinden": "Connection timeout",
   "Ziehen zum Sortieren": "Drag to reorder",
   "Host „{host}“ in Gruppe „{group}“ verschoben.": "Host “{host}” moved to group “{group}”.",
-  "Host „{host}“ aus Gruppe entfernt.": "Host “{host}” removed from group."
+  "Host „{host}“ aus Gruppe entfernt.": "Host “{host}” removed from group.",
+  "Version wählen …": "Select version …",
+  "Aktuell": "Current",
+  "Keine Versionen verfügbar": "No versions available",
+  "Zeigt nur Dev-Versionen.": "Shows only dev versions.",
+  "Zeigt nur stabile Versionen.": "Shows only stable versions."
 }

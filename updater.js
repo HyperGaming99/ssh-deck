@@ -50,19 +50,24 @@ async function latest({ repo, url, channel = 'stable', fetch = globalThis.fetch 
 }
 
 // Alle Veröffentlichungen (stabil und Dev), neueste zuerst: zum gezielten Wechseln auf eine andere, auch ältere Version
-async function releases({ repo, fetch = globalThis.fetch }) {
+async function releases({ repo, channel, fetch = globalThis.fetch }) {
   if (!(repo && /^[\w.-]+\/[\w.-]+$/.test(repo))) throw err('NOTFOUND');
   let r;
-  try { r = await fetch(`https://api.github.com/repos/${repo}/releases?per_page=50`, { headers: { accept: 'application/vnd.github+json', 'user-agent': 'ssh-deck' } }); } catch { throw err('NET'); }
+  try { r = await fetch(`https://api.github.com/repos/${repo}/releases?per_page=100`, { headers: { accept: 'application/vnd.github+json', 'user-agent': 'ssh-deck' } }); } catch { throw err('NET'); }
   if (r.status === 404) throw err('NOTFOUND');
   if (!r.ok) throw err('NET');
   const j = await r.json();
   const ver = (x) => String(x.tag_name || '').replace(/^v/i, '');
-  return (Array.isArray(j) ? j : []).filter((x) => !x.draft && /^\d+\.\d+/.test(ver(x))).sort((a, b) => cmp(ver(b), ver(a)))
+  let rels = (Array.isArray(j) ? j : []).filter((x) => !x.draft && /^\d+\.\d+/.test(ver(x))).sort((a, b) => cmp(ver(b), ver(a)))
     .map((x) => {
       const asset = (x.assets || []).find((a) => /\.(tar\.gz|tgz)$/i.test(a.name));
-      return { version: ver(x), prerelease: !!x.prerelease, tarball: (asset && asset.browser_download_url) || x.tarball_url || '', page: x.html_url || '' };
+      const version = ver(x);
+      const isDev = !!x.prerelease || /-dev\./i.test(version) || /-/.test(version);
+      return { version, prerelease: isDev, tarball: (asset && asset.browser_download_url) || x.tarball_url || '', page: x.html_url || '' };
     });
+  if (channel === 'stable') rels = rels.filter((x) => !x.prerelease);
+  else if (channel === 'dev') rels = rels.filter((x) => x.prerelease);
+  return rels;
 }
 
 const run = (cmd, args, cwd) => new Promise((resolve, reject) => {

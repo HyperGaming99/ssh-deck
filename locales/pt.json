@@ -629,5 +629,10 @@
   "Timeout beim Verbinden": "Tempo limite de conexão",
   "Ziehen zum Sortieren": "Arrastar para reordenar",
   "Host „{host}“ in Gruppe „{group}“ verschoben.": "Host \"{host}\" movido para o grupo \"{group}\".",
-  "Host „{host}“ aus Gruppe entfernt.": "Host \"{host}\" removido do grupo."
+  "Host „{host}“ aus Gruppe entfernt.": "Host \"{host}\" removido do grupo.",
+  "Version wählen …": "Selecionar versão …",
+  "Aktuell": "Atual",
+  "Keine Versionen verfügbar": "Nenhuma versão disponível",
+  "Zeigt nur Dev-Versionen.": "Mostra apenas versões de desenvolvimento.",
+  "Zeigt nur stabile Versionen.": "Mostra apenas versões estáveis."
 }

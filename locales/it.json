@@ -629,5 +629,10 @@
   "Timeout beim Verbinden": "Timeout di connessione",
   "Ziehen zum Sortieren": "Trascina per riordinare",
   "Host „{host}“ in Gruppe „{group}“ verschoben.": "Host \"{host}\" spostato nel gruppo \"{group}\".",
-  "Host „{host}“ aus Gruppe entfernt.": "Host \"{host}\" rimosso dal gruppo."
+  "Host „{host}“ aus Gruppe entfernt.": "Host \"{host}\" rimosso dal gruppo.",
+  "Version wählen …": "Seleziona versione …",
+  "Aktuell": "Attuale",
+  "Keine Versionen verfügbar": "Nessuna versione disponibile",
+  "Zeigt nur Dev-Versionen.": "Mostra solo versioni dev.",
+  "Zeigt nur stabile Versionen.": "Mostra solo versioni stabili."
 }

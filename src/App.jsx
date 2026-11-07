@@ -810,12 +810,47 @@ function UpdatesSettings() {
   const [busy, setBusy] = useState(false);
   const [installing, setInstalling] = useState(false);
   const [err, setErr] = useState('');
-  const check = useCallback(async () => { setBusy(true); setErr(''); const r = await api.update.check(); setBusy(false); setRes(r); if (r.error) setErr(r.error); }, []);
-  useEffect(() => { api.settings.get().then((x) => setS({ auto: x.updates?.auto !== false, repo: x.updates?.repo || '', channel: x.updates?.channel === 'dev' ? 'dev' : 'stable' })).then(check); }, [check]);
-  const save = (p) => { const n = { ...s, ...p }; setS(n); api.settings.set({ updates: n }); };
   const [rel, setRel] = useState({ list: [], pick: '' }); // Versionswahl, auch ältere
-  useEffect(() => { api.update.list().then((r) => r.list && setRel({ list: r.list, pick: '' })); }, []);
-  const install = async (v) => { setInstalling(true); setErr(''); const r = await api.update.install(v); if (r.error) { setInstalling(false); setErr(r.error); } };
+
+  const check = useCallback(async () => {
+    setBusy(true); setErr('');
+    const r = await api.update.check();
+    setBusy(false); setRes(r);
+    if (r.error) setErr(r.error);
+    api.update.list().then((l) => l?.list && setRel((prev) => ({ ...prev, list: l.list })));
+  }, []);
+
+  useEffect(() => {
+    api.settings.get().then((x) => setS({
+      auto: x.updates?.auto !== false,
+      repo: x.updates?.repo || '',
+      channel: x.updates?.channel === 'dev' ? 'dev' : 'stable'
+    })).then(check);
+  }, [check]);
+
+  const save = (p) => { const n = { ...s, ...p }; setS(n); api.settings.set({ updates: n }); };
+
+  useEffect(() => {
+    api.update.list().then((r) => r.list && setRel({ list: r.list, pick: '' }));
+  }, []);
+
+  const install = async (v) => {
+    setInstalling(true); setErr('');
+    const r = await api.update.install(v);
+    if (r.error) { setInstalling(false); setErr(r.error); }
+  };
+
+  const isDevRel = (r) => !!r.prerelease || /-dev\./i.test(r.version) || /-/.test(r.version);
+  const channelList = useMemo(() => {
+    return rel.list.filter((r) => (s.channel === 'dev' ? isDevRel(r) : !isDevRel(r)));
+  }, [rel.list, s.channel]);
+
+  useEffect(() => {
+    if (rel.pick && !channelList.some((r) => r.version === rel.pick)) {
+      setRel((prev) => ({ ...prev, pick: '' }));
+    }
+  }, [channelList, rel.pick]);
+
   const row = 'flex items-center justify-between gap-4 rounded-xl border bg-card p-4';
   return (
     <div className="max-w-xl space-y-3">
@@ -838,20 +873,6 @@ function UpdatesSettings() {
         <p className="text-sm font-medium">{t('Automatisch nach Updates suchen')}</p>
         <Switch checked={s.auto} onCheckedChange={(v) => save({ auto: v })} />
       </div>
-      {rel.list.length > 0 && (
-        <div className={cn(row, 'flex-col items-stretch')}>
-          <p className="text-sm font-medium">{t('Andere Version installieren (auch ältere)')}</p>
-          <div className="flex gap-2">
-            <select value={rel.pick} onChange={(e) => setRel({ ...rel, pick: e.target.value })} className="h-9 min-w-0 flex-1 rounded-md border bg-background px-2 text-sm">
-              <option value="" />
-              {rel.list.map((r) => <option key={r.version} value={r.version}>{r.version}{r.version === res?.current ? ' ✓' : ''}</option>)}
-            </select>
-            <Button disabled={!rel.pick || rel.pick === res?.current || installing} onClick={() => (res?.canInstall ? install(rel.pick) : api.update.openPage(rel.pick))}>
-              {res?.canInstall ? t('Installieren und neu starten') : t('Release-Seite öffnen')}
-            </Button>
-          </div>
-        </div>
-      )}
       <div className={cn(row, 'flex-col items-stretch')}>
         <p className="text-sm font-medium">{t('Update-Kanal')}</p>
         <div className="grid grid-cols-2 rounded-lg bg-muted p-1 text-sm">
@@ -861,6 +882,40 @@ function UpdatesSettings() {
           ))}
         </div>
         {s.channel === 'dev' && <p className="text-xs text-muted-foreground">{t('Dev-Versionen erscheinen bei jedem Push und können Fehler enthalten.')}</p>}
+      </div>
+      <div className={cn(row, 'flex-col items-stretch')}>
+        <div>
+          <p className="text-sm font-medium">{t('Andere Version installieren (auch ältere)')}</p>
+          <p className="text-xs text-muted-foreground">
+            {s.channel === 'dev' ? t('Zeigt nur Dev-Versionen.') : t('Zeigt nur stabile Versionen.')}
+          </p>
+        </div>
+        {channelList.length > 0 ? (
+          <div className="flex gap-2">
+            <Select value={rel.pick || undefined} onValueChange={(v) => setRel((prev) => ({ ...prev, pick: v }))}>
+              <SelectTrigger className="h-9 min-w-0 flex-1">
+                <SelectValue placeholder={t('Version wählen …')} />
+              </SelectTrigger>
+              <SelectContent>
+                {channelList.map((r) => (
+                  <SelectItem key={r.version} value={r.version}>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs">{r.version}</span>
+                      {r.version === res?.current && (
+                        <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">{t('Aktuell')}</span>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button disabled={!rel.pick || rel.pick === res?.current || installing} onClick={() => (res?.canInstall ? install(rel.pick) : api.update.openPage(rel.pick))}>
+              {installing ? t('Update wird installiert …') : res?.canInstall ? t('Installieren und neu starten') : t('Release-Seite öffnen')}
+            </Button>
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">{t('Keine Versionen verfügbar')}</p>
+        )}
       </div>
       <div className={cn(row, 'flex-col items-stretch')}>
         <p className="text-sm font-medium">{t('Update-Quelle (GitHub: Besitzer/Repository)')}</p>
@@ -988,8 +1043,6 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
   const [autoRe, setAutoRe] = useState(() => { try { return localStorage.getItem('autoReconnect') !== '0'; } catch { return true; } });
   const [featTab, setFeatTab] = useState('server');
   const [srvStats, setSrvStats] = useState(() => { try { return localStorage.getItem('serverStats') !== '0'; } catch { return true; } });
-  const [dkStats, setDkStats] = useState(() => { try { return localStorage.getItem('dockerStats') !== '0'; } catch { return true; } });
-  const [k8sStats, setK8sStats] = useState(() => { try { return localStorage.getItem('k8sStats') !== '0'; } catch { return true; } });
   const [dotfiles, setDotfiles] = useState(() => { try { return localStorage.getItem('sftpDotfiles') !== '0'; } catch { return true; } });
   const [autoLockMin, setAutoLockMin] = useState(() => { try { return localStorage.getItem('autoLockMin') || '0'; } catch { return '0'; } });
   const [hasLockPin, setHasLockPin] = useState(() => { try { return !!localStorage.getItem('lockPinHash'); } catch { return false; } });
@@ -1045,20 +1098,10 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
               ))}
             </div>
             {featTab === 'server' && (
-              <>
-                <div className={row}>
-                  <div><p className="text-sm font-medium">{t('Server-Status')}</p><p className="text-xs text-muted-foreground">{t('CPU, Arbeitsspeicher, Festplatte und Laufzeit im Terminal anzeigen')}</p></div>
-                  <Switch checked={srvStats} onCheckedChange={(v) => { setSrvStats(v); try { localStorage.setItem('serverStats', v ? '1' : '0'); } catch { /* egal */ } }} />
-                </div>
-                <div className={cn(row, !srvStats && 'opacity-50')}>
-                  <div><p className="text-sm font-medium">{t('Docker-Container')}</p><p className="text-xs text-muted-foreground">{t('Docker-Container im Server-Status anzeigen')}</p></div>
-                  <Switch disabled={!srvStats} checked={dkStats} onCheckedChange={(v) => { setDkStats(v); try { localStorage.setItem('dockerStats', v ? '1' : '0'); } catch { /* egal */ } }} />
-                </div>
-                <div className={cn(row, !srvStats && 'opacity-50')}>
-                  <div><p className="text-sm font-medium">{t('Kubernetes-Pods')}</p><p className="text-xs text-muted-foreground">{t('Kubernetes-Pods im Server-Status anzeigen')}</p></div>
-                  <Switch disabled={!srvStats} checked={k8sStats} onCheckedChange={(v) => { setK8sStats(v); try { localStorage.setItem('k8sStats', v ? '1' : '0'); } catch { /* egal */ } }} />
-                </div>
-              </>
+              <div className={row}>
+                <div><p className="text-sm font-medium">{t('Server-Status')}</p><p className="text-xs text-muted-foreground">{t('CPU, Arbeitsspeicher, Festplatte und Laufzeit im Terminal anzeigen')}</p></div>
+                <Switch checked={srvStats} onCheckedChange={(v) => { setSrvStats(v); try { localStorage.setItem('serverStats', v ? '1' : '0'); } catch { /* egal */ } }} />
+              </div>
             )}
             {featTab === 'terminal' && (
               <>

@@ -629,5 +629,10 @@
   "Timeout beim Verbinden": "Délai de connexion dépassé",
   "Ziehen zum Sortieren": "Glisser pour réorganiser",
   "Host „{host}“ in Gruppe „{group}“ verschoben.": "Hôte « {host} » déplacé dans le groupe « {group} ».",
-  "Host „{host}“ aus Gruppe entfernt.": "Hôte « {host} » retiré du groupe."
+  "Host „{host}“ aus Gruppe entfernt.": "Hôte « {host} » retiré du groupe.",
+  "Version wählen …": "Sélectionner une version …",
+  "Aktuell": "Actuelle",
+  "Keine Versionen verfügbar": "Aucune version disponible",
+  "Zeigt nur Dev-Versionen.": "Affiche uniquement les versions de développement.",
+  "Zeigt nur stabile Versionen.": "Affiche uniquement les versions stables."
 }

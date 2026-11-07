@@ -629,5 +629,10 @@
   "Timeout beim Verbinden": "연결 시간 초과",
   "Ziehen zum Sortieren": "드래그하여 순서 변경",
   "Host „{host}“ in Gruppe „{group}“ verschoben.": "호스트 '{host}'이(가) '{group}' 그룹으로 이동되었습니다.",
-  "Host „{host}“ aus Gruppe entfernt.": "호스트 '{host}'이(가) 그룹에서 제거되었습니다."
+  "Host „{host}“ aus Gruppe entfernt.": "호스트 '{host}'이(가) 그룹에서 제거되었습니다.",
+  "Version wählen …": "버전 선택 …",
+  "Aktuell": "현재",
+  "Keine Versionen verfügbar": "사용 가능한 버전이 없습니다",
+  "Zeigt nur Dev-Versionen.": "개발 버전만 표시합니다.",
+  "Zeigt nur stabile Versionen.": "안정적인 버전만 표시합니다."
 }
