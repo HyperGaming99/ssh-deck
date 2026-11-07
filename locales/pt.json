@@ -565,5 +565,8 @@
   "App gesperrt": "Aplicativo bloqueado",
   "Bitte Sperr-Passwort oder PIN eingeben, um fortzufahren.": "Digite sua senha ou PIN de bloqueio para continuar.",
   "Entsperren": "Desbloquear",
-  "Gespeichert.": "Salvo."
+  "Gespeichert.": "Salvo.",
+  "Schlüssellänge (Bits)": "Tamanho da chave (bits)",
+  "Kurve / Bits": "Curva / bits",
+  "Bits": "bits"
 }

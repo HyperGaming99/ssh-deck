@@ -565,5 +565,8 @@
   "App gesperrt": "アプリはロックされています",
   "Bitte Sperr-Passwort oder PIN eingeben, um fortzufahren.": "続行するにはロック用パスワードまたはPINを入力してください。",
   "Entsperren": "ロック解除",
-  "Gespeichert.": "保存しました。"
+  "Gespeichert.": "保存しました。",
+  "Schlüssellänge (Bits)": "鍵長（ビット）",
+  "Kurve / Bits": "曲線 / ビット",
+  "Bits": "ビット"
 }

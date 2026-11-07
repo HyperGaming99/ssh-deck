@@ -565,5 +565,8 @@
   "App gesperrt": "Приложение заблокировано",
   "Bitte Sperr-Passwort oder PIN eingeben, um fortzufahren.": "Введите пароль или PIN блокировки для продолжения.",
   "Entsperren": "Разблокировать",
-  "Gespeichert.": "Сохранено."
+  "Gespeichert.": "Сохранено.",
+  "Schlüssellänge (Bits)": "Длина ключа (бит)",
+  "Kurve / Bits": "Кривая / бит",
+  "Bits": "бит"
 }

@@ -299,31 +299,85 @@ function KeychainView({ dark, openForm, toast }) {
   });
   const generate = () => openForm({
     title: t('Schlüssel generieren'), description: t('Erzeugt ein neues Schlüsselpaar. Der private Teil wird verschlüsselt gespeichert.'),
-    values: { type: 'ed25519' }, submitLabel: t('Generieren'),
+    values: { type: 'ed25519', rsaBits: '4096', ecdsaBits: '256' }, submitLabel: t('Generieren'),
     fields: [
       { name: 'name', label: t('Name'), required: true },
-      { name: 'type', label: t('Typ'), options: [
-        ['ed25519', t('ED25519 (empfohlen)')],
-        ['rsa-4096', 'RSA (4096 Bits)'],
-        ['rsa-2048', 'RSA (2048 Bits)'],
-        ['rsa-3072', 'RSA (3072 Bits)'],
-        ['ecdsa-256', 'ECDSA (256 Bits / P-256)'],
-        ['ecdsa-384', 'ECDSA (384 Bits / P-384)'],
-        ['ecdsa-521', 'ECDSA (521 Bits / P-521)'],
-      ] },
+      {
+        name: 'type',
+        label: t('Typ'),
+        segmented: true,
+        options: [
+          ['ed25519', 'ED25519'],
+          ['rsa', 'RSA'],
+          ['ecdsa', 'ECDSA'],
+        ],
+      },
+      {
+        name: 'bits',
+        render: (v, set) => {
+          if (v.type === 'rsa') {
+            return (
+              <div className="grid gap-1.5">
+                <Label>{t('Schlüssellänge (Bits)')}</Label>
+                <div className="flex gap-1.5 rounded-lg bg-muted p-1">
+                  {['2048', '3072', '4096'].map((b) => (
+                    <button
+                      key={b}
+                      type="button"
+                      onClick={() => set('rsaBits', b)}
+                      className={cn(
+                        'flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors text-center',
+                        (v.rsaBits || '4096') === b
+                          ? 'bg-background text-foreground shadow-xs font-semibold'
+                          : 'text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      {b} {t('Bits')}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+          if (v.type === 'ecdsa') {
+            return (
+              <div className="grid gap-1.5">
+                <Label>{t('Kurve / Bits')}</Label>
+                <div className="flex gap-1.5 rounded-lg bg-muted p-1">
+                  {[
+                    ['256', 'P-256 (256 Bits)'],
+                    ['384', 'P-384 (384 Bits)'],
+                    ['521', 'P-521 (521 Bits)'],
+                  ].map(([b, lab]) => (
+                    <button
+                      key={b}
+                      type="button"
+                      onClick={() => set('ecdsaBits', b)}
+                      className={cn(
+                        'flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors text-center',
+                        (v.ecdsaBits || '256') === b
+                          ? 'bg-background text-foreground shadow-xs font-semibold'
+                          : 'text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      {lab}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+          return null;
+        },
+      },
       { name: 'comment', label: t('Kommentar (optional)') },
       { name: 'passphrase', label: t('Passphrase (optional)'), type: 'password' },
     ],
     onSubmit: async (v) => {
-      let type = v.type || 'ed25519';
+      const type = v.type || 'ed25519';
       let bits;
-      if (type.startsWith('rsa-')) {
-        bits = Number(type.split('-')[1]);
-        type = 'rsa';
-      } else if (type.startsWith('ecdsa-')) {
-        bits = Number(type.split('-')[1]);
-        type = 'ecdsa';
-      }
+      if (type === 'rsa') bits = Number(v.rsaBits || 4096);
+      if (type === 'ecdsa') bits = Number(v.ecdsaBits || 256);
       const err = await api.keys.generate({ ...v, type, bits, vault });
       err ? toast(err) : load();
     },

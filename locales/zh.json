@@ -565,5 +565,8 @@
   "App gesperrt": "应用已锁定",
   "Bitte Sperr-Passwort oder PIN eingeben, um fortzufahren.": "请输入锁定密码或 PIN 以继续。",
   "Entsperren": "解锁",
-  "Gespeichert.": "已保存。"
+  "Gespeichert.": "已保存。",
+  "Schlüssellänge (Bits)": "密钥长度（位）",
+  "Kurve / Bits": "曲线 / 位",
+  "Bits": "位"
 }

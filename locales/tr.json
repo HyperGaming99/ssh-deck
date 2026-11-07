@@ -565,5 +565,8 @@
   "App gesperrt": "Uygulama kilitli",
   "Bitte Sperr-Passwort oder PIN eingeben, um fortzufahren.": "Devam etmek için lütfen kilit parolanızı veya PIN kodunuzu girin.",
   "Entsperren": "Kilidi aç",
-  "Gespeichert.": "Kaydedildi."
+  "Gespeichert.": "Kaydedildi.",
+  "Schlüssellänge (Bits)": "Anahtar uzunluğu (bit)",
+  "Kurve / Bits": "Eğri / bit",
+  "Bits": "bit"
 }

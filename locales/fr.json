@@ -565,5 +565,8 @@
   "App gesperrt": "Application verrouillée",
   "Bitte Sperr-Passwort oder PIN eingeben, um fortzufahren.": "Veuillez saisir votre mot de passe ou PIN de verrouillage pour continuer.",
   "Entsperren": "Déverrouiller",
-  "Gespeichert.": "Enregistré."
+  "Gespeichert.": "Enregistré.",
+  "Schlüssellänge (Bits)": "Longueur de clé (bits)",
+  "Kurve / Bits": "Courbe / bits",
+  "Bits": "bits"
 }

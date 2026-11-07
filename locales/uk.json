@@ -565,5 +565,8 @@
   "App gesperrt": "Застосунок заблоковано",
   "Bitte Sperr-Passwort oder PIN eingeben, um fortzufahren.": "Введіть пароль або PIN блокування, щоб продовжити.",
   "Entsperren": "Розблокувати",
-  "Gespeichert.": "Збережено."
+  "Gespeichert.": "Збережено.",
+  "Schlüssellänge (Bits)": "Довжина ключа (біт)",
+  "Kurve / Bits": "Крива / біт",
+  "Bits": "біт"
 }

@@ -565,5 +565,8 @@
   "App gesperrt": "ऐप लॉक है",
   "Bitte Sperr-Passwort oder PIN eingeben, um fortzufahren.": "जारी रखने के लिए कृपया लॉक पासवर्ड या पिन दर्ज करें।",
   "Entsperren": "अनलॉक करें",
-  "Gespeichert.": "सहेजा गया।"
+  "Gespeichert.": "सहेजा गया।",
+  "Schlüssellänge (Bits)": "कुंजी की लंबाई (बिट्स)",
+  "Kurve / Bits": "वक्र / बिट्स",
+  "Bits": "बिट्स"
 }

@@ -565,5 +565,8 @@
   "App gesperrt": "App locked",
   "Bitte Sperr-Passwort oder PIN eingeben, um fortzufahren.": "Please enter your lock password or PIN to continue.",
   "Entsperren": "Unlock",
-  "Gespeichert.": "Saved."
+  "Gespeichert.": "Saved.",
+  "Schlüssellänge (Bits)": "Key length (bits)",
+  "Kurve / Bits": "Curve / bits",
+  "Bits": "bits"
 }

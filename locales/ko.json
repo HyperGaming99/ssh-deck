@@ -565,5 +565,8 @@
   "App gesperrt": "앱 잠김",
   "Bitte Sperr-Passwort oder PIN eingeben, um fortzufahren.": "계속하려면 잠금 비밀번호 또는 PIN을 입력하세요.",
   "Entsperren": "잠금 해제",
-  "Gespeichert.": "저장되었습니다."
+  "Gespeichert.": "저장되었습니다.",
+  "Schlüssellänge (Bits)": "키 길이 (비트)",
+  "Kurve / Bits": "곡선 / 비트",
+  "Bits": "비트"
 }

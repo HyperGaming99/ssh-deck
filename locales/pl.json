@@ -565,5 +565,8 @@
   "App gesperrt": "Aplikacja zablokowana",
   "Bitte Sperr-Passwort oder PIN eingeben, um fortzufahren.": "Wprowadź hasło lub PIN blokady, aby kontynuować.",
   "Entsperren": "Odblokuj",
-  "Gespeichert.": "Zapisano."
+  "Gespeichert.": "Zapisano.",
+  "Schlüssellänge (Bits)": "Długość klucza (bity)",
+  "Kurve / Bits": "Krzywa / bity",
+  "Bits": "bitów"
 }

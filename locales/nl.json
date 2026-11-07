@@ -565,5 +565,8 @@
   "App gesperrt": "App vergrendeld",
   "Bitte Sperr-Passwort oder PIN eingeben, um fortzufahren.": "Voer je vergrendelwachtwoord of pincode in om door te gaan.",
   "Entsperren": "Ontgrendelen",
-  "Gespeichert.": "Opgeslagen."
+  "Gespeichert.": "Opgeslagen.",
+  "Schlüssellänge (Bits)": "Sleutellengte (bits)",
+  "Kurve / Bits": "Kromme / bits",
+  "Bits": "bits"
 }

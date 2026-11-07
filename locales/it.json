@@ -565,5 +565,8 @@
   "App gesperrt": "App bloccata",
   "Bitte Sperr-Passwort oder PIN eingeben, um fortzufahren.": "Inserisci la password o il PIN di blocco per continuare.",
   "Entsperren": "Sblocca",
-  "Gespeichert.": "Salvato."
+  "Gespeichert.": "Salvato.",
+  "Schlüssellänge (Bits)": "Lunghezza chiave (bit)",
+  "Kurve / Bits": "Curva / bit",
+  "Bits": "bit"
 }

@@ -565,5 +565,8 @@
   "App gesperrt": "التطبيق مقفل",
   "Bitte Sperr-Passwort oder PIN eingeben, um fortzufahren.": "يرجى إدخال كلمة مرور القفل أو رمز PIN للمتابعة.",
   "Entsperren": "إلغاء القفل",
-  "Gespeichert.": "تم الحفظ."
+  "Gespeichert.": "تم الحفظ.",
+  "Schlüssellänge (Bits)": "طول المفتاح (بت)",
+  "Kurve / Bits": "المنحنى / بت",
+  "Bits": "بت"
 }
