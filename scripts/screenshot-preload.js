@@ -157,6 +157,43 @@ contextBridge.exposeInMainWorld('api', {
     logs: () => ok('2026-11-08T02:00:00Z [INFO] Server started on :80\n2026-11-08T02:00:01Z [INFO] Connected to redis:6379\n2026-11-08T02:00:05Z [INFO] Ready for traffic'),
     describe: () => ok('Name: frontend-web\nReplicas: 2\nStatus: Running'),
   },
+  docker: {
+    overview: () => ok({
+      containers: [
+        { id: 'c1a2b3c4', name: 'web-nginx', image: 'nginx:alpine', state: 'running', status: 'Up 4 hours', running: true, paused: false, ports: '0.0.0.0:80->80/tcp', created: '4 hours ago', size: '23MB', cpu: '0.12%', memory: '18.4MB / 16GB', memPct: '0.11%', netIO: '12MB / 4MB', pids: '3' },
+        { id: 'd2e3f4a5', name: 'postgres-db', image: 'postgres:16', state: 'running', status: 'Up 12 days', running: true, paused: false, ports: '127.0.0.1:5432->5432/tcp', created: '12 days ago', size: '380MB', cpu: '0.45%', memory: '142MB / 16GB', memPct: '0.88%', netIO: '85MB / 92MB', pids: '8' },
+        { id: 'f5a6b7c8', name: 'redis-cache', image: 'redis:7-alpine', state: 'running', status: 'Up 12 days', running: true, paused: false, ports: '127.0.0.1:6379->6379/tcp', created: '12 days ago', size: '35MB', cpu: '0.05%', memory: '24MB / 16GB', memPct: '0.15%', netIO: '34MB / 48MB', pids: '4' },
+      ],
+      images: [
+        { id: 'img1', repository: 'nginx', tag: 'alpine', size: '23.5MB', created: '2 weeks ago' },
+        { id: 'img2', repository: 'postgres', tag: '16', size: '379MB', created: '3 weeks ago' },
+        { id: 'img3', repository: 'redis', tag: '7-alpine', size: '35.1MB', created: '1 month ago' },
+      ],
+      volumes: [
+        { name: 'pgdata', driver: 'local', mountpoint: '/var/lib/docker/volumes/pgdata/_data', scope: 'local' },
+        { name: 'redis_data', driver: 'local', mountpoint: '/var/lib/docker/volumes/redis_data/_data', scope: 'local' },
+      ],
+      networks: [
+        { id: 'net1', name: 'bridge', driver: 'bridge', scope: 'local' },
+        { id: 'net2', name: 'host', driver: 'host', scope: 'local' },
+      ],
+      info: { serverVersion: '27.3.1', operatingSystem: 'Ubuntu 24.04 LTS', arch: 'x86_64', cpus: 8, totalMemory: 16384 },
+    }),
+    start: () => ok({ ok: true }),
+    stop: () => ok({ ok: true }),
+    restart: () => ok({ ok: true }),
+    pause: () => ok({ ok: true }),
+    unpause: () => ok({ ok: true }),
+    remove: () => ok({ ok: true }),
+    logs: () => ok('[INFO] Server started\n[INFO] Connected to database\n[INFO] Listening on port 80'),
+    inspect: () => ok('{\n  "Id": "c1a2b3c4",\n  "State": { "Running": true }\n}'),
+    run: () => ok({ ok: true }),
+    pull: () => ok({ ok: true }),
+    removeImage: () => ok({ ok: true }),
+    removeVolume: () => ok({ ok: true }),
+    removeNetwork: () => ok({ ok: true }),
+    prune: () => ok({ ok: true }),
+  },
   sync: {
     status: () => ok({
       configured: true, email: 'alex@example.com', server: 'https://sync.example.com',

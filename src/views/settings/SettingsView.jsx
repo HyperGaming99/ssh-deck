@@ -75,6 +75,7 @@ export function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogo
   const [autoRe, setAutoRe] = useState(() => { try { return localStorage.getItem('autoReconnect') !== '0'; } catch { return true; } });
   const [featTab, setFeatTab] = useState('server');
   const [srvStats, setSrvStats] = useState(() => { try { return localStorage.getItem('serverStats') !== '0'; } catch { return true; } });
+  const [dockerSetting, setDockerSetting] = useState(() => { try { return localStorage.getItem('dockerFeature') === '1'; } catch { return false; } });
   const [k8sSetting, setK8sSetting] = useState(() => { try { return localStorage.getItem('k8sFeature') === '1'; } catch { return false; } });
   const [hostHealth, setHostHealth] = useState(() => { try { return localStorage.getItem('hostHealth') !== '0'; } catch { return true; } });
   const [dotfiles, setDotfiles] = useState(() => { try { return localStorage.getItem('sftpDotfiles') !== '0'; } catch { return true; } });
@@ -137,6 +138,10 @@ export function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogo
                 <div className={row}>
                   <div><p className="text-sm font-medium">{t('Server-Status')}</p><p className="text-xs text-muted-foreground">{t('CPU, Arbeitsspeicher, Festplatte und Laufzeit im Terminal anzeigen')}</p></div>
                   <Switch checked={srvStats} onCheckedChange={(v) => { setSrvStats(v); try { localStorage.setItem('serverStats', v ? '1' : '0'); } catch { /* egal */ } }} />
+                </div>
+                <div className={row}>
+                  <div><p className="text-sm font-medium">{t('Docker-Manager')}</p><p className="text-xs text-muted-foreground">{t('Eigenen Docker-Reiter in der Hauptnavigation anzeigen')}</p></div>
+                  <Switch checked={dockerSetting} onCheckedChange={(v) => { setDockerSetting(v); try { localStorage.setItem('dockerFeature', v ? '1' : '0'); window.dispatchEvent(new Event('docker-cfg')); } catch { /* egal */ } }} />
                 </div>
                 <div className={row}>
                   <div><p className="text-sm font-medium">{t('Kubernetes-Manager')}</p><p className="text-xs text-muted-foreground">{t('Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen')}</p></div>

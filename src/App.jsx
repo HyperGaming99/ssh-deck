@@ -4,6 +4,7 @@ import {
   Boxes,
   Circle,
   Code2,
+  Container,
   Fingerprint,
   FolderOpen,
   KeyRound,
@@ -42,7 +43,7 @@ import LoginScreen from '@/components/LoginScreen';
 import LanguageSetup from '@/components/LanguageSetup';
 import { IconButton, LockScreen, Pill, UpdateBanner, VaultSwitcher } from '@/components/common';
 import { VaultCtx } from '@/context/VaultContext';
-import { ForwardsView, HostsView, K8sView, KeychainView, KnownHostsView, SettingsView, SnippetsView } from '@/views';
+import { DockerView, ForwardsView, HostsView, K8sView, KeychainView, KnownHostsView, SettingsView, SnippetsView } from '@/views';
 import { I18nContext, RTL, T, makeT } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { fill, vars } from '@/lib/snippetVars.mjs';
@@ -57,6 +58,7 @@ const Wrap = mobile ? 'div' : Fragment; // Handy: Terminal und Tastenleiste unte
 
 const SECTIONS = [
   ['hosts', T('Hosts'), Server],
+  ['docker', T('Docker'), Container],
   ['k8s', T('Kubernetes'), Boxes],
   ['keychain', T('Keychain'), KeyRound],
   ['known', T('Known Hosts'), Fingerprint],
@@ -105,7 +107,16 @@ export default function App() {
   // Sprache: null = noch nie gewählt -> Einrichtung beim ersten Start (kein stilles Englisch)
   const [lang, setLangState] = useState(() => { try { return localStorage.getItem('lang'); } catch { return null; } });
   const setLang = (v) => { setLangState(v); try { localStorage.setItem('lang', v); } catch { /* egal */ } };
+  const [dockerOn, setDockerOn] = useState(() => { try { return localStorage.getItem('dockerFeature') === '1'; } catch { return false; } });
   const [k8sOn, setK8sOn] = useState(() => { try { return localStorage.getItem('k8sFeature') === '1'; } catch { return false; } });
+  useEffect(() => {
+    const onDockerCfg = () => { try { setDockerOn(localStorage.getItem('dockerFeature') === '1'); } catch { /* egal */ } };
+    window.addEventListener('docker-cfg', onDockerCfg);
+    return () => window.removeEventListener('docker-cfg', onDockerCfg);
+  }, []);
+  useEffect(() => {
+    if (!dockerOn && section === 'docker') setSection('hosts');
+  }, [dockerOn, section]);
   useEffect(() => {
     const onCfg = () => { try { setK8sOn(localStorage.getItem('k8sFeature') === '1'); } catch { /* egal */ } };
     window.addEventListener('k8s-cfg', onCfg);
@@ -114,7 +125,7 @@ export default function App() {
   useEffect(() => {
     if (!k8sOn && section === 'k8s') setSection('hosts');
   }, [k8sOn, section]);
-  const visibleSections = useMemo(() => SECTIONS.filter(([id]) => id !== 'k8s' || k8sOn), [k8sOn]);
+  const visibleSections = useMemo(() => SECTIONS.filter(([id]) => (id !== 'k8s' || k8sOn) && (id !== 'docker' || dockerOn)), [k8sOn, dockerOn]);
   const t = useMemo(() => makeT(lang), [lang]);
   const i18n = useMemo(() => ({ t, lang: lang || 'en' }), [t, lang]);
   const [rev, setRev] = useState(0); // erhöht sich, wenn der Server ein Betriebssystem-Icon gesetzt hat
@@ -266,7 +277,7 @@ export default function App() {
   }, []);
   const gate = st && lang !== null && !st.configured && !skip;
   readyRef.current = !!st && lang !== null && !gate; // ohne Konto zuerst der Login-Bildschirm
-  const view = { hosts: HostsView, k8s: K8sView, keychain: KeychainView, known: KnownHostsView, settings: SettingsView, snippets: SnippetsView, forwards: ForwardsView }[section];
+  const view = { hosts: HostsView, docker: DockerView, k8s: K8sView, keychain: KeychainView, known: KnownHostsView, settings: SettingsView, snippets: SnippetsView, forwards: ForwardsView }[section];
   const View = view;
   return (
     <I18nContext.Provider value={i18n}>

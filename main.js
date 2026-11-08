@@ -24,6 +24,7 @@ const updater = require('./updater');
 const teamTools = require('./teams');
 const kcTools = require('./keyvault');
 const k8sTools = require('./k8s');
+const dockerTools = require('./docker');
 const healthTools = require('./health');
 
 const sessions = new Map(); // sid -> { conn, stream }
@@ -1205,8 +1206,8 @@ app.whenReady().then(() => {
     return filePath;
   });
 
-  // Kubernetes Management: lokal oder per SSH-Befehl
-  const execK8s = async (hostId, cmd) => {
+  // Remote- oder lokales Management (Kubernetes, Docker)
+  const execRemoteOrLocal = async (hostId, cmd) => {
     if (!hostId || hostId === 'local') {
       return new Promise((resolve) => {
         const p = spawn('sh', ['-c', cmd], { stdio: ['ignore', 'pipe', 'pipe'] });
@@ -1262,6 +1263,7 @@ app.whenReady().then(() => {
       sshConnectJump(conn, target, sshConfig(target, auth), dialogAsk(target.name), () => {}, false);
     });
   };
+  const execK8s = execRemoteOrLocal;
 
   ipcMain.handle('k8s:overview', async (_, hostId) => {
     const res = await execK8s(hostId, k8sTools.overviewCmd());
@@ -1303,6 +1305,97 @@ app.whenReady().then(() => {
     const res = await execK8s(hostId, k8sTools.describeCmd(spec));
     if (res.error) return { error: res.error };
     return { data: res.stdout || res.stderr || 'Keine Ausgabe' };
+  });
+
+  // Docker Management
+  ipcMain.handle('docker:overview', async (_, hostId) => {
+    const res = await execRemoteOrLocal(hostId, dockerTools.overviewCmd());
+    if (res.error) return { error: res.error };
+    const parsed = dockerTools.parseOverview(res.stdout);
+    if (!parsed) return { error: res.stderr || 'Kein Docker-Daemon gefunden oder keine Berechtigung.' };
+    return { data: parsed };
+  });
+  ipcMain.handle('docker:start', async (_, hostId, spec) => {
+    const res = await execRemoteOrLocal(hostId, dockerTools.startCmd(spec));
+    if (res.error) return { error: res.error };
+    if (res.code !== 0) return { error: res.stderr || 'Starten fehlgeschlagen' };
+    return { data: res.stdout };
+  });
+  ipcMain.handle('docker:stop', async (_, hostId, spec) => {
+    const res = await execRemoteOrLocal(hostId, dockerTools.stopCmd(spec));
+    if (res.error) return { error: res.error };
+    if (res.code !== 0) return { error: res.stderr || 'Stoppen fehlgeschlagen' };
+    return { data: res.stdout };
+  });
+  ipcMain.handle('docker:restart', async (_, hostId, spec) => {
+    const res = await execRemoteOrLocal(hostId, dockerTools.restartCmd(spec));
+    if (res.error) return { error: res.error };
+    if (res.code !== 0) return { error: res.stderr || 'Neustart fehlgeschlagen' };
+    return { data: res.stdout };
+  });
+  ipcMain.handle('docker:pause', async (_, hostId, spec) => {
+    const res = await execRemoteOrLocal(hostId, dockerTools.pauseCmd(spec));
+    if (res.error) return { error: res.error };
+    if (res.code !== 0) return { error: res.stderr || 'Pausieren fehlgeschlagen' };
+    return { data: res.stdout };
+  });
+  ipcMain.handle('docker:unpause', async (_, hostId, spec) => {
+    const res = await execRemoteOrLocal(hostId, dockerTools.unpauseCmd(spec));
+    if (res.error) return { error: res.error };
+    if (res.code !== 0) return { error: res.stderr || 'Fortsetzen fehlgeschlagen' };
+    return { data: res.stdout };
+  });
+  ipcMain.handle('docker:remove', async (_, hostId, spec) => {
+    const res = await execRemoteOrLocal(hostId, dockerTools.removeCmd(spec));
+    if (res.error) return { error: res.error };
+    if (res.code !== 0) return { error: res.stderr || 'Löschen fehlgeschlagen' };
+    return { data: res.stdout };
+  });
+  ipcMain.handle('docker:logs', async (_, hostId, spec) => {
+    const res = await execRemoteOrLocal(hostId, dockerTools.logsCmd(spec));
+    if (res.error) return { error: res.error };
+    return { data: res.stdout || res.stderr || 'Keine Logs vorhanden' };
+  });
+  ipcMain.handle('docker:inspect', async (_, hostId, spec) => {
+    const res = await execRemoteOrLocal(hostId, dockerTools.inspectCmd(spec));
+    if (res.error) return { error: res.error };
+    return { data: res.stdout || res.stderr || 'Keine Ausgabe' };
+  });
+  ipcMain.handle('docker:run', async (_, hostId, spec) => {
+    const res = await execRemoteOrLocal(hostId, dockerTools.runCmd(spec));
+    if (res.error) return { error: res.error };
+    if (res.code !== 0) return { error: res.stderr || 'Befehl fehlgeschlagen' };
+    return { data: res.stdout };
+  });
+  ipcMain.handle('docker:pull', async (_, hostId, spec) => {
+    const res = await execRemoteOrLocal(hostId, dockerTools.pullCmd(spec));
+    if (res.error) return { error: res.error };
+    if (res.code !== 0) return { error: res.stderr || 'Pull fehlgeschlagen' };
+    return { data: res.stdout };
+  });
+  ipcMain.handle('docker:removeImage', async (_, hostId, spec) => {
+    const res = await execRemoteOrLocal(hostId, dockerTools.removeImageCmd(spec));
+    if (res.error) return { error: res.error };
+    if (res.code !== 0) return { error: res.stderr || 'Löschen fehlgeschlagen' };
+    return { data: res.stdout };
+  });
+  ipcMain.handle('docker:removeVolume', async (_, hostId, spec) => {
+    const res = await execRemoteOrLocal(hostId, dockerTools.removeVolumeCmd(spec));
+    if (res.error) return { error: res.error };
+    if (res.code !== 0) return { error: res.stderr || 'Löschen fehlgeschlagen' };
+    return { data: res.stdout };
+  });
+  ipcMain.handle('docker:removeNetwork', async (_, hostId, spec) => {
+    const res = await execRemoteOrLocal(hostId, dockerTools.removeNetworkCmd(spec));
+    if (res.error) return { error: res.error };
+    if (res.code !== 0) return { error: res.stderr || 'Löschen fehlgeschlagen' };
+    return { data: res.stdout };
+  });
+  ipcMain.handle('docker:prune', async (_, hostId, spec) => {
+    const res = await execRemoteOrLocal(hostId, dockerTools.pruneCmd(spec));
+    if (res.error) return { error: res.error };
+    if (res.code !== 0) return { error: res.stderr || 'Aufräumen fehlgeschlagen' };
+    return { data: res.stdout };
   });
   ipcMain.on('ssh:input', (_, sid, d) => sessions.get(sid)?.stream?.write(d));
   ipcMain.on('cred:answer', (_, id, a) => { credAsks.get(id)?.(a); credAsks.delete(id); });
