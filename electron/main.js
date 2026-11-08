@@ -345,7 +345,7 @@ function detectOs(win, conn, h) {
     let out = '';
     stream.on('data', (d) => { if (out.length < 8192) out += d; }).on('close', () => {
       const slug = osIcon(out);
-      if (!slug || !fs.existsSync(path.join(__dirname, 'dist', 'icons', `${slug}.svg`))) return;
+      if (!slug || !fs.existsSync(path.join(__dirname, '..', 'dist', 'icons', `${slug}.svg`))) return;
       hosts.setAutoIcon(h.id, slug);
       scheduleSync();
       if (!win.isDestroyed()) win.webContents.send('hosts:changed');
@@ -560,12 +560,12 @@ const updErr = (e) => {
   return 'Update fehlgeschlagen';
 };
 const updFetch = (url, init) => (torCfg().sync && !torTools.isPrivateHost(new URL(url).hostname) ? torFetch : fetch)(url, init);
-const updCfg = () => { const u = readSettings().updates || {}; return { auto: u.auto !== false, channel: u.channel === 'dev' ? 'dev' : 'stable', repo: u.repo || (require('./package.json').updates || {}).repo || '', url: process.env.SSH_DECK_UPDATE_URL }; };
+const updCfg = () => { const u = readSettings().updates || {}; return { auto: u.auto !== false, channel: u.channel === 'dev' ? 'dev' : 'stable', repo: u.repo || (require('../package.json').updates || {}).repo || '', url: process.env.SSH_DECK_UPDATE_URL }; };
 let updInfo = null, updBusy = false;
 // Installierte Version: nach einem Update steht hier die genaue Version (auch Dev-Build "0.1.4-dev.5"), denn package.json trägt nur die Basis "0.1.4"
 const installedFile = () => path.join(app.getPath('userData'), 'installed-update.json');
 const curVersion = () => {
-  const base = require('./package.json').version;
+  const base = require('../package.json').version;
   try { const i = JSON.parse(fs.readFileSync(installedFile(), 'utf8')); if (i.base === base) return i.version; } catch { /* nie per Update installiert */ }
   return base;
 };
@@ -601,7 +601,7 @@ app.whenReady().then(() => {
   kcFile = path.join(dir, 'keychain-cloud.json');
 
   const win = new BrowserWindow({
-    width: 1200, height: 740, minWidth: 720, minHeight: 480, show: false, icon: path.join(__dirname, 'assets', 'icon-512.png'),
+    width: 1200, height: 740, minWidth: 720, minHeight: 480, show: false, icon: path.join(__dirname, '..', 'assets', 'icon-512.png'),
     ...(process.platform === 'darwin' ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 16, y: 18 } } : { frame: false }), // erst zeigen, wenn gezeichnet: kein weißer Blitz
     backgroundColor: readSettings().dark ? '#0a0a0a' : '#ffffff',
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true },
@@ -609,7 +609,7 @@ app.whenReady().then(() => {
   mainWin = win;
   win.removeMenu();
   win.once('ready-to-show', () => win.show());
-  win.loadFile(path.join(__dirname, 'dist', 'index.html'));
+  win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
 
   const winOf = (e) => BrowserWindow.fromWebContents(e.sender);
   ipcMain.on('win:minimize', (e) => winOf(e).minimize());
@@ -653,7 +653,7 @@ app.whenReady().then(() => {
     if (!pick || updBusy) return { error: 'Update fehlgeschlagen' };
     updBusy = true;
     try {
-      const base = await updater.install({ tarball: pick.tarball, dir: __dirname, fetch: updFetch, onStep: (step) => send('update:step', step) });
+      const base = await updater.install({ tarball: pick.tarball, dir: path.join(__dirname, '..'), fetch: updFetch, onStep: (step) => send('update:step', step) });
       fs.writeFileSync(installedFile(), JSON.stringify({ version: pick.version, base })); // merkt sich z. B. den Dev-Build
     }
     catch (e) { updBusy = false; return { error: updErr(e) }; }

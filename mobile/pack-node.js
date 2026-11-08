@@ -9,7 +9,12 @@ const tmp = path.join(__dirname, 'node-app');
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 
-for (const f of fs.readdirSync(root)) if (/\.js$/.test(f) && !['start.js', 'test.js'].includes(f) && !f.startsWith('vite.')) fs.copyFileSync(path.join(root, f), path.join(out, f));
+const electronDir = path.join(root, 'electron');
+if (fs.existsSync(electronDir)) {
+  for (const f of fs.readdirSync(electronDir)) if (/\.js$/.test(f) && !['start.js'].includes(f)) fs.copyFileSync(path.join(electronDir, f), path.join(out, f));
+} else {
+  for (const f of fs.readdirSync(root)) if (/\.js$/.test(f) && !['start.js', 'test.js'].includes(f) && !f.startsWith('vite.')) fs.copyFileSync(path.join(root, f), path.join(out, f));
+}
 for (const f of ['entry.js', 'electron-shim.js']) fs.copyFileSync(path.join(__dirname, 'node', f), path.join(out, f));
 const pkg = require('../package.json');
 fs.writeFileSync(path.join(out, 'package.json'), JSON.stringify({ name: pkg.name, version: pkg.version, updates: pkg.updates, dependencies: { ssh2: pkg.dependencies.ssh2, socks: pkg.dependencies.socks } }));

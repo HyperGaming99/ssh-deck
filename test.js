@@ -3,9 +3,9 @@ const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { hosts, plain, keys } = require('./store');
-const keyTools = require('./keys');
-const serverStats = require('./serverstats');
+const { hosts, plain, keys } = require('./electron/store');
+const keyTools = require('./electron/keys');
+const serverStats = require('./electron/serverstats');
 {
   const out = '0.50 0.40 0.30 1/200 999\n---\n4\n---\nMemTotal:       8000000 kB\nMemFree: 1 kB\nMemAvailable:   2000000 kB\n---\nFilesystem 1024-blocks Used Available Capacity Mounted on\n/dev/sda1 10000000 4000000 6000000 40% /\n---\n90061.5 1000.0\n';
   const r = serverStats.parse(out);
@@ -85,7 +85,7 @@ assert(fs.readFileSync(path.join(dir, 'h2.json'), 'utf8').includes('ENC:pw'), 'S
 assert.equal(hs2.raw()[0].secret, 'pw');
 
 // Cloud-Sync: Verschlüsselung, Merge, Schlüsselableitung
-const sync = require('./sync');
+const sync = require('./electron/sync');
 const keysA = sync.deriveKeys('A@x.de', 'geheim'), keysB = sync.deriveKeys('a@x.de ', 'geheim');
 assert.deepEqual(keysA.enc, keysB.enc, 'E-Mail wird normalisiert');
 assert.notEqual(keysA.auth, sync.deriveKeys('a@x.de', 'anders').auth);
@@ -237,14 +237,14 @@ const listen = (opts) => new Promise((res) => { const srv = createServer({ db: o
     for (const m of s.matchAll(/\b[tT]\(\s*'((?:[^'\\]|\\.)*)'/g)) used.add(m[1].replace(/\\'/g, "'"));
     for (const m of s.matchAll(/\bt\(\s*"((?:[^"\\]|\\.)*)"/g)) used.add(m[1]);
   }
-  const srv = walk('server').filter((f) => f.endsWith('.js')).map((f) => fs.readFileSync(f, 'utf8')).join('\n'), mainJs = fs.readFileSync('main.js', 'utf8');
+  const srv = walk('server').filter((f) => f.endsWith('.js')).map((f) => fs.readFileSync(f, 'utf8')).join('\n'), mainJs = fs.readFileSync(path.join('electron', 'main.js'), 'utf8');
   const msgs = new Set([
     ...[...srv.matchAll(/fail\(\d+, '([^']+)'/g)].map((m) => m[1]).filter((m) => m !== 'blob fehlt'),
     ...[...mainJs.matchAll(/(?:error: |new Error\()'([^']+)'/g)].map((m) => m[1]),
     ...[...mainJs.matchAll(/return '([A-ZÄÖÜ][^']+)'/g)].map((m) => m[1]),
-    ...[...fs.readFileSync('sync.js', 'utf8').matchAll(/new Error\('([^']+)'/g)].map((m) => m[1]),
-    ...[...fs.readFileSync('importers.js', 'utf8').matchAll(/new Error\('([^']+)'/g)].map((m) => m[1]),
-    ...[...fs.readFileSync('keys.js', 'utf8').matchAll(/new Error\('([^']+)'/g)].map((m) => m[1]),
+    ...[...fs.readFileSync(path.join('electron', 'sync.js'), 'utf8').matchAll(/new Error\('([^']+)'/g)].map((m) => m[1]),
+    ...[...fs.readFileSync(path.join('electron', 'importers.js'), 'utf8').matchAll(/new Error\('([^']+)'/g)].map((m) => m[1]),
+    ...[...fs.readFileSync(path.join('electron', 'keys.js'), 'utf8').matchAll(/new Error\('([^']+)'/g)].map((m) => m[1]),
     'Wähle zuerst einen Host.', // SftpTab
   ]);
   const ph = (s) => (s.match(/\{\w+\}/g) || []).sort().join();
@@ -261,7 +261,7 @@ const listen = (opts) => new Promise((res) => { const srv = createServer({ db: o
 })();
 
 // Tor: private Ziele direkt, Rest über SOCKS5 (echter Mini-Proxy im Test)
-const torTools = require('./tor');
+const torTools = require('./electron/tor');
 for (const h of ['localhost', '127.0.0.1', '10.0.0.50', '192.168.1.5', '172.20.0.1', '169.254.1.1', 'nas', 'pi.local', '::1', 'fd00::1']) assert(torTools.isPrivateHost(h), `${h} ist privat`);
 for (const h of ['example.com', '8.8.8.8', '172.32.0.1', 'abcdefghij234567.onion', '2001:4860:4860::8888']) assert(!torTools.isPrivateHost(h), `${h} ist öffentlich`);
 (async () => {
@@ -314,7 +314,7 @@ for (const h of ['example.com', '8.8.8.8', '172.32.0.1', 'abcdefghij234567.onion
 })().catch((e) => { console.error(e); process.exit(1); });
 
 // Known Hosts: echte ssh2-Verbindung liefert den Host-Schlüssel an hostVerifier
-const knownTools = require('./known');
+const knownTools = require('./electron/known');
 (async () => {
   const { Server, Client, utils } = require('ssh2');
   const hk = utils.generateKeyPairSync('ed25519');
@@ -351,7 +351,7 @@ const knownTools = require('./known');
 })().catch((e) => { console.error(e); process.exit(1); });
 
 // OS-Icon aus os-release
-const { osIcon } = require('./osicon');
+const { osIcon } = require('./electron/osicon');
 assert.equal(osIcon('NAME="Ubuntu"\nID=ubuntu\nID_LIKE=debian\n'), 'ubuntu-linux');
 assert.equal(osIcon('ID="rocky"\nID_LIKE="rhel centos fedora"'), 'rocky-linux');
 assert.equal(osIcon('ID=pop\nID_LIKE="ubuntu debian"'), 'ubuntu-linux', 'Derivat über ID_LIKE');
@@ -400,7 +400,7 @@ assert.equal(s.list().find((x) => x.id === fid).fav, false);
   assert.equal(P.parentPath('C:\\Users', '\\'), 'C:\\', 'Wurzel behält den Schrägstrich');
   assert.equal(P.parentPath('C:\\', '\\'), P.DRIVES, 'über C:\\ kommt die Laufwerksliste');
   assert.equal(P.joinPath(P.DRIVES, 'D:\\', '\\'), 'D:\\', 'Laufwerk aus der Liste öffnen');
-  const sftpT = require('./sftp');
+  const sftpT = require('./electron/sftp');
   assert.deepEqual(sftpT.listDrives((d) => d === 'C:\\' || d === 'E:\\'), ['C:\\', 'E:\\']);
   const dr = sftpT.listLocal('::drives', '/', { platform: 'win32', exists: (d) => d === 'C:\\' });
   assert.deepEqual(dr.entries.map((e) => [e.name, e.dir]), [['C:\\', true]]);
@@ -409,7 +409,7 @@ assert.equal(s.list().find((x) => x.id === fid).fav, false);
 
 // Host-Import: fünf Formate mit Beispieldateien
 (() => {
-  const imp = require('./importers');
+  const imp = require('./electron/importers');
   // ~/.ssh/config: Aliase, Muster werden übersprungen, Standardwerte aus "Host *", ~ wird ersetzt
   const cfg = imp.parseSshConfig(['Host *', '  User deploy', '  Port 2200', '', 'Host web db', '  HostName 10.0.0.5', '  IdentityFile ~/.ssh/id_ed25519', '',
     'Host staging', '  HostName=stage.example.com', '  User root', '  Port 22', '', 'Host *.internal', '  User x', '', 'Match host foo', '  User nope'].join('\n'), { home: '/home/u', defaultUser: 'me' });
@@ -483,7 +483,7 @@ assert.equal(s.list().find((x) => x.id === fid).fav, false);
 })().catch((e) => { console.error(e); process.exit(1); });
 
 // Editor-Erkennung: Fake-PATH mit zwei ausführbaren Dateien
-const editors = require('./editors');
+const editors = require('./electron/editors');
 const bin = path.join(dir, 'bin');
 fs.mkdirSync(bin);
 for (const n of ['gedit', 'code']) fs.writeFileSync(path.join(bin, n), '#!/bin/sh\n', { mode: 0o755 });
@@ -511,7 +511,7 @@ assert.deepEqual(mac[0].args, ['-a', '/Applications/Visual Studio Code.app']);
 assert.equal(mac[0].bin, '/usr/bin/open', 'macOS startet über open -a');
 
 // SFTP: Mock auf lokalem Dateisystem (gleiche Callback-Signaturen wie ssh2)
-const sftpTools = require('./sftp');
+const sftpTools = require('./electron/sftp');
 const cb = (fn) => (...a) => { const done = a.pop(); try { done(null, fn(...a)); } catch (e) { done(e); } };
 const mock = {
   realpath: cb((p) => fs.realpathSync(p)),
@@ -563,7 +563,7 @@ const mock = {
 // Anmeldung: Methoden vom Server erfragen, dann Schlüssel / Passwort / Code abfragen (echte ssh2-Server)
 (async () => {
   const { Client, Server, utils } = require('ssh2');
-  const { createAuth } = require('./auth');
+  const { createAuth } = require('./electron/auth');
   const good = utils.generateKeyPairSync('ed25519');
   const goodPub = utils.parseKey(good.public);
   const hostKey = utils.generateKeyPairSync('ed25519').private;
@@ -613,7 +613,7 @@ const mock = {
 (async () => {
   const http = require('http');
   const { execFileSync } = require('child_process');
-  const updater = require('./updater');
+  const updater = require('./electron/updater');
   assert(updater.isNewer('0.2.0', '0.1.9') && updater.isNewer('v1.0.0', '0.9.9') && !updater.isNewer('0.1.0', '0.1.0') && !updater.isNewer('0.1.0', '0.1.1'), 'Versionsvergleich');
 
   const work = fs.mkdtempSync(path.join(os.tmpdir(), 'deck-upd-test-'));
@@ -668,7 +668,7 @@ const mock = {
 
 // Teams: Schlüsselaustausch, geteilter Tresor, Rollen, Entfernen mit neuem Schlüssel (echter Server, drei Nutzer)
 (async () => {
-  const teams = require('./teams');
+  const teams = require('./electron/teams');
   const { srv, url } = await listen({});
   const mk = async (email) => {
     const k = sync.deriveKeys(email, 'pw'), b = new sync.Backend({ url });
@@ -732,8 +732,8 @@ const mock = {
 
 // Tresore lokal: Team-Einträge bleiben getrennt vom persönlichen Tresor (Speicher, Löschmarker, Anwenden, Entfernen)
 (() => {
-  const teams = require('./teams');
-  const { plain, hosts: mkHosts, keys: mkKeys } = require('./store');
+  const teams = require('./electron/teams');
+  const { plain, hosts: mkHosts, keys: mkKeys } = require('./electron/store');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'deck-vault-'));
   const crypt = { encrypt: (x) => 'enc:' + x, decrypt: (x) => String(x).replace(/^enc:/, '') };
   const st = { hosts: mkHosts(path.join(dir, 'h.json'), crypt), groups: plain(path.join(dir, 'g.json')), snippets: plain(path.join(dir, 's.json')), forwards: plain(path.join(dir, 'f.json')), known: plain(path.join(dir, 'k.json')), keys: mkKeys(path.join(dir, 'keys.json'), crypt) };
@@ -765,7 +765,7 @@ const mock = {
 
 // Gruppen: Anlegen, Farbe & Logo speichern, Bearbeiten, Icons und Custom Logos
 (() => {
-  const { plain, hosts: mkHosts } = require('./store');
+  const { plain, hosts: mkHosts } = require('./electron/store');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'deck-grp-'));
   const crypt = { encrypt: (x) => x, decrypt: (x) => x };
   const grps = plain(path.join(dir, 'g.json'));
@@ -793,7 +793,7 @@ const mock = {
 
 // Host klonen/verschieben zwischen Tresoren (gleiche Logik wie hosts:copy in main.js, hier mit echten Speichern)
 (() => {
-  const { plain, hosts: mkHosts } = require('./store');
+  const { plain, hosts: mkHosts } = require('./electron/store');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'deck-copy-'));
   const crypt = { encrypt: (x) => 'enc:' + x, decrypt: (x) => String(x).replace(/^enc:/, '') };
   const hosts = mkHosts(path.join(dir, 'h.json'), crypt);
@@ -818,8 +818,8 @@ const mock = {
 
 // Cloud-Schlüsselbund: Passwort + Geheimschlüssel, zwei Geräte, Löschen, falsche Eingaben, Server sieht nur Chiffretext (echter Server)
 (async () => {
-  const kc = require('./keyvault');
-  const { keys: mkKeys } = require('./store');
+  const kc = require('./electron/keyvault');
+  const { keys: mkKeys } = require('./electron/store');
   const { srv, url } = await listen({});
   const crypt = { encrypt: (x) => 'enc:' + x, decrypt: (x) => String(x).replace(/^enc:/, '') };
   const k = sync.deriveKeys('kc@t.de', 'pw-kc');
@@ -874,7 +874,7 @@ const mock = {
 // Update-Kanäle: SemVer-Vergleich mit Dev-Builds, Dev-Kanal wählt das höchste Release inkl. Vorabversionen (lokaler Server)
 (async () => {
   const http = require('http');
-  const updater = require('./updater');
+  const updater = require('./electron/updater');
   const lt = (a, b) => assert(updater.cmp(a, b) < 0 && updater.cmp(b, a) > 0, `${a} < ${b}`);
   lt('0.1.3-dev.2', '0.1.3-dev.10'); lt('0.1.3-dev.9', '0.1.3'); lt('0.1.3', '0.1.4-dev.1'); lt('0.1.2', '0.1.3-dev.1');
   assert.equal(updater.cmp('0.1.3', 'v0.1.3'), 0);
@@ -917,8 +917,8 @@ const mock = {
 
 // Jump-Hosts: Kette, Schleifen, Tiefe; Telnet: IAC-Verhandlung
 (() => {
-  const jump = require('./jump');
-  const telnet = require('./telnet');
+  const jump = require('./electron/jump');
+  const telnet = require('./electron/telnet');
   const L = [{ id: 'a' }, { id: 'b', jumpId: 'a' }, { id: 'c', jumpId: 'b' }, { id: 'd', jumpId: 'c' }, { id: 'e', jumpId: 'd' }, { id: 't', protocol: 'telnet' }];
   const get = (id) => L.find((x) => x.id === id);
   assert.deepEqual(jump.chain(get, get('c')).map((x) => x.id), ['a', 'b'], 'außen zuerst');
@@ -950,7 +950,7 @@ const mock = {
 
 // Proxy-Kette / Cloudflare Tunnel
 {
-  const tp = require('./transport');
+  const tp = require('./electron/transport');
   const p = tp.parseProxies('# Kommentar\nsocks5://u:p%40w@a.example:9050\nsocks4://[::1]:1081\nb.example\n');
   assert.deepEqual(p[0], { host: 'a.example', port: 9050, type: 5, userId: 'u', password: 'p@w' });
   assert.deepEqual(p[1], { host: '::1', port: 1081, type: 4 });

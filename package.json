@@ -6,10 +6,10 @@
   },
   "version": "0.1.8",
   "description": "Minimaler SSH-Client im Stil von Termius",
-  "main": "main.js",
+  "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
-    "start": "node start.js",
+    "start": "node electron/start.js",
     "test": "node test.js",
     "build": "vite build",
     "server": "node server/server.js",
@@ -70,10 +70,7 @@
     "npmRebuild": false,
     "asar": true,
     "files": [
-      "*.js",
-      "!test.js",
-      "!start.js",
-      "!vite.config.js",
+      "electron/**/*.js",
       "dist/**/*",
       "assets/icon-512.png",
       "package.json"

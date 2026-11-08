@@ -94,7 +94,7 @@ async function install({ tarball, dir, fetch = globalThis.fetch, exec = run, onS
     let root = out; // GitHub-Pakete haben genau einen Oberordner
     if (!fs.existsSync(path.join(root, 'package.json'))) { const sub = fs.readdirSync(out); if (sub.length === 1) root = path.join(out, sub[0]); }
     let pkg; try { pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')); } catch { throw err('PKG'); }
-    if (pkg.name !== JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8')).name || !fs.existsSync(path.join(root, 'main.js'))) throw err('PKG');
+    if (pkg.name !== JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8')).name || (!fs.existsSync(path.join(root, 'main.js')) && !fs.existsSync(path.join(root, 'electron', 'main.js')))) throw err('PKG');
     const depsChanged = hash(sig(dir)) !== hash(sig(root));
     onStep('backup'); const backup = path.join(tmp, 'backup');
     fs.cpSync(dir, backup, { recursive: true, filter: (s) => !SKIP.test(path.relative(dir, s)) });
