@@ -653,5 +653,9 @@
   "Ändern": "Zmień",
   "Gruppe speichern": "Zapisz grupę",
   "Gruppe erstellen": "Utwórz grupę",
-  "Ungültige Bilddatei.": "Nieprawidłowy plik obrazu."
+  "Ungültige Bilddatei.": "Nieprawidłowy plik obrazu.",
+  "Dateirechte anzeigen": "Pokaż uprawnienia plików",
+  "Rechte-Spalte (rwxr-xr-x / 755) in der SFTP-Dateiliste anzeigen": "Pokaż kolumnę uprawnień (rwxr-xr-x / 755) na liście plików SFTP",
+  "Kubernetes-Manager": "Menedżer Kubernetes",
+  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "Pokaż dedykowaną zakładkę Kubernetes w menu głównym"
 }

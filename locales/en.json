@@ -653,5 +653,9 @@
   "Ändern": "Change",
   "Gruppe speichern": "Save group",
   "Gruppe erstellen": "Create group",
-  "Ungültige Bilddatei.": "Invalid image file."
+  "Ungültige Bilddatei.": "Invalid image file.",
+  "Dateirechte anzeigen": "Show file permissions",
+  "Rechte-Spalte (rwxr-xr-x / 755) in der SFTP-Dateiliste anzeigen": "Show permissions column (rwxr-xr-x / 755) in the SFTP file list",
+  "Kubernetes-Manager": "Kubernetes manager",
+  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "Show dedicated Kubernetes tab in the main navigation"
 }

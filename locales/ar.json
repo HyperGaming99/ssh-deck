@@ -653,5 +653,9 @@
   "Ändern": "تغيير",
   "Gruppe speichern": "حفظ المجموعة",
   "Gruppe erstellen": "إنشاء مجموعة",
-  "Ungültige Bilddatei.": "ملف صورة غير صالح."
+  "Ungültige Bilddatei.": "ملف صورة غير صالح.",
+  "Dateirechte anzeigen": "إظهار أذونات الملفات",
+  "Rechte-Spalte (rwxr-xr-x / 755) in der SFTP-Dateiliste anzeigen": "إظهار عمود الأذونات (rwxr-xr-x / 755) في قائمة ملفات SFTP",
+  "Kubernetes-Manager": "مدير Kubernetes",
+  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "إظهار علامة تبويب Kubernetes مخصصة في شريط التنقل الرئيسي"
 }

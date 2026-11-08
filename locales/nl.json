@@ -653,5 +653,9 @@
   "Ändern": "Wijzigen",
   "Gruppe speichern": "Groep opslaan",
   "Gruppe erstellen": "Groep maken",
-  "Ungültige Bilddatei.": "Ongeldig afbeeldingsbestand."
+  "Ungültige Bilddatei.": "Ongeldig afbeeldingsbestand.",
+  "Dateirechte anzeigen": "Bestandsrechten weergeven",
+  "Rechte-Spalte (rwxr-xr-x / 755) in der SFTP-Dateiliste anzeigen": "Toon rechtenkolom (rwxr-xr-x / 755) in de SFTP-bestandenlijst",
+  "Kubernetes-Manager": "Kubernetes-beheerder",
+  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "Toon eigen Kubernetes-tabblad in de hoofdnavigatie"
 }

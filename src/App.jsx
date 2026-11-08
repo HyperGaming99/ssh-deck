@@ -1181,7 +1181,9 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
   const [autoRe, setAutoRe] = useState(() => { try { return localStorage.getItem('autoReconnect') !== '0'; } catch { return true; } });
   const [featTab, setFeatTab] = useState('server');
   const [srvStats, setSrvStats] = useState(() => { try { return localStorage.getItem('serverStats') !== '0'; } catch { return true; } });
+  const [k8sSetting, setK8sSetting] = useState(() => { try { return localStorage.getItem('k8sFeature') === '1'; } catch { return false; } });
   const [dotfiles, setDotfiles] = useState(() => { try { return localStorage.getItem('sftpDotfiles') !== '0'; } catch { return true; } });
+  const [sftpPerms, setSftpPerms] = useState(() => { try { return localStorage.getItem('sftpPermissions') !== '0'; } catch { return true; } });
   const [autoLockMin, setAutoLockMin] = useState(() => { try { return localStorage.getItem('autoLockMin') || '0'; } catch { return '0'; } });
   const [hasLockPin, setHasLockPin] = useState(() => { try { return !!localStorage.getItem('lockPinHash'); } catch { return false; } });
   const [newPin, setNewPin] = useState('');
@@ -1236,10 +1238,16 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
               ))}
             </div>
             {featTab === 'server' && (
-              <div className={row}>
-                <div><p className="text-sm font-medium">{t('Server-Status')}</p><p className="text-xs text-muted-foreground">{t('CPU, Arbeitsspeicher, Festplatte und Laufzeit im Terminal anzeigen')}</p></div>
-                <Switch checked={srvStats} onCheckedChange={(v) => { setSrvStats(v); try { localStorage.setItem('serverStats', v ? '1' : '0'); } catch { /* egal */ } }} />
-              </div>
+              <>
+                <div className={row}>
+                  <div><p className="text-sm font-medium">{t('Server-Status')}</p><p className="text-xs text-muted-foreground">{t('CPU, Arbeitsspeicher, Festplatte und Laufzeit im Terminal anzeigen')}</p></div>
+                  <Switch checked={srvStats} onCheckedChange={(v) => { setSrvStats(v); try { localStorage.setItem('serverStats', v ? '1' : '0'); } catch { /* egal */ } }} />
+                </div>
+                <div className={row}>
+                  <div><p className="text-sm font-medium">{t('Kubernetes-Manager')}</p><p className="text-xs text-muted-foreground">{t('Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen')}</p></div>
+                  <Switch checked={k8sSetting} onCheckedChange={(v) => { setK8sSetting(v); try { localStorage.setItem('k8sFeature', v ? '1' : '0'); window.dispatchEvent(new Event('k8s-cfg')); } catch { /* egal */ } }} />
+                </div>
+              </>
             )}
             {featTab === 'terminal' && (
               <>
@@ -1262,6 +1270,10 @@ function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lan
                 <div className={row}>
                   <div><p className="text-sm font-medium">{t('Versteckte Dateien anzeigen')}</p><p className="text-xs text-muted-foreground">{t('Dateien und Ordner mit führendem Punkt (.env, .ssh, .git) im SFTP einblenden')}</p></div>
                   <Switch checked={dotfiles} onCheckedChange={(v) => { setDotfiles(v); try { localStorage.setItem('sftpDotfiles', v ? '1' : '0'); window.dispatchEvent(new Event('sftp-dotfiles')); } catch { /* egal */ } }} />
+                </div>
+                <div className={row}>
+                  <div><p className="text-sm font-medium">{t('Dateirechte anzeigen')}</p><p className="text-xs text-muted-foreground">{t('Rechte-Spalte (rwxr-xr-x / 755) in der SFTP-Dateiliste anzeigen')}</p></div>
+                  <Switch checked={sftpPerms} onCheckedChange={(v) => { setSftpPerms(v); try { localStorage.setItem('sftpPermissions', v ? '1' : '0'); window.dispatchEvent(new Event('sftp-permissions')); } catch { /* egal */ } }} />
                 </div>
               </>
             )}
@@ -1506,6 +1518,16 @@ export default function App() {
   // Sprache: null = noch nie gewählt -> Einrichtung beim ersten Start (kein stilles Englisch)
   const [lang, setLangState] = useState(() => { try { return localStorage.getItem('lang'); } catch { return null; } });
   const setLang = (v) => { setLangState(v); try { localStorage.setItem('lang', v); } catch { /* egal */ } };
+  const [k8sOn, setK8sOn] = useState(() => { try { return localStorage.getItem('k8sFeature') === '1'; } catch { return false; } });
+  useEffect(() => {
+    const onCfg = () => { try { setK8sOn(localStorage.getItem('k8sFeature') === '1'); } catch { /* egal */ } };
+    window.addEventListener('k8s-cfg', onCfg);
+    return () => window.removeEventListener('k8s-cfg', onCfg);
+  }, []);
+  useEffect(() => {
+    if (!k8sOn && section === 'k8s') setSection('hosts');
+  }, [k8sOn, section]);
+  const visibleSections = useMemo(() => SECTIONS.filter(([id]) => id !== 'k8s' || k8sOn), [k8sOn]);
   const t = useMemo(() => makeT(lang), [lang]);
   const i18n = useMemo(() => ({ t, lang: lang || 'en' }), [t, lang]);
   const [rev, setRev] = useState(0); // erhöht sich, wenn der Server ein Betriebssystem-Icon gesetzt hat
@@ -1709,7 +1731,7 @@ export default function App() {
         {(navOpen || mobile) && !termActive && (
           <nav className={cn('mnav flex shrink-0 flex-col gap-1 py-3', side === 'wide' ? 'w-56 items-stretch border-r bg-sidebar px-3' : 'items-stretch px-2',
             side === 'compact' && 'w-[84px] border-r bg-sidebar', side === 'float' && 'm-2 mr-0 w-[92px] rounded-2xl border bg-card shadow-sm')}>
-            {SECTIONS.map(([id, label, Icon]) => {
+            {visibleSections.map(([id, label, Icon]) => {
               const on = active === 'home' && section === id;
               return (
                 <button key={id} style={id === 'settings' ? { marginTop: 'auto' } : undefined} onClick={() => { setSection(id); setActive('home'); }}
@@ -1727,7 +1749,7 @@ export default function App() {
           <div className="relative min-h-0 flex-1">
             <div className={cn('mpad absolute inset-0 overflow-auto p-8', active !== 'home' && 'hidden')}>
               <h1 className="mb-6 text-2xl font-semibold">
-                <ShinyText text={t(SECTIONS.find(([id]) => id === section)[1])} color={dark ? '#8a8a8a' : '#52525b'} shineColor={dark ? '#ffffff' : '#2563eb'} speed={4} />
+                <ShinyText text={t((visibleSections.find(([id]) => id === section) || SECTIONS[0])[1])} color={dark ? '#8a8a8a' : '#52525b'} shineColor={dark ? '#ffffff' : '#2563eb'} speed={4} />
               </h1>
               <ErrorBoundary key={section + vault}><View settingsTab={settingsTab} teams={teams} refreshTeams={refreshTeams} vault={activeV.id} setVault={setVault} lang={lang} setLang={setLang} st={st} setDark={setDark} side={side} setSide={setSide} onLogin={() => chooseSkip(false)} onLogout={() => chooseSkip(false)} dark={dark} connect={connect} openSftp={(h) => connect(h, 'sftp')} runSnippet={runSnippet} openForm={setForm} openHost={setHostForm} toast={toast} rev={rev} /></ErrorBoundary>
             </div>

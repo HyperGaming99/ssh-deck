@@ -653,5 +653,9 @@
   "Ändern": "बदलें",
   "Gruppe speichern": "समूह सहेजें",
   "Gruppe erstellen": "समूह बनाएं",
-  "Ungültige Bilddatei.": "अमान्य छवि फ़ाइल।"
+  "Ungültige Bilddatei.": "अमान्य छवि फ़ाइल।",
+  "Dateirechte anzeigen": "फ़ाइल अनुमतियाँ दिखाएं",
+  "Rechte-Spalte (rwxr-xr-x / 755) in der SFTP-Dateiliste anzeigen": "SFTP फ़ाइल सूची में अनुमति कॉलम (rwxr-xr-x / 755) दिखाएं",
+  "Kubernetes-Manager": "कुबेरनेट्स प्रबंधक",
+  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "मुख्य नेविगेशन में समर्पित कुबेरनेट्स टैब दिखाएं"
 }

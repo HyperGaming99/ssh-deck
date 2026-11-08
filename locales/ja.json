@@ -653,5 +653,9 @@
   "Ändern": "変更",
   "Gruppe speichern": "グループを保存",
   "Gruppe erstellen": "グループを作成",
-  "Ungültige Bilddatei.": "無効な画像ファイルです。"
+  "Ungültige Bilddatei.": "無効な画像ファイルです。",
+  "Dateirechte anzeigen": "ファイル権限を表示",
+  "Rechte-Spalte (rwxr-xr-x / 755) in der SFTP-Dateiliste anzeigen": "SFTPファイル一覧で権限列（rwxr-xr-x / 755）を表示",
+  "Kubernetes-Manager": "Kubernetesマネージャー",
+  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "メインナビゲーションに専用のKubernetesタブを表示"
 }

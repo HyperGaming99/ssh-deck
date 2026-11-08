@@ -341,7 +341,7 @@ function TransferBanner({ transfer, onCancel }) {
   );
 }
 
-function Pane({ pane, otherPane, otherSrc, hosts, editors, onReloadEditors, showDotfiles, onToggleDotfiles, onOpenChmod, busy, onDropPane, onDropFiles, onTransfer, transferLabel, openForm, toast }) {
+function Pane({ pane, otherPane, otherSrc, hosts, editors, onReloadEditors, showDotfiles, onToggleDotfiles, showPerms = true, onOpenChmod, busy, onDropPane, onDropFiles, onTransfer, transferLabel, openForm, toast }) {
   const t = useT();
   const lang = useLang();
   const [draft, setDraft] = useState(null);
@@ -758,22 +758,24 @@ function Pane({ pane, otherPane, otherSrc, hosts, editors, onReloadEditors, show
                     {e.dir ? '—' : size(e.size)}
                   </span>
 
-                  <button
-                    type="button"
-                    title={t('Dateirechte …')}
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      onOpenChmod({
-                        name: e.name,
-                        dir: e.dir,
-                        mode: e.mode,
-                        onSubmit: (mode) => act(() => pane.ops.chmod(pane.join(e.name), mode)),
-                      });
-                    }}
-                    className="w-28 shrink-0 rounded px-1 py-0.5 text-right font-mono text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                  >
-                    {fmtMode(e.mode)}
-                  </button>
+                  {showPerms && (
+                    <button
+                      type="button"
+                      title={t('Dateirechte …')}
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        onOpenChmod({
+                          name: e.name,
+                          dir: e.dir,
+                          mode: e.mode,
+                          onSubmit: (mode) => act(() => pane.ops.chmod(pane.join(e.name), mode)),
+                        });
+                      }}
+                      className="w-28 shrink-0 rounded px-1 py-0.5 text-right font-mono text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    >
+                      {fmtMode(e.mode)}
+                    </button>
+                  )}
 
                   <span className="hidden w-24 shrink-0 text-right text-xs text-muted-foreground xl:block">
                     {e.mtime ? new Date(e.mtime).toLocaleDateString(lang) : ''}
@@ -895,10 +897,18 @@ export default function SftpTab({ sid, hostId, active = true, toast, openForm })
     try { localStorage.setItem('sftpDotfiles', next ? '1' : '0'); window.dispatchEvent(new Event('sftp-dotfiles')); } catch { /* egal */ }
     return next;
   });
+  const [showPerms, setShowPerms] = useState(() => { try { return localStorage.getItem('sftpPermissions') !== '0'; } catch { return true; } });
   useEffect(() => {
-    const sync = () => { try { setShowDotfiles(localStorage.getItem('sftpDotfiles') !== '0'); } catch { /* egal */ } };
+    const sync = () => {
+      try { setShowDotfiles(localStorage.getItem('sftpDotfiles') !== '0'); } catch { /* egal */ }
+      try { setShowPerms(localStorage.getItem('sftpPermissions') !== '0'); } catch { /* egal */ }
+    };
     window.addEventListener('sftp-dotfiles', sync);
-    return () => window.removeEventListener('sftp-dotfiles', sync);
+    window.addEventListener('sftp-permissions', sync);
+    return () => {
+      window.removeEventListener('sftp-dotfiles', sync);
+      window.removeEventListener('sftp-permissions', sync);
+    };
   }, []);
   const [transfer, setTransfer] = useState(null);
   const transferringRef = useRef(false);
@@ -1020,6 +1030,7 @@ export default function SftpTab({ sid, hostId, active = true, toast, openForm })
           onReloadEditors={() => api.editors.list().then(setEditors)}
           showDotfiles={showDotfiles}
           onToggleDotfiles={toggleDotfiles}
+          showPerms={showPerms}
           onOpenChmod={setChmodSpec}
           busy={busy}
           onDropPane={onDropPane}
@@ -1069,6 +1080,7 @@ export default function SftpTab({ sid, hostId, active = true, toast, openForm })
           onReloadEditors={() => api.editors.list().then(setEditors)}
           showDotfiles={showDotfiles}
           onToggleDotfiles={toggleDotfiles}
+          showPerms={showPerms}
           onOpenChmod={setChmodSpec}
           busy={busy}
           onDropPane={onDropPane}

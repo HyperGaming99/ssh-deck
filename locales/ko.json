@@ -653,5 +653,9 @@
   "Ändern": "변경",
   "Gruppe speichern": "그룹 저장",
   "Gruppe erstellen": "그룹 생성",
-  "Ungültige Bilddatei.": "잘못된 이미지 파일입니다."
+  "Ungültige Bilddatei.": "잘못된 이미지 파일입니다.",
+  "Dateirechte anzeigen": "파일 권한 표시",
+  "Rechte-Spalte (rwxr-xr-x / 755) in der SFTP-Dateiliste anzeigen": "SFTP 파일 목록에 권한 열(rwxr-xr-x / 755) 표시",
+  "Kubernetes-Manager": "Kubernetes 관리자",
+  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "기본 내비게이션에 전용 Kubernetes 탭 표시"
 }

@@ -653,5 +653,9 @@
   "Ändern": "Alterar",
   "Gruppe speichern": "Salvar grupo",
   "Gruppe erstellen": "Criar grupo",
-  "Ungültige Bilddatei.": "Arquivo de imagem inválido."
+  "Ungültige Bilddatei.": "Arquivo de imagem inválido.",
+  "Dateirechte anzeigen": "Mostrar permissões de arquivo",
+  "Rechte-Spalte (rwxr-xr-x / 755) in der SFTP-Dateiliste anzeigen": "Mostrar coluna de permissões (rwxr-xr-x / 755) na lista de arquivos SFTP",
+  "Kubernetes-Manager": "Gerenciador Kubernetes",
+  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "Mostrar aba dedicada do Kubernetes na navegação principal"
 }

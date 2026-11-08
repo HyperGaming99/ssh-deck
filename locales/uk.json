@@ -653,5 +653,9 @@
   "Ändern": "Змінити",
   "Gruppe speichern": "Зберегти групу",
   "Gruppe erstellen": "Створити групу",
-  "Ungültige Bilddatei.": "Недійсний файл зображення."
+  "Ungültige Bilddatei.": "Недійсний файл зображення.",
+  "Dateirechte anzeigen": "Показувати права доступу до файлів",
+  "Rechte-Spalte (rwxr-xr-x / 755) in der SFTP-Dateiliste anzeigen": "Показувати стовпець прав (rwxr-xr-x / 755) у списку файлів SFTP",
+  "Kubernetes-Manager": "Менеджер Kubernetes",
+  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "Показувати окрему вкладку Kubernetes у головній навігації"
 }

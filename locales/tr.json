@@ -653,5 +653,9 @@
   "Ändern": "Değiştir",
   "Gruppe speichern": "Grubu kaydet",
   "Gruppe erstellen": "Grup oluştur",
-  "Ungültige Bilddatei.": "Geçersiz resim dosyası."
+  "Ungültige Bilddatei.": "Geçersiz resim dosyası.",
+  "Dateirechte anzeigen": "Dosya izinlerini göster",
+  "Rechte-Spalte (rwxr-xr-x / 755) in der SFTP-Dateiliste anzeigen": "SFTP dosya listesinde izinler sütununu (rwxr-xr-x / 755) göster",
+  "Kubernetes-Manager": "Kubernetes yöneticisi",
+  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "Ana gezinmede özel Kubernetes sekmesini göster"
 }
