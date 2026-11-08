@@ -24,3 +24,4 @@ log = "0.4"
 tauri = { version = "2.12.5" }
 tauri-plugin-log = "2"
 libdbus-sys = { version = "0.2.7", features = ["vendored"] }
+tokio = { version = "1", features = ["net", "time", "rt", "sync"] }

@@ -3,6 +3,9 @@ import '@xterm/xterm/css/xterm.css';
 import './index.css';
 import App from './App.jsx';
 import { hideSplash } from './splash.js';
+import { initTauriBridge } from './lib/tauri-bridge.js';
+
+await initTauriBridge();
 
 if (window.api?.mobile) document.documentElement.dataset.mobile = '1'; // Handy-Layout, siehe index.css
 createRoot(document.getElementById('root')).render(<App />);
