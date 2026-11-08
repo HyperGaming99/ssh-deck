@@ -155,6 +155,173 @@ export function createTauriBridge() {
     }
   }).catch(() => {});
 
+  const CURRENT_APP_VERSION = '0.1.8';
+  let cachedReleases = [];
+  let lastUpdInfo = null;
+  const updateListeners = [];
+  const stepListeners = [];
+
+  const splitSemVer = (v) => {
+    const m = String(v).replace(/^v/i, '').match(/^(\d+)\.(\d+)(?:\.(\d+))?(?:-([\w.]+))?/);
+    return m ? { core: [+m[1], +m[2], +(m[3] || 0)], pre: m[4] ? m[4].split('.') : null } : { core: [0, 0, 0], pre: null };
+  };
+
+  function cmpSemVer(a, b) {
+    const x = splitSemVer(a), y = splitSemVer(b);
+    for (let i = 0; i < 3; i++) if (x.core[i] !== y.core[i]) return x.core[i] > y.core[i] ? 1 : -1;
+    if (!x.pre || !y.pre) return x.pre === y.pre ? 0 : x.pre ? -1 : 1;
+    for (let i = 0; i < Math.max(x.pre.length, y.pre.length); i++) {
+      const p = x.pre[i], q = y.pre[i];
+      if (p === undefined || q === undefined) return p === undefined ? -1 : 1;
+      const np = /^\d+$/.test(p), nq = /^\d+$/.test(q);
+      if (np && nq) { if (+p !== +q) return +p > +q ? 1 : -1; } else if (np !== nq) return np ? -1 : 1; else if (p !== q) return p > q ? 1 : -1;
+    }
+    return 0;
+  }
+
+  const isSemVerNewer = (a, b) => cmpSemVer(a, b) > 0;
+  const isSemVerAvailable = (latest, cur, prerelease) =>
+    isSemVerNewer(latest, cur) || (prerelease && !splitSemVer(cur).pre && cmpSemVer(latest.replace(/-.*/, ''), cur) === 0);
+
+  const cleanVer = (x) => String(x.tag_name || x.version || '').replace(/^v/i, '');
+
+  async function fetchGitHubReleases(repo) {
+    const targetRepo = repo && /^[\w.-]+\/[\w.-]+$/.test(repo) ? repo : 'HyperGaming99/ssh-deck';
+    const url = `https://api.github.com/repos/${targetRepo}/releases?per_page=100`;
+    let data = null;
+    try {
+      const res = await fetch(url, { headers: { accept: 'application/vnd.github+json', 'user-agent': 'ssh-deck' } });
+      if (res.ok) {
+        data = await res.json();
+      }
+    } catch (err) {
+      console.warn('Direct fetch failed, falling back to curl:', err);
+    }
+
+    if (!data || !Array.isArray(data)) {
+      try {
+        const curlRes = await invoke('deck_shell_cmd', { cmd: `curl -s -H "User-Agent: ssh-deck" -H "Accept: application/vnd.github+json" "${url}"` });
+        if (curlRes?.stdout) {
+          data = JSON.parse(curlRes.stdout);
+        }
+      } catch (e) {
+        console.warn('Curl fallback failed:', e);
+      }
+    }
+
+    if (!Array.isArray(data)) {
+      throw new Error('Update-Quelle nicht erreichbar');
+    }
+
+    return data
+      .filter((x) => !x.draft && /^\d+\.\d+/.test(cleanVer(x)))
+      .sort((a, b) => cmpSemVer(cleanVer(b), cleanVer(a)));
+  }
+
+  async function doCheckUpdate() {
+    const cur = CURRENT_APP_VERSION;
+    try {
+      const s = await bridge.settings.get().catch(() => ({}));
+      const upCfg = s?.updates || {};
+      const repo = (upCfg.repo || 'HyperGaming99/ssh-deck').trim();
+      const channel = upCfg.channel === 'dev' ? 'dev' : 'stable';
+
+      const rawList = await fetchGitHubReleases(repo);
+      cachedReleases = rawList;
+
+      let target = null;
+      if (channel === 'dev') {
+        target = rawList.find((x) => !!x.prerelease || /-dev\./i.test(cleanVer(x)) || /-/.test(cleanVer(x))) || rawList[0];
+      } else {
+        target = rawList.find((x) => !x.prerelease && !/-dev\./i.test(cleanVer(x)) && !/-/.test(cleanVer(x))) || rawList[0];
+      }
+
+      if (!target) {
+        lastUpdInfo = { current: cur, latest: cur, channel, available: false, canInstall: false };
+        return lastUpdInfo;
+      }
+
+      const latestVer = cleanVer(target);
+      const isPre = !!target.prerelease || /-dev\./i.test(latestVer) || /-/.test(latestVer);
+      const available = isSemVerAvailable(latestVer, cur, isPre);
+      const asset = (target.assets || []).find((a) => /\.(tar\.gz|tgz|deb|rpm|AppImage|exe|dmg|zip)$/i.test(a.name));
+
+      lastUpdInfo = {
+        current: cur,
+        latest: latestVer,
+        channel,
+        prerelease: isPre,
+        available,
+        notes: target.body || '',
+        page: target.html_url || `https://github.com/${repo}/releases`,
+        tarball: (asset && asset.browser_download_url) || target.tarball_url || '',
+        canInstall: false,
+      };
+
+      if (available) {
+        updateListeners.forEach((fn) => {
+          try { fn({ latest: latestVer, canInstall: false }); } catch {}
+        });
+      }
+
+      return lastUpdInfo;
+    } catch (err) {
+      return { current: cur, error: err?.message || 'Update-Quelle nicht erreichbar' };
+    }
+  }
+
+  async function doListReleases() {
+    const cur = CURRENT_APP_VERSION;
+    try {
+      const s = await bridge.settings.get().catch(() => ({}));
+      const upCfg = s?.updates || {};
+      const repo = (upCfg.repo || 'HyperGaming99/ssh-deck').trim();
+
+      if (!cachedReleases || cachedReleases.length === 0) {
+        cachedReleases = await fetchGitHubReleases(repo);
+      }
+
+      const list = cachedReleases.map((x) => {
+        const version = cleanVer(x);
+        const isDev = !!x.prerelease || /-dev\./i.test(version) || /-/.test(version);
+        const asset = (x.assets || []).find((a) => /\.(tar\.gz|tgz|deb|rpm|AppImage|exe|dmg|zip)$/i.test(a.name));
+        return {
+          version,
+          name: x.name || version,
+          prerelease: isDev,
+          tarball: (asset && asset.browser_download_url) || x.tarball_url || '',
+          page: x.html_url || `https://github.com/${repo}/releases`,
+          publishedAt: x.published_at || x.created_at || '',
+          notes: x.body || '',
+        };
+      });
+
+      return { current: cur, list };
+    } catch (err) {
+      return { current: cur, list: [], error: err?.message || 'Update-Quelle nicht erreichbar' };
+    }
+  }
+
+  async function doOpenReleasePage(verOrUrl) {
+    let url = '';
+    if (verOrUrl && String(verOrUrl).startsWith('http')) {
+      url = verOrUrl;
+    } else if (verOrUrl) {
+      const match = cachedReleases.find((x) => cleanVer(x) === String(verOrUrl));
+      url = match?.html_url || `https://github.com/HyperGaming99/ssh-deck/releases/tag/v${verOrUrl}`;
+    } else if (lastUpdInfo?.page) {
+      url = lastUpdInfo.page;
+    } else {
+      url = 'https://github.com/HyperGaming99/ssh-deck/releases';
+    }
+
+    try {
+      await invoke('deck_shell_cmd', { cmd: `xdg-open "${url}" || open "${url}"` });
+    } catch {
+      window.open(url, '_blank');
+    }
+  }
+
   const bridge = {
     platform,
     isTauri,
@@ -399,12 +566,19 @@ export function createTauriBridge() {
       onChanged: () => {},
     },
     update: {
-      check: async () => null,
-      install: async () => {},
-      openPage: async () => {},
-      list: async () => [],
-      onAvailable: () => {},
-      onStep: () => {},
+      check: doCheckUpdate,
+      install: async (ver) => {
+        await doOpenReleasePage(ver);
+        return { ok: true };
+      },
+      openPage: doOpenReleasePage,
+      list: doListReleases,
+      onAvailable: (cb) => {
+        if (typeof cb === 'function') updateListeners.push(cb);
+      },
+      onStep: (cb) => {
+        if (typeof cb === 'function') stepListeners.push(cb);
+      },
     },
     settings: {
       get: async () => {
