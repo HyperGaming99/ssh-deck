@@ -5,6 +5,7 @@ import {
   AppWindowMac,
   Box,
   Check,
+  Clock,
   Columns,
   Cpu,
   Download,
