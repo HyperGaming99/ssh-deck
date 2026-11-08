@@ -332,7 +332,7 @@ fn keys_rescan() -> Result<usize, String> {
         return Ok(0);
     }
 
-    let mut keys_val = deck_store_read("keys".into()).unwrap_or(serde_json::json!([]));
+    let keys_val = deck_store_read("keys".into()).unwrap_or(serde_json::json!([]));
     let mut keys_list = keys_val.as_array().cloned().unwrap_or_default();
 
     let mut known_paths: std::collections::HashSet<String> = keys_list
