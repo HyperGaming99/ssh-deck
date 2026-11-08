@@ -729,5 +729,12 @@
   "Pull fehlgeschlagen": "Fallo al descargar",
   "Aufräumen fehlgeschlagen": "Fallo al limpiar",
   "Startet einen neuen Docker-Container auf der gewählten Verbindung.": "Inicia un nuevo contenedor Docker en la conexión seleccionada.",
-  "Lädt das angegebene Image aus der Container-Registry herunter.": "Descarga la imagen especificada del registro de contenedores."
+  "Lädt das angegebene Image aus der Container-Registry herunter.": "Descarga la imagen especificada del registro de contenedores.",
+  "Sitzungs-Inaktivitäts-Timeout": "Tiempo de espera de inactividad de sesión",
+  "Trennt inaktive SSH-Sitzungen nach bestimmter Zeit automatisch": "Desconecta automáticamente las sesiones SSH inactivas tras un tiempo establecido",
+  "Zwischenablage automatisch leeren": "Vaciar portapapeles automáticamente",
+  "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "Borra contraseñas confidenciales del portapapeles después de 30 segundos",
+  "Sitzung „{title}“ wegen Inaktivität getrennt.": "Sesión “{title}” desconectada por inactividad.",
+  "60 min": "60 min",
+  "Unverschlüsselte Verbindung (Telnet)": "Conexión no cifrada (Telnet)"
 }

@@ -729,5 +729,12 @@
   "Pull fehlgeschlagen": "Pull failed",
   "Aufräumen fehlgeschlagen": "Prune failed",
   "Startet einen neuen Docker-Container auf der gewählten Verbindung.": "Starts a new Docker container on the selected connection.",
-  "Lädt das angegebene Image aus der Container-Registry herunter.": "Downloads the specified image from the container registry."
+  "Lädt das angegebene Image aus der Container-Registry herunter.": "Downloads the specified image from the container registry.",
+  "Sitzungs-Inaktivitäts-Timeout": "Session inactivity timeout",
+  "Trennt inaktive SSH-Sitzungen nach bestimmter Zeit automatisch": "Automatically disconnects inactive SSH sessions after a set time",
+  "Zwischenablage automatisch leeren": "Auto-clear clipboard",
+  "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "Clears sensitive passwords from clipboard after 30 seconds",
+  "Sitzung „{title}“ wegen Inaktivität getrennt.": "Session “{title}” disconnected due to inactivity.",
+  "60 min": "60 min",
+  "Unverschlüsselte Verbindung (Telnet)": "Unencrypted connection (Telnet)"
 }

@@ -23,7 +23,12 @@ export default function ConnectScreen({ conn, onAnswer, onClose, onEdit, onRetry
       <div className="w-[396px] space-y-6 pb-10">
         <div className="flex items-center gap-3">
           <div className="grid size-10 place-items-center rounded-xl bg-primary/15 [&>img]:size-6">{info.icon || info.autoIcon ? <HostIcon slug={info.icon || info.autoIcon} /> : <Server className="size-5 text-primary" />}</div>
-          <div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold">{info.name}</div><div className="truncate text-xs text-muted-foreground">SSH {info.host}:{info.port}</div></div>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-semibold">{info.name}</div>
+            <div className={cn("truncate text-xs", info.protocol === 'telnet' ? "font-medium text-amber-500" : "text-muted-foreground")}>
+              {info.protocol === 'telnet' ? t('Unverschlüsselte Verbindung (Telnet)') : `SSH ${info.host}:${info.port}`}
+            </div>
+          </div>
           {failed
             ? <Button variant="secondary" size="sm" onClick={() => navigator.clipboard?.writeText(conn.log.join('\n'))}>{t('Logs kopieren')}</Button>
             : <Button variant="secondary" size="sm" onClick={() => setShowLog(!showLog)}>{showLog ? t('Logs ausblenden') : t('Logs anzeigen')}</Button>}

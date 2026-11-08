@@ -81,6 +81,8 @@ export function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogo
   const [dotfiles, setDotfiles] = useState(() => { try { return localStorage.getItem('sftpDotfiles') !== '0'; } catch { return true; } });
   const [sftpPerms, setSftpPerms] = useState(() => { try { return localStorage.getItem('sftpPermissions') !== '0'; } catch { return true; } });
   const [autoLockMin, setAutoLockMin] = useState(() => { try { return localStorage.getItem('autoLockMin') || '0'; } catch { return '0'; } });
+  const [sessionTimeout, setSessionTimeout] = useState(() => { try { return localStorage.getItem('sessionTimeoutMin') || '0'; } catch { return '0'; } });
+  const [clipboardClear, setClipboardClear] = useState(() => { try { return localStorage.getItem('clipboardClear') === '1'; } catch { return false; } });
   const [hasLockPin, setHasLockPin] = useState(() => { try { return !!localStorage.getItem('lockPinHash'); } catch { return false; } });
   const [newPin, setNewPin] = useState('');
   const pickEditor = (v) => { setEditor(v); api.settings.set({ editor: v }); };
@@ -194,6 +196,23 @@ export function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogo
                       <SelectItem value="30">30 min</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div className={row}>
+                  <div><p className="text-sm font-medium">{t('Sitzungs-Inaktivitäts-Timeout')}</p><p className="text-xs text-muted-foreground">{t('Trennt inaktive SSH-Sitzungen nach bestimmter Zeit automatisch')}</p></div>
+                  <Select value={sessionTimeout} onValueChange={(v) => { setSessionTimeout(v); try { localStorage.setItem('sessionTimeoutMin', v); window.dispatchEvent(new Event('session-timeout-cfg')); } catch { /* egal */ } }}>
+                    <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">{t('Aus')}</SelectItem>
+                      <SelectItem value="5">5 min</SelectItem>
+                      <SelectItem value="15">15 min</SelectItem>
+                      <SelectItem value="30">30 min</SelectItem>
+                      <SelectItem value="60">{t('60 min')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className={row}>
+                  <div><p className="text-sm font-medium">{t('Zwischenablage automatisch leeren')}</p><p className="text-xs text-muted-foreground">{t('Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage')}</p></div>
+                  <Switch checked={clipboardClear} onCheckedChange={(v) => { setClipboardClear(v); try { localStorage.setItem('clipboardClear', v ? '1' : '0'); window.dispatchEvent(new Event('clipboard-clear-cfg')); } catch { /* egal */ } }} />
                 </div>
                 <div className={cn(row, 'flex-col items-stretch')}>
                   <div className="flex items-center justify-between gap-2">

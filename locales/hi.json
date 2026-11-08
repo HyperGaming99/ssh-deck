@@ -729,5 +729,12 @@
   "Pull fehlgeschlagen": "पुल विफल",
   "Aufräumen fehlgeschlagen": "सफाई विफल",
   "Startet einen neuen Docker-Container auf der gewählten Verbindung.": "चयनित कनेक्शन पर एक नया डॉकर कंटेनर शुरू करता है।",
-  "Lädt das angegebene Image aus der Container-Registry herunter.": "कंटेनर रजिस्ट्री से निर्दिष्ट छवि डाउनलोड करता है।"
+  "Lädt das angegebene Image aus der Container-Registry herunter.": "कंटेनर रजिस्ट्री से निर्दिष्ट छवि डाउनलोड करता है।",
+  "Sitzungs-Inaktivitäts-Timeout": "सत्र निष्क्रियता समय समाप्ति",
+  "Trennt inaktive SSH-Sitzungen nach bestimmter Zeit automatisch": "निर्धारित समय के बाद निष्क्रिय एसएसएच सत्रों को स्वचालित रूप से डिस्कनेक्ट करता है",
+  "Zwischenablage automatisch leeren": "क्लिपबोर्ड स्वचालित रूप से साफ़ करें",
+  "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "30 सेकंड के बाद क्लिपबोर्ड से संवेदनशील पासवर्ड साफ़ करता है",
+  "Sitzung „{title}“ wegen Inaktivität getrennt.": "निष्क्रियता के कारण सत्र “{title}” डिस्कनेक्ट हो गया।",
+  "60 min": "60 मिनट",
+  "Unverschlüsselte Verbindung (Telnet)": "अनएन्क्रिप्टेड कनेक्शन (टेल्नेट)"
 }

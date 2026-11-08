@@ -729,5 +729,12 @@
   "Pull fehlgeschlagen": "Échec du téléchargement",
   "Aufräumen fehlgeschlagen": "Échec du nettoyage",
   "Startet einen neuen Docker-Container auf der gewählten Verbindung.": "Démarre un nouveau conteneur Docker sur la connexion sélectionnée.",
-  "Lädt das angegebene Image aus der Container-Registry herunter.": "Télécharge l'image spécifiée depuis le registre de conteneurs."
+  "Lädt das angegebene Image aus der Container-Registry herunter.": "Télécharge l'image spécifiée depuis le registre de conteneurs.",
+  "Sitzungs-Inaktivitäts-Timeout": "Délai d'inactivité de la session",
+  "Trennt inaktive SSH-Sitzungen nach bestimmter Zeit automatisch": "Déconnecte automatiquement les sessions SSH inactives après un délai défini",
+  "Zwischenablage automatisch leeren": "Effacement automatique du presse-papiers",
+  "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "Efface les mots de passe sensibles du presse-papiers après 30 secondes",
+  "Sitzung „{title}“ wegen Inaktivität getrennt.": "Session « {title} » déconnectée en raison de l'inactivité.",
+  "60 min": "60 min",
+  "Unverschlüsselte Verbindung (Telnet)": "Connexion non chiffrée (Telnet)"
 }

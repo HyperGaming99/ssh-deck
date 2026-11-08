@@ -729,5 +729,12 @@
   "Pull fehlgeschlagen": "取得に失敗しました",
   "Aufräumen fehlgeschlagen": "クリーンアップに失敗しました",
   "Startet einen neuen Docker-Container auf der gewählten Verbindung.": "選択した接続で新しいDockerコンテナを開始します。",
-  "Lädt das angegebene Image aus der Container-Registry herunter.": "コンテナレジストリから指定されたイメージをダウンロードします。"
+  "Lädt das angegebene Image aus der Container-Registry herunter.": "コンテナレジストリから指定されたイメージをダウンロードします。",
+  "Sitzungs-Inaktivitäts-Timeout": "セッション非アクティブタイムアウト",
+  "Trennt inaktive SSH-Sitzungen nach bestimmter Zeit automatisch": "設定した時間が経過すると、非アクティブなSSHセッションを自動的に切断します",
+  "Zwischenablage automatisch leeren": "クリップボードの自動消去",
+  "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "30秒後にクリップボードから機密パスワードを消去します",
+  "Sitzung „{title}“ wegen Inaktivität getrennt.": "非アクティブのためセッション「{title}」を切断しました。",
+  "60 min": "60分",
+  "Unverschlüsselte Verbindung (Telnet)": "非暗号化接続 (Telnet)"
 }

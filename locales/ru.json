@@ -729,5 +729,12 @@
   "Pull fehlgeschlagen": "Не удалось загрузить",
   "Aufräumen fehlgeschlagen": "Не удалось очистить",
   "Startet einen neuen Docker-Container auf der gewählten Verbindung.": "Запускает новый контейнер Docker на выбранном соединении.",
-  "Lädt das angegebene Image aus der Container-Registry herunter.": "Загружает указанный образ из реестра контейнеров."
+  "Lädt das angegebene Image aus der Container-Registry herunter.": "Загружает указанный образ из реестра контейнеров.",
+  "Sitzungs-Inaktivitäts-Timeout": "Тайм-аут неактивности сессии",
+  "Trennt inaktive SSH-Sitzungen nach bestimmter Zeit automatisch": "Автоматически закрывает неактивные SSH-сессии через заданное время",
+  "Zwischenablage automatisch leeren": "Автоочистка буфера обмена",
+  "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "Удаляет пароли из буфера обмена через 30 секунд",
+  "Sitzung „{title}“ wegen Inaktivität getrennt.": "Сессия «{title}» отключена из-за неактивности.",
+  "60 min": "60 мин",
+  "Unverschlüsselte Verbindung (Telnet)": "Незашифрованное соединение (Telnet)"
 }

@@ -729,5 +729,12 @@
   "Pull fehlgeschlagen": "Çekme başarısız",
   "Aufräumen fehlgeschlagen": "Temizleme başarısız",
   "Startet einen neuen Docker-Container auf der gewählten Verbindung.": "Seçilen bağlantıda yeni bir Docker konteyneri başlatır.",
-  "Lädt das angegebene Image aus der Container-Registry herunter.": "Belirtilen imajı konteyner kayıt defterinden indirir."
+  "Lädt das angegebene Image aus der Container-Registry herunter.": "Belirtilen imajı konteyner kayıt defterinden indirir.",
+  "Sitzungs-Inaktivitäts-Timeout": "Oturum hareketsizlik zaman aşımı",
+  "Trennt inaktive SSH-Sitzungen nach bestimmter Zeit automatisch": "Belirli bir süre sonra etkin olmayan SSH oturumlarını otomatik olarak sonlandırır",
+  "Zwischenablage automatisch leeren": "Panoyu otomatik temizle",
+  "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "Hassas parolaları 30 saniye sonra panodan temizler",
+  "Sitzung „{title}“ wegen Inaktivität getrennt.": "“{title}” oturumu hareketsizlik nedeniyle sonlandırıldı.",
+  "60 min": "60 dk",
+  "Unverschlüsselte Verbindung (Telnet)": "Şifrelenmemiş bağlantı (Telnet)"
 }

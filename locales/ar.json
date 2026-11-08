@@ -729,5 +729,12 @@
   "Pull fehlgeschlagen": "فشل السحب",
   "Aufräumen fehlgeschlagen": "فشل التنظيف",
   "Startet einen neuen Docker-Container auf der gewählten Verbindung.": "يبدأ حاوية Docker جديدة على الاتصال المحدد.",
-  "Lädt das angegebene Image aus der Container-Registry herunter.": "يقوم بتنزيل الصورة المحددة من سجل الحاويات."
+  "Lädt das angegebene Image aus der Container-Registry herunter.": "يقوم بتنزيل الصورة المحددة من سجل الحاويات.",
+  "Sitzungs-Inaktivitäts-Timeout": "مهلة عدم نشاط الجلسة",
+  "Trennt inaktive SSH-Sitzungen nach bestimmter Zeit automatisch": "يفصل جلسات SSH غير النشطة تلقائياً بعد وقت محدد",
+  "Zwischenablage automatisch leeren": "مسح الحافظة تلقائياً",
+  "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "يمسح كلمات المرور الحساسة من الحافظة بعد 30 ثانية",
+  "Sitzung „{title}“ wegen Inaktivität getrennt.": "تم فصل الجلسة “{title}” بسبب عدم النشاط.",
+  "60 min": "60 دقيقة",
+  "Unverschlüsselte Verbindung (Telnet)": "اتصال غير مشفر (Telnet)"
 }

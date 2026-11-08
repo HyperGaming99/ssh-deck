@@ -729,5 +729,12 @@
   "Pull fehlgeschlagen": "Ophalen mislukt",
   "Aufräumen fehlgeschlagen": "Opruimen mislukt",
   "Startet einen neuen Docker-Container auf der gewählten Verbindung.": "Start een nieuwe Docker-container op de geselecteerde verbinding.",
-  "Lädt das angegebene Image aus der Container-Registry herunter.": "Downloadt de opgegeven image uit het containerregister."
+  "Lädt das angegebene Image aus der Container-Registry herunter.": "Downloadt de opgegeven image uit het containerregister.",
+  "Sitzungs-Inaktivitäts-Timeout": "Sessie-inactiviteitstime-out",
+  "Trennt inaktive SSH-Sitzungen nach bestimmter Zeit automatisch": "Verbreekt automatisch inactieve SSH-sessies na een ingestelde tijd",
+  "Zwischenablage automatisch leeren": "Klembord automatisch wissen",
+  "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "Wist gevoelige wachtwoorden na 30 seconden van het klembord",
+  "Sitzung „{title}“ wegen Inaktivität getrennt.": "Sessie “{title}” verbroken wegens inactiviteit.",
+  "60 min": "60 min",
+  "Unverschlüsselte Verbindung (Telnet)": "Niet-versleutelde verbinding (Telnet)"
 }

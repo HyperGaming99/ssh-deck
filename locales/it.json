@@ -729,5 +729,12 @@
   "Pull fehlgeschlagen": "Download non riuscito",
   "Aufräumen fehlgeschlagen": "Pulizia non riuscita",
   "Startet einen neuen Docker-Container auf der gewählten Verbindung.": "Avvia un nuovo container Docker sulla connessione selezionata.",
-  "Lädt das angegebene Image aus der Container-Registry herunter.": "Scarica l'immagine specificata dal registro dei container."
+  "Lädt das angegebene Image aus der Container-Registry herunter.": "Scarica l'immagine specificata dal registro dei container.",
+  "Sitzungs-Inaktivitäts-Timeout": "Timeout di inattività della sessione",
+  "Trennt inaktive SSH-Sitzungen nach bestimmter Zeit automatisch": "Disconnette automaticamente le sessioni SSH inattive dopo un periodo stabilito",
+  "Zwischenablage automatisch leeren": "Svuota automaticamente gli appunti",
+  "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "Cancella le password sensibili dagli appunti dopo 30 secondi",
+  "Sitzung „{title}“ wegen Inaktivität getrennt.": "Sessione “{title}” disconnessa per inattività.",
+  "60 min": "60 min",
+  "Unverschlüsselte Verbindung (Telnet)": "Connessione non crittografata (Telnet)"
 }

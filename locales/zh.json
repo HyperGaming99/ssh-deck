@@ -729,5 +729,12 @@
   "Pull fehlgeschlagen": "拉取失败",
   "Aufräumen fehlgeschlagen": "清理失败",
   "Startet einen neuen Docker-Container auf der gewählten Verbindung.": "在所选连接上启动新的 Docker 容器。",
-  "Lädt das angegebene Image aus der Container-Registry herunter.": "从容器注册表中下载指定的镜像。"
+  "Lädt das angegebene Image aus der Container-Registry herunter.": "从容器注册表中下载指定的镜像。",
+  "Sitzungs-Inaktivitäts-Timeout": "会话不活跃超时",
+  "Trennt inaktive SSH-Sitzungen nach bestimmter Zeit automatisch": "在设定时间后自动断开不活跃的 SSH 会话",
+  "Zwischenablage automatisch leeren": "自动清空剪贴板",
+  "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "30 秒后从剪贴板清除敏感密码",
+  "Sitzung „{title}“ wegen Inaktivität getrennt.": "由于长时间未操作，会话“{title}”已断开。",
+  "60 min": "60 分钟",
+  "Unverschlüsselte Verbindung (Telnet)": "未加密连接 (Telnet)"
 }

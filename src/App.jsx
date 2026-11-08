@@ -80,7 +80,11 @@ export default function App() {
   const setFont = (v) => { setFontState(v); persist('termFont', v); };
   const togglePanel = () => { setPanel(!panel); if (!mobile) persist('termPanel', !panel); };
   const xtheme = useMemo(() => resolveTheme(termTheme, dark), [termTheme, dark]);
-  const onCommand = useCallback((sid, c) => setHistory((h) => ({ ...h, [sid]: [...(h[sid] || []).filter((x) => x !== c), c].slice(-100) })), []);
+  const lastActiveRef = useRef({}); // sid -> timestamp der letzten Aktivität
+  const onCommand = useCallback((sid, c) => {
+    lastActiveRef.current[sid] = Date.now();
+    setHistory((h) => ({ ...h, [sid]: [...(h[sid] || []).filter((x) => x !== c), c].slice(-100) }));
+  }, []);
   const [tabs, setTabs] = useState([]); // { sid, title, kind, panes: [{ sid, conn, attempt, closed }], focus, dir }
   const [bc, setBc] = useState({ on: false, ids: [] }); // Broadcast: Eingabe an mehrere Sessions
   const updPane = (sid, f) => setTabs((prev) => prev.map((x) => (x.panes?.some((p) => p.sid === sid) ? { ...x, panes: x.panes.map((p) => (p.sid === sid ? { ...p, ...f(p) } : p)) } : x)));
@@ -107,6 +111,17 @@ export default function App() {
   // Sprache: null = noch nie gewählt -> Einrichtung beim ersten Start (kein stilles Englisch)
   const [lang, setLangState] = useState(() => { try { return localStorage.getItem('lang'); } catch { return null; } });
   const setLang = (v) => { setLangState(v); try { localStorage.setItem('lang', v); } catch { /* egal */ } };
+  const [sessTimeoutMin, setSessTimeoutMin] = useState(() => {
+    try { return Number(localStorage.getItem('sessionTimeoutMin') || '0'); } catch { return 0; }
+  });
+  useEffect(() => {
+    const onTimeoutCfg = () => {
+      try { setSessTimeoutMin(Number(localStorage.getItem('sessionTimeoutMin') || '0')); } catch { /* egal */ }
+    };
+    window.addEventListener('session-timeout-cfg', onTimeoutCfg);
+    return () => window.removeEventListener('session-timeout-cfg', onTimeoutCfg);
+  }, []);
+
   const [dockerOn, setDockerOn] = useState(() => { try { return localStorage.getItem('dockerFeature') === '1'; } catch { return false; } });
   const [k8sOn, setK8sOn] = useState(() => { try { return localStorage.getItem('k8sFeature') === '1'; } catch { return false; } });
   useEffect(() => {
@@ -140,7 +155,10 @@ export default function App() {
     document.documentElement.dir = RTL.has(lang) ? 'rtl' : 'ltr';
   }, [lang]);
   useEffect(() => {
-    api.onData((sid, d) => writers.get(sid)?.(d));
+    api.onData((sid, d) => {
+      lastActiveRef.current[sid] = Date.now();
+      writers.get(sid)?.(d);
+    });
     api.onEdit((m) => toast(m));
     api.onHostsChanged(() => setRev((r) => r + 1));
     api.onHostKey((info) => setHostKeys((q) => [...q, info]), (id) => setHostKeys((q) => q.filter((x) => x.id !== id)));
@@ -154,6 +172,26 @@ export default function App() {
     api.onLost((sid) => updPane(sid, () => ({ lost: true })));
     api.onClosed((sid) => updPane(sid, () => ({ closed: true })));
   }, []);
+
+  useEffect(() => {
+    if (sessTimeoutMin <= 0) return;
+    const timeoutMs = sessTimeoutMin * 60 * 1000;
+    const timer = setInterval(() => {
+      const now = Date.now();
+      for (const tab of tabs) {
+        if (tab.kind && tab.kind !== 'ssh') continue;
+        for (const pane of tab.panes || []) {
+          if (pane.closed || !pane.conn || pane.conn.state !== 'ready') continue;
+          const last = lastActiveRef.current[pane.sid] || (lastActiveRef.current[pane.sid] = now);
+          if (now - last >= timeoutMs) {
+            api.close(pane.sid);
+            toast(t('Sitzung „{title}“ wegen Inaktivität getrennt.', { title: tab.title }));
+          }
+        }
+      }
+    }, 10000);
+    return () => clearInterval(timer);
+  }, [sessTimeoutMin, tabs, t]);
 
   const sessions = tabs.flatMap((x) => (x.panes || []).filter((p) => !p.closed).map((p, i) => ({ sid: p.sid, label: x.panes.length > 1 ? `${x.title} (${i + 1})` : x.title })));
   const bcTargets = bc.on ? bc.ids.filter((id) => sessions.some((s) => s.sid === id)) : [];
@@ -181,6 +219,7 @@ export default function App() {
       try { localStorage.setItem('recent', JSON.stringify(next)); } catch { /* egal */ }
     }
     const sid = `s${seq + 1}`;
+    lastActiveRef.current[sid] = Date.now();
     setSeq(seq + 1);
     setTabs((prev) => [...prev, { sid, hostId: h.id, title: kind === 'sftp' ? t('{name} · SFTP', { name: h.name }) : h.name, kind, ...(kind === 'ssh' && { panes: [{ sid }], focus: sid, dir: 'row' }) }]);
     setActive(sid);
@@ -195,6 +234,7 @@ export default function App() {
     const tab = tabsRef.current.find((x) => x.sid === active);
     if (!tab?.panes || tab.panes.length >= MAX_PANES) return;
     const sid = `p${Date.now()}`;
+    lastActiveRef.current[sid] = Date.now();
     setTabs((prev) => prev.map((x) => (x.sid === tab.sid ? { ...x, dir, panes: [...x.panes, { sid }], focus: sid } : x)));
   };
   const setFocus = (tabSid, sid) => setTabs((prev) => prev.map((x) => (x.sid === tabSid ? { ...x, focus: sid } : x)));

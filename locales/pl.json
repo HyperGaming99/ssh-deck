@@ -729,5 +729,12 @@
   "Pull fehlgeschlagen": "Nie udało się pobrać",
   "Aufräumen fehlgeschlagen": "Nie udało się wyczyścić",
   "Startet einen neuen Docker-Container auf der gewählten Verbindung.": "Uruchamia nowy kontener Docker na wybranym połączeniu.",
-  "Lädt das angegebene Image aus der Container-Registry herunter.": "Pobiera określony obraz z rejestru kontenerów."
+  "Lädt das angegebene Image aus der Container-Registry herunter.": "Pobiera określony obraz z rejestru kontenerów.",
+  "Sitzungs-Inaktivitäts-Timeout": "Limit czasu nieaktywności sesji",
+  "Trennt inaktive SSH-Sitzungen nach bestimmter Zeit automatisch": "Automatycznie rozłącza nieaktywne sesje SSH po określonym czasie",
+  "Zwischenablage automatisch leeren": "Automatyczne czyszczenie schowka",
+  "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "Czyści poufne hasła ze schowka po 30 sekundach",
+  "Sitzung „{title}“ wegen Inaktivität getrennt.": "Sesja „{title}” rozłączona z powodu braku aktywności.",
+  "60 min": "60 min",
+  "Unverschlüsselte Verbindung (Telnet)": "Niezaszyfrowane połączenie (Telnet)"
 }
