@@ -750,5 +750,13 @@
   "{n} Zuschauer verbunden": "{n} 位观众在线",
   "Keine Zuschauer": "暂无观众",
   "QR-Code zum Beitreten scannen:": "扫码加入：",
-  "Freigabe-Link:": "共享链接："
+  "Freigabe-Link:": "共享链接：",
+  "Wähle deine bevorzugte Sprache für die gesamte Benutzeroberfläche.": "为整个用户界面选择首选语言。",
+  "Aktive Sprache": "当前语言",
+  "Sprache suchen …": "搜索语言 …",
+  "Sprachen": "语言",
+  "Keine Sprache gefunden.": "未找到语言。",
+  "Die Sprache wird ohne Neustart der Anwendung sofort wirksam.": "语言更改会立即生效，无需重启应用程序。",
+  "Rechts-nach-links (RTL)": "从右到左 (RTL)",
+  "Aktiv": "已激活"
 }

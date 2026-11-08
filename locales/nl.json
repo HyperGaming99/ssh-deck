@@ -750,5 +750,13 @@
   "{n} Zuschauer verbunden": "{n} kijkers verbonden",
   "Keine Zuschauer": "Geen kijkers",
   "QR-Code zum Beitreten scannen:": "Scan QR-code om deel te nemen:",
-  "Freigabe-Link:": "Deellink:"
+  "Freigabe-Link:": "Deellink:",
+  "Wähle deine bevorzugte Sprache für die gesamte Benutzeroberfläche.": "Kies je voorkeurstaal voor de gehele gebruikersinterface.",
+  "Aktive Sprache": "Actieve taal",
+  "Sprache suchen …": "Taal zoeken …",
+  "Sprachen": "Talen",
+  "Keine Sprache gefunden.": "Geen taal gevonden.",
+  "Die Sprache wird ohne Neustart der Anwendung sofort wirksam.": "De taalwijziging wordt direct van kracht zonder de applicatie opnieuw te starten.",
+  "Rechts-nach-links (RTL)": "Van rechts naar links (RTL)",
+  "Aktiv": "Actief"
 }

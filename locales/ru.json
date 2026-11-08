@@ -750,5 +750,13 @@
   "{n} Zuschauer verbunden": "{n} зрителей подключено",
   "Keine Zuschauer": "Нет зрителей",
   "QR-Code zum Beitreten scannen:": "Отсканируйте QR-код для подключения:",
-  "Freigabe-Link:": "Ссылка для подключения:"
+  "Freigabe-Link:": "Ссылка для подключения:",
+  "Wähle deine bevorzugte Sprache für die gesamte Benutzeroberfläche.": "Выберите предпочтительный язык для всего пользовательского интерфейса.",
+  "Aktive Sprache": "Активный язык",
+  "Sprache suchen …": "Поиск языка …",
+  "Sprachen": "Языки",
+  "Keine Sprache gefunden.": "Язык не найден.",
+  "Die Sprache wird ohne Neustart der Anwendung sofort wirksam.": "Смена языка вступает в силу немедленно без перезапуска приложения.",
+  "Rechts-nach-links (RTL)": "Справа налево (RTL)",
+  "Aktiv": "Активно"
 }

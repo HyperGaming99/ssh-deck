@@ -750,5 +750,13 @@
   "{n} Zuschauer verbunden": "تم اتصال {n} من المشاهدين",
   "Keine Zuschauer": "لا يوجد مشاهدين",
   "QR-Code zum Beitreten scannen:": "امسح رمز QR للانضمام:",
-  "Freigabe-Link:": "رابط المشاركة:"
+  "Freigabe-Link:": "رابط المشاركة:",
+  "Wähle deine bevorzugte Sprache für die gesamte Benutzeroberfläche.": "اختر لغتك المفضلة لكامل واجهة المستخدم.",
+  "Aktive Sprache": "اللغة النشطة",
+  "Sprache suchen …": "بحث عن لغة …",
+  "Sprachen": "اللغات",
+  "Keine Sprache gefunden.": "لم يتم العثور على أي لغة.",
+  "Die Sprache wird ohne Neustart der Anwendung sofort wirksam.": "يتم تطبيق تغيير اللغة فوراً دون إعادة تشغيل التطبيق.",
+  "Rechts-nach-links (RTL)": "من اليمين إلى اليسار (RTL)",
+  "Aktiv": "نشط"
 }

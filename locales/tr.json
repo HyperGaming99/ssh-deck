@@ -750,5 +750,13 @@
   "{n} Zuschauer verbunden": "{n} izleyici bağlandı",
   "Keine Zuschauer": "İzleyici yok",
   "QR-Code zum Beitreten scannen:": "Katılmak için QR kodunu tarayın:",
-  "Freigabe-Link:": "Paylaşım bağlantısı:"
+  "Freigabe-Link:": "Paylaşım bağlantısı:",
+  "Wähle deine bevorzugte Sprache für die gesamte Benutzeroberfläche.": "Tüm kullanıcı arayüzü için tercih ettiğiniz dili seçin.",
+  "Aktive Sprache": "Aktif dil",
+  "Sprache suchen …": "Dil ara …",
+  "Sprachen": "Diller",
+  "Keine Sprache gefunden.": "Dil bulunamadı.",
+  "Die Sprache wird ohne Neustart der Anwendung sofort wirksam.": "Dil değişikliği uygulamayı yeniden başlatmadan anında uygulanır.",
+  "Rechts-nach-links (RTL)": "Sağdan sola (RTL)",
+  "Aktiv": "Aktif"
 }

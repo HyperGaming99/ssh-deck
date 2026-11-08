@@ -750,5 +750,13 @@
   "{n} Zuschauer verbunden": "{n} दर्शक जुड़े हैं",
   "Keine Zuschauer": "कोई दर्शक नहीं",
   "QR-Code zum Beitreten scannen:": "शामिल होने के लिए क्यूआर कोड स्कैन करें:",
-  "Freigabe-Link:": "साझाकरण लिंक:"
+  "Freigabe-Link:": "साझाकरण लिंक:",
+  "Wähle deine bevorzugte Sprache für die gesamte Benutzeroberfläche.": "संपूर्ण यूजर इंटरफेस के लिए अपनी पसंदीदा भाषा चुनें।",
+  "Aktive Sprache": "सक्रिय भाषा",
+  "Sprache suchen …": "भाषा खोजें …",
+  "Sprachen": "भाषाएं",
+  "Keine Sprache gefunden.": "कोई भाषा नहीं मिली।",
+  "Die Sprache wird ohne Neustart der Anwendung sofort wirksam.": "एप्लिकेशन को पुनरारंभ किए बिना भाषा परिवर्तन तुरंत लागू होता है।",
+  "Rechts-nach-links (RTL)": "दाएं से बाएं (RTL)",
+  "Aktiv": "सक्रिय"
 }

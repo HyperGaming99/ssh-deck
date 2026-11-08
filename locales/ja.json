@@ -750,5 +750,13 @@
   "{n} Zuschauer verbunden": "{n} 人の閲覧者が接続中",
   "Keine Zuschauer": "閲覧者なし",
   "QR-Code zum Beitreten scannen:": "参加用QRコードをスキャン:",
-  "Freigabe-Link:": "共有リンク:"
+  "Freigabe-Link:": "共有リンク:",
+  "Wähle deine bevorzugte Sprache für die gesamte Benutzeroberfläche.": "ユーザーインターフェース全体の優先言語を選択してください。",
+  "Aktive Sprache": "アクティブな言語",
+  "Sprache suchen …": "言語を検索 …",
+  "Sprachen": "言語",
+  "Keine Sprache gefunden.": "言語が見つかりません。",
+  "Die Sprache wird ohne Neustart der Anwendung sofort wirksam.": "言語の変更はアプリケーションを再起動することなく直ちに適用されます。",
+  "Rechts-nach-links (RTL)": "右から左 (RTL)",
+  "Aktiv": "アクティブ"
 }

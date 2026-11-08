@@ -29,6 +29,7 @@ import { getPaste, getSuggest, setPaste, setSuggest } from '@/lib/termState';
 import SyncView from './SyncView';
 import TorSettings from './TorSettings';
 import UpdatesSettings from './UpdatesSettings';
+import LanguageSettings from './LanguageSettings';
 
 const mobile = !!window.api?.mobile;
 
@@ -264,21 +265,7 @@ export function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogo
             )}
           </>
         )}
-        {tab === 'language' && (
-          <div className="rounded-xl border bg-card p-4">
-            <p className="text-sm font-medium">{t('Sprache der Oberfläche')}</p>
-            <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-3" dir="ltr">
-              {LANGS.map(({ code, name, Flag }) => (
-                <button key={code} onClick={() => setLang(code)}
-                  className={cn('flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-start text-sm transition-colors hover:bg-accent', lang === code && 'border-primary bg-accent')}>
-                  <Flag className="h-4 w-6 shrink-0 rounded-[3px] shadow-sm" />
-                  <span className="truncate">{name}</span>
-                  {lang === code && <Check className="ms-auto size-4 text-primary" />}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        {tab === 'language' && <LanguageSettings lang={lang} setLang={setLang} />}
         {tab === 'privacy' && <TorSettings />}
         {tab === 'keychain' && <KeychainCloud st={st} toast={toast} goAccount={() => setTab('account')} />}
         {tab === 'teams' && <TeamsSettings st={st} teams={teams} refresh={refreshTeams} vault={vault} setVault={setVault} toast={toast} goAccount={() => setTab('account')} />}

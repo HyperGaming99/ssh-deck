@@ -750,5 +750,13 @@
   "{n} Zuschauer verbunden": "{n} viewers connected",
   "Keine Zuschauer": "No viewers",
   "QR-Code zum Beitreten scannen:": "Scan QR code to join:",
-  "Freigabe-Link:": "Share link:"
+  "Freigabe-Link:": "Share link:",
+  "Wähle deine bevorzugte Sprache für die gesamte Benutzeroberfläche.": "Choose your preferred language for the entire user interface.",
+  "Aktive Sprache": "Active language",
+  "Sprache suchen …": "Search language …",
+  "Sprachen": "Languages",
+  "Keine Sprache gefunden.": "No language found.",
+  "Die Sprache wird ohne Neustart der Anwendung sofort wirksam.": "The language change takes effect immediately without restarting the application.",
+  "Rechts-nach-links (RTL)": "Right-to-left (RTL)",
+  "Aktiv": "Active"
 }

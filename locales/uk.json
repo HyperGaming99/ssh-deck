@@ -750,5 +750,13 @@
   "{n} Zuschauer verbunden": "{n} глядачів підключено",
   "Keine Zuschauer": "Немає глядачів",
   "QR-Code zum Beitreten scannen:": "Відскануйте QR-код, щоб приєднатися:",
-  "Freigabe-Link:": "Посилання для приєднання:"
+  "Freigabe-Link:": "Посилання для приєднання:",
+  "Wähle deine bevorzugte Sprache für die gesamte Benutzeroberfläche.": "Оберіть бажану мову для всього інтерфейсу користувача.",
+  "Aktive Sprache": "Активна мова",
+  "Sprache suchen …": "Пошук мови …",
+  "Sprachen": "Мови",
+  "Keine Sprache gefunden.": "Мову не знайдено.",
+  "Die Sprache wird ohne Neustart der Anwendung sofort wirksam.": "Зміна мови набирає чинності негайно без перезапуску програми.",
+  "Rechts-nach-links (RTL)": "Справа наліво (RTL)",
+  "Aktiv": "Активно"
 }

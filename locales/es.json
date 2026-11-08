@@ -750,5 +750,13 @@
   "{n} Zuschauer verbunden": "{n} espectadores conectados",
   "Keine Zuschauer": "Sin espectadores",
   "QR-Code zum Beitreten scannen:": "Escanea el código QR para unirte:",
-  "Freigabe-Link:": "Enlace para compartir:"
+  "Freigabe-Link:": "Enlace para compartir:",
+  "Wähle deine bevorzugte Sprache für die gesamte Benutzeroberfläche.": "Elige tu idioma preferido para toda la interfaz de usuario.",
+  "Aktive Sprache": "Idioma activo",
+  "Sprache suchen …": "Buscar idioma …",
+  "Sprachen": "Idiomas",
+  "Keine Sprache gefunden.": "No se encontró ningún idioma.",
+  "Die Sprache wird ohne Neustart der Anwendung sofort wirksam.": "El cambio de idioma se aplica de inmediato sin reiniciar la aplicación.",
+  "Rechts-nach-links (RTL)": "De derecha a izquierda (RTL)",
+  "Aktiv": "Activo"
 }

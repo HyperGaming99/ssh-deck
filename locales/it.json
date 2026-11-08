@@ -750,5 +750,13 @@
   "{n} Zuschauer verbunden": "{n} spettatori connessi",
   "Keine Zuschauer": "Nessuno spettatore",
   "QR-Code zum Beitreten scannen:": "Scansiona il codice QR per unirti:",
-  "Freigabe-Link:": "Link di condivisione:"
+  "Freigabe-Link:": "Link di condivisione:",
+  "Wähle deine bevorzugte Sprache für die gesamte Benutzeroberfläche.": "Scegli la tua lingua preferita per l'intera interfaccia utente.",
+  "Aktive Sprache": "Lingua attiva",
+  "Sprache suchen …": "Cerca lingua …",
+  "Sprachen": "Lingue",
+  "Keine Sprache gefunden.": "Nessuna lingua trovata.",
+  "Die Sprache wird ohne Neustart der Anwendung sofort wirksam.": "Il cambio di lingua ha effetto immediato senza riavviare l'applicazione.",
+  "Rechts-nach-links (RTL)": "Da destra a sinistra (RTL)",
+  "Aktiv": "Attivo"
 }
