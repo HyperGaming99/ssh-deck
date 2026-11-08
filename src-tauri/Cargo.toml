@@ -1,10 +1,8 @@
 [package]
-name = "app"
-version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
-license = ""
-repository = ""
+name = "ssh-deck"
+version = "0.1.8"
+description = "SSH client with SFTP, keychain and themes"
+authors = ["HyperGaming99"]
 edition = "2024"
 rust-version = "1.90"
 
