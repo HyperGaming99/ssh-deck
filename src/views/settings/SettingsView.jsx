@@ -1,25 +1,35 @@
 import { useEffect, useState } from 'react';
 import {
+  Activity,
+  AlertCircle,
   AppWindowMac,
+  Box,
   Check,
   Columns,
+  Cpu,
   Download,
+  Eye,
+  FileCode,
   FileText,
   FolderOpen,
   KeyRound,
   Languages,
+  Layers,
   Layout,
   Lock,
   Minus,
   Moon,
   Palette,
   Plus,
+  RefreshCw,
   Server,
+  Shield,
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
   Sun,
   Terminal as TermIcon,
+  Timer,
   Type,
   User,
   Users,
@@ -560,123 +570,640 @@ export function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogo
           </div>
         )}
         {tab === 'features' && (
-          <>
-            <div className="flex flex-wrap gap-1 rounded-xl border bg-card p-1">
-              {[['server', t('Server'), Server], ['terminal', t('Terminal'), TermIcon], ['sftp', 'SFTP', FolderOpen], ['security', t('Sicherheit'), Lock]].map(([id, label, Icon]) => (
-                <button key={id} type="button" onClick={() => setFeatTab(id)}
-                  className={cn('flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors', featTab === id ? 'bg-primary/15 font-medium text-primary' : 'text-muted-foreground hover:bg-accent')}>
-                  <Icon className="size-4" />{label}
+          <div className="space-y-4">
+            {/* Feature Sub-Navigation */}
+            <div className="flex flex-wrap gap-1 rounded-2xl border bg-card p-1.5 shadow-sm">
+              {[
+                ['server', t('Server'), Server],
+                ['terminal', t('Terminal'), TermIcon],
+                ['sftp', 'SFTP', FolderOpen],
+                ['security', t('Sicherheit'), Lock],
+              ].map(([id, label, Icon]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setFeatTab(id)}
+                  className={cn(
+                    'flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition-all',
+                    featTab === id
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'
+                  )}
+                >
+                  <Icon className="size-4" />
+                  {label}
                 </button>
               ))}
             </div>
+
+            {/* 1. SERVER TAB */}
             {featTab === 'server' && (
-              <>
-                <div className={row}>
-                  <div><p className="text-sm font-medium">{t('Server-Status')}</p><p className="text-xs text-muted-foreground">{t('CPU, Arbeitsspeicher, Festplatte und Laufzeit im Terminal anzeigen')}</p></div>
-                  <Switch checked={srvStats} onCheckedChange={(v) => { setSrvStats(v); try { localStorage.setItem('serverStats', v ? '1' : '0'); } catch { /* egal */ } }} />
+              <div className="space-y-3.5">
+                {/* Server-Status Bar Card */}
+                <div className="space-y-3 rounded-2xl border bg-card p-4 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="grid size-9 place-items-center rounded-xl bg-cyan-500/10 text-cyan-500 border border-cyan-500/20">
+                        <Activity className="size-4.5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">{t('Server-Status')}</p>
+                        <p className="text-xs text-muted-foreground">{t('CPU, Arbeitsspeicher, Festplatte und Laufzeit im Terminal anzeigen')}</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={srvStats}
+                      onCheckedChange={(v) => {
+                        setSrvStats(v);
+                        try { localStorage.setItem('serverStats', v ? '1' : '0'); } catch {}
+                      }}
+                    />
+                  </div>
+
+                  {/* Visual Terminal Server Stats Bar Preview */}
+                  <div className={cn(
+                    'overflow-hidden rounded-xl border transition-all text-xs font-mono',
+                    srvStats ? 'border-cyan-500/30 bg-zinc-950 text-zinc-100 shadow-inner' : 'border-border bg-muted/30 text-muted-foreground opacity-50'
+                  )}>
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 bg-white/5 px-3 py-2 text-[11px]">
+                      <div className="flex items-center gap-2">
+                        <span className="size-2 rounded-full bg-emerald-500 inline-block" />
+                        <span className="font-semibold text-zinc-200">prod-cluster-01</span>
+                        <span className="text-zinc-500 font-sans">Linux 6.6 · x86_64</span>
+                      </div>
+                      <span className="text-zinc-400 font-sans">up 18d 4h</span>
+                    </div>
+                    <div className="grid grid-cols-3 divide-x divide-white/10 p-2.5 gap-2">
+                      <div className="px-2">
+                        <div className="flex justify-between text-[10px] text-zinc-400 mb-1">
+                          <span>CPU</span>
+                          <span className="text-cyan-400 font-bold">28%</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+                          <div className="h-full bg-cyan-400 rounded-full" style={{ width: '28%' }} />
+                        </div>
+                      </div>
+                      <div className="px-2">
+                        <div className="flex justify-between text-[10px] text-zinc-400 mb-1">
+                          <span>RAM</span>
+                          <span className="text-emerald-400 font-bold">4.2 / 8.0 GB</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+                          <div className="h-full bg-emerald-400 rounded-full" style={{ width: '52%' }} />
+                        </div>
+                      </div>
+                      <div className="px-2">
+                        <div className="flex justify-between text-[10px] text-zinc-400 mb-1">
+                          <span>DISK</span>
+                          <span className="text-purple-400 font-bold">24%</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+                          <div className="h-full bg-purple-400 rounded-full" style={{ width: '24%' }} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className={row}>
-                  <div><p className="text-sm font-medium">{t('Docker-Manager')}</p><p className="text-xs text-muted-foreground">{t('Eigenen Docker-Reiter in der Hauptnavigation anzeigen')}</p></div>
-                  <Switch checked={dockerSetting} onCheckedChange={(v) => { setDockerSetting(v); try { localStorage.setItem('dockerFeature', v ? '1' : '0'); window.dispatchEvent(new Event('docker-cfg')); } catch { /* egal */ } }} />
-                </div>
-                <div className={row}>
-                  <div><p className="text-sm font-medium">{t('Kubernetes-Manager')}</p><p className="text-xs text-muted-foreground">{t('Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen')}</p></div>
-                  <Switch checked={k8sSetting} onCheckedChange={(v) => { setK8sSetting(v); try { localStorage.setItem('k8sFeature', v ? '1' : '0'); window.dispatchEvent(new Event('k8s-cfg')); } catch { /* egal */ } }} />
-                </div>
-                <div className={row}>
-                  <div><p className="text-sm font-medium">{t('Host-Status & Ping')}</p><p className="text-xs text-muted-foreground">{t('Erreichbarkeit und Latenz (ms) auf Host-Karten anzeigen')}</p></div>
-                  <Switch checked={hostHealth} onCheckedChange={(v) => { setHostHealth(v); try { localStorage.setItem('hostHealth', v ? '1' : '0'); window.dispatchEvent(new Event('host-health-cfg')); } catch { /* egal */ } }} />
-                </div>
-              </>
-            )}
-            {featTab === 'terminal' && (
-              <>
-                <div className={row}>
-                  <div><p className="text-sm font-medium">{t('Befehlsvorschläge')}</p><p className="text-xs text-muted-foreground">{t('Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.')}</p></div>
-                  {seg([['on', t('An')], ['off', t('Aus')]], sg, pickSg)}
-                </div>
-                <div className={row}>
-                  <div><p className="text-sm font-medium">{t('Einfügen im Terminal')}</p><p className="text-xs text-muted-foreground">{t('Strg+V und Rechtsklick fügen die Zwischenablage ein')}</p></div>
-                  {seg([['ask', t('Nachfragen')], ['on', t('Erlauben')], ['off', t('Aus')]], paste, pickPaste)}
-                </div>
-                <div className={row}>
-                  <div><p className="text-sm font-medium">{t('Automatisch neu verbinden')}</p><p className="text-xs text-muted-foreground">{t('Bei unerwartet getrennter Verbindung erneut versuchen')}</p></div>
-                  <Switch checked={autoRe} onCheckedChange={(v) => { setAutoRe(v); try { localStorage.setItem('autoReconnect', v ? '1' : '0'); } catch { /* egal */ } }} />
-                </div>
-              </>
-            )}
-            {featTab === 'sftp' && (
-              <>
-                <div className={row}>
-                  <div><p className="text-sm font-medium">{t('Versteckte Dateien anzeigen')}</p><p className="text-xs text-muted-foreground">{t('Dateien und Ordner mit führendem Punkt (.env, .ssh, .git) im SFTP einblenden')}</p></div>
-                  <Switch checked={dotfiles} onCheckedChange={(v) => { setDotfiles(v); try { localStorage.setItem('sftpDotfiles', v ? '1' : '0'); window.dispatchEvent(new Event('sftp-dotfiles')); } catch { /* egal */ } }} />
-                </div>
-                <div className={row}>
-                  <div><p className="text-sm font-medium">{t('Dateirechte anzeigen')}</p><p className="text-xs text-muted-foreground">{t('Rechte-Spalte (rwxr-xr-x / 755) in der SFTP-Dateiliste anzeigen')}</p></div>
-                  <Switch checked={sftpPerms} onCheckedChange={(v) => { setSftpPerms(v); try { localStorage.setItem('sftpPermissions', v ? '1' : '0'); window.dispatchEvent(new Event('sftp-permissions')); } catch { /* egal */ } }} />
-                </div>
-              </>
-            )}
-            {featTab === 'security' && (
-              <>
-                <div className={row}>
-                  <div><p className="text-sm font-medium">{t('App-Sperre nach Inaktivität')}</p><p className="text-xs text-muted-foreground">{t('Sperrt die Oberfläche automatisch bei Inaktivität, ohne laufende Sitzungen zu trennen')}</p></div>
-                  <Select value={autoLockMin} onValueChange={(v) => { setAutoLockMin(v); try { localStorage.setItem('autoLockMin', v); window.dispatchEvent(new Event('lock-cfg')); } catch { /* egal */ } }}>
-                    <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">{t('Aus')}</SelectItem>
-                      <SelectItem value="5">5 min</SelectItem>
-                      <SelectItem value="15">15 min</SelectItem>
-                      <SelectItem value="30">30 min</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className={row}>
-                  <div><p className="text-sm font-medium">{t('Sitzungs-Inaktivitäts-Timeout')}</p><p className="text-xs text-muted-foreground">{t('Trennt inaktive SSH-Sitzungen nach bestimmter Zeit automatisch')}</p></div>
-                  <Select value={sessionTimeout} onValueChange={(v) => { setSessionTimeout(v); try { localStorage.setItem('sessionTimeoutMin', v); window.dispatchEvent(new Event('session-timeout-cfg')); } catch { /* egal */ } }}>
-                    <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">{t('Aus')}</SelectItem>
-                      <SelectItem value="5">5 min</SelectItem>
-                      <SelectItem value="15">15 min</SelectItem>
-                      <SelectItem value="30">30 min</SelectItem>
-                      <SelectItem value="60">{t('60 min')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className={row}>
-                  <div><p className="text-sm font-medium">{t('Zwischenablage automatisch leeren')}</p><p className="text-xs text-muted-foreground">{t('Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage')}</p></div>
-                  <Switch checked={clipboardClear} onCheckedChange={(v) => { setClipboardClear(v); try { localStorage.setItem('clipboardClear', v ? '1' : '0'); window.dispatchEvent(new Event('clipboard-clear-cfg')); } catch { /* egal */ } }} />
-                </div>
-                <div className={cn(row, 'flex-col items-stretch')}>
-                  <div className="flex items-center justify-between gap-2">
+
+                {/* 2-Spalten Container & Cluster Modul Karten */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Docker Card */}
+                  <div className={cn(
+                    'flex flex-col justify-between rounded-2xl border p-4 shadow-sm transition-all',
+                    dockerSetting ? 'border-blue-500/40 bg-blue-500/5 ring-1 ring-blue-500/20' : 'border-border bg-card'
+                  )}>
                     <div>
-                      <p className="text-sm font-medium">{t('Sperr-Passwort / PIN')}</p>
-                      <p className="text-xs text-muted-foreground">{t('Wird zum Entsperren der App nach Inaktivität oder manuellem Sperren benötigt')}</p>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="grid size-9 place-items-center rounded-xl bg-blue-500/10 text-blue-500 border border-blue-500/20">
+                            <Box className="size-4.5" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold">{t('Docker-Manager')}</p>
+                            <span className="text-[10px] text-muted-foreground">Sidebar Modul</span>
+                          </div>
+                        </div>
+                        <Switch
+                          checked={dockerSetting}
+                          onCheckedChange={(v) => {
+                            setDockerSetting(v);
+                            try { localStorage.setItem('dockerFeature', v ? '1' : '0'); window.dispatchEvent(new Event('docker-cfg')); } catch {}
+                          }}
+                        />
+                      </div>
+
+                      {/* Mini Container List Preview */}
+                      <div className={cn(
+                        'rounded-xl border p-2.5 space-y-1.5 font-mono text-[11px] transition-all',
+                        dockerSetting ? 'border-blue-500/20 bg-zinc-950 text-zinc-200' : 'border-border bg-muted/40 text-muted-foreground opacity-50'
+                      )}>
+                        <div className="flex items-center justify-between text-[10px] text-zinc-400 pb-1 border-b border-white/10 font-sans">
+                          <span>Container</span>
+                          <span>Status</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="truncate">nginx:alpine</span>
+                          <span className="text-[9px] text-emerald-400 bg-emerald-500/10 px-1 rounded font-sans">running</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="truncate">postgres:16</span>
+                          <span className="text-[9px] text-emerald-400 bg-emerald-500/10 px-1 rounded font-sans">healthy</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="truncate text-zinc-400">redis:7</span>
+                          <span className="text-[9px] text-zinc-400 bg-zinc-800 px-1 rounded font-sans">stopped</span>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="mt-2.5 text-[11px] text-muted-foreground">
+                      {t('Eigenen Docker-Reiter in der Hauptnavigation anzeigen')}
+                    </p>
+                  </div>
+
+                  {/* Kubernetes Card */}
+                  <div className={cn(
+                    'flex flex-col justify-between rounded-2xl border p-4 shadow-sm transition-all',
+                    k8sSetting ? 'border-indigo-500/40 bg-indigo-500/5 ring-1 ring-indigo-500/20' : 'border-border bg-card'
+                  )}>
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="grid size-9 place-items-center rounded-xl bg-indigo-500/10 text-indigo-500 border border-indigo-500/20">
+                            <Layers className="size-4.5" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold">{t('Kubernetes-Manager')}</p>
+                            <span className="text-[10px] text-muted-foreground">Cluster Modul</span>
+                          </div>
+                        </div>
+                        <Switch
+                          checked={k8sSetting}
+                          onCheckedChange={(v) => {
+                            setK8sSetting(v);
+                            try { localStorage.setItem('k8sFeature', v ? '1' : '0'); window.dispatchEvent(new Event('k8s-cfg')); } catch {}
+                          }}
+                        />
+                      </div>
+
+                      {/* Mini K8s Pods Preview */}
+                      <div className={cn(
+                        'rounded-xl border p-2.5 space-y-1.5 font-mono text-[11px] transition-all',
+                        k8sSetting ? 'border-indigo-500/20 bg-zinc-950 text-zinc-200' : 'border-border bg-muted/40 text-muted-foreground opacity-50'
+                      )}>
+                        <div className="flex items-center justify-between text-[10px] text-zinc-400 pb-1 border-b border-white/10 font-sans">
+                          <span>Pod (default)</span>
+                          <span>Ready</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="truncate">api-prod-8f4b</span>
+                          <span className="text-[9px] text-indigo-400 bg-indigo-500/10 px-1 rounded font-sans">1/1 Run</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="truncate">auth-worker-2c</span>
+                          <span className="text-[9px] text-indigo-400 bg-indigo-500/10 px-1 rounded font-sans">2/2 Run</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="truncate text-zinc-400">ingress-nginx</span>
+                          <span className="text-[9px] text-emerald-400 bg-emerald-500/10 px-1 rounded font-sans">Ready</span>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="mt-2.5 text-[11px] text-muted-foreground">
+                      {t('Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen')}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Host Health & Realtime Ping Card */}
+                <div className="space-y-3 rounded-2xl border bg-card p-4 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="grid size-9 place-items-center rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                        <Activity className="size-4.5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">{t('Host-Status & Ping')}</p>
+                        <p className="text-xs text-muted-foreground">{t('Erreichbarkeit und Latenz (ms) auf Host-Karten anzeigen')}</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={hostHealth}
+                      onCheckedChange={(v) => {
+                        setHostHealth(v);
+                        try { localStorage.setItem('hostHealth', v ? '1' : '0'); window.dispatchEvent(new Event('host-health-cfg')); } catch {}
+                      }}
+                    />
+                  </div>
+
+                  {/* Mini Host Cards Preview */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                    <div className="flex items-center justify-between rounded-xl border bg-muted/40 p-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
+                        <div className="truncate">
+                          <p className="text-xs font-semibold truncate">Ubuntu Webserver</p>
+                          <p className="text-[10px] text-muted-foreground font-mono">10.0.0.51:22</p>
+                        </div>
+                      </div>
+                      {hostHealth ? (
+                        <span className="font-mono text-[10px] font-semibold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
+                          4.2 ms
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground shrink-0">—</span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-xl border bg-muted/40 p-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
+                        <div className="truncate">
+                          <p className="text-xs font-semibold truncate">Database Master</p>
+                          <p className="text-[10px] text-muted-foreground font-mono">10.0.0.20:22</p>
+                        </div>
+                      </div>
+                      {hostHealth ? (
+                        <span className="font-mono text-[10px] font-semibold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
+                          1.8 ms
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-muted-foreground shrink-0">—</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 2. TERMINAL TAB */}
+            {featTab === 'terminal' && (
+              <div className="space-y-3.5">
+                {/* Befehlsvorschläge Card */}
+                <div className="space-y-3 rounded-2xl border bg-card p-4 shadow-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold">{t('Befehlsvorschläge')}</p>
+                      <p className="text-xs text-muted-foreground">{t('Vorschläge beim Tippen im Terminal: Befehle dieser Sitzung, Snippets und häufige Befehle. Übernehmen mit Strg+Leertaste oder Antippen.')}</p>
+                    </div>
+                    {seg([['on', t('An')], ['off', t('Aus')]], sg, pickSg)}
+                  </div>
+
+                  {/* Interactive Terminal Autocomplete Mockup */}
+                  <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 p-3.5 text-zinc-100 shadow-inner font-mono text-xs">
+                    <div className="flex items-center gap-2 text-zinc-400 text-[11px] pb-2 border-b border-zinc-800 font-sans">
+                      <div className="flex gap-1.5">
+                        <span className="size-2.5 rounded-full bg-red-500/80" />
+                        <span className="size-2.5 rounded-full bg-amber-500/80" />
+                        <span className="size-2.5 rounded-full bg-emerald-500/80" />
+                      </div>
+                      <span className="text-zinc-500">Live Shell Autocomplete Preview</span>
+                    </div>
+                    <div className="pt-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-emerald-400">deck@host</span>
+                        <span className="text-zinc-500">:</span>
+                        <span className="text-blue-400">~</span>
+                        <span className="text-zinc-500">$</span>
+                        <span>dock</span>
+                        <span className="w-2 h-4 bg-primary inline-block animate-pulse" />
+                      </div>
+
+                      {sg === 'on' ? (
+                        <div className="mt-2.5 w-full max-w-sm rounded-lg border border-primary/30 bg-zinc-900/95 p-1.5 text-xs shadow-xl backdrop-blur">
+                          <div className="flex items-center justify-between rounded px-2 py-1 bg-primary text-primary-foreground font-semibold">
+                            <span className="flex items-center gap-1.5">
+                              <Sparkles className="size-3" />
+                              docker compose up -d
+                            </span>
+                            <span className="text-[10px] opacity-80 font-sans">Snippet</span>
+                          </div>
+                          <div className="flex items-center justify-between rounded px-2 py-1 text-zinc-300 hover:bg-zinc-800">
+                            <span>docker ps -a</span>
+                            <span className="text-[10px] text-zinc-500 font-sans">Verlauf</span>
+                          </div>
+                          <div className="flex items-center justify-between rounded px-2 py-1 text-zinc-300 hover:bg-zinc-800">
+                            <span>docker logs -f --tail 100</span>
+                            <span className="text-[10px] text-zinc-500 font-sans">Häufig</span>
+                          </div>
+                          <div className="mt-1 flex items-center justify-between border-t border-zinc-800 pt-1 px-1.5 text-[10px] text-zinc-400 font-sans">
+                            <span>Übernehmen:</span>
+                            <span className="rounded bg-zinc-800 px-1 text-zinc-300">Strg + Leertaste</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-2 text-[11px] text-zinc-500 italic font-sans">
+                          Autocomplete deaktiviert
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Einfügen im Terminal Card */}
+                <div className="space-y-3 rounded-2xl border bg-card p-4 shadow-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold">{t('Einfügen im Terminal')}</p>
+                      <p className="text-xs text-muted-foreground">{t('Strg+V und Rechtsklick fügen die Zwischenablage ein')}</p>
+                    </div>
+                    {seg([['ask', t('Nachfragen')], ['on', t('Erlauben')], ['off', t('Aus')]], paste, pickPaste)}
+                  </div>
+
+                  {/* Paste Mode Preview Mockup */}
+                  <div className="rounded-xl border bg-muted/40 p-3.5 space-y-2">
+                    {paste === 'ask' && (
+                      <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 flex items-start gap-3">
+                        <AlertCircle className="size-5 text-amber-500 shrink-0 mt-0.5" />
+                        <div className="space-y-1.5 min-w-0">
+                          <p className="text-xs font-semibold text-foreground">Sicherheitsabfrage beim Einfügen aktiv</p>
+                          <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            Schützt vor versehentlicher Ausführung gefährlicher mehrzeiliger Skripte und Befehle.
+                          </p>
+                          <div className="rounded border bg-background/80 p-1.5 font-mono text-[10px] text-muted-foreground">
+                            sudo systemctl restart nginx &amp;&amp; systemctl status nginx
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {paste === 'on' && (
+                      <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 flex items-start gap-3">
+                        <Check className="size-5 text-emerald-500 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs font-semibold text-foreground">Direktes Einfügen erlaubt</p>
+                          <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            Zwischenablage wird mit Strg+V oder Rechtsklick sofort ohne Zwischenschritt eingefügt.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {paste === 'off' && (
+                      <div className="rounded-lg border border-zinc-500/30 bg-zinc-500/5 p-3 flex items-start gap-3">
+                        <ZapOff className="size-5 text-zinc-400 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs font-semibold text-foreground">Einfügen per Tastaturkürzel deaktiviert</p>
+                          <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            Terminal ignoriert Strg+V Tastaturbefehle.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Automatisch neu verbinden Card */}
+                <div className="space-y-3 rounded-2xl border bg-card p-4 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary border border-primary/20">
+                        <RefreshCw className="size-4.5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">{t('Automatisch neu verbinden')}</p>
+                        <p className="text-xs text-muted-foreground">{t('Bei unerwartet getrennter Verbindung erneut versuchen')}</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={autoRe}
+                      onCheckedChange={(v) => {
+                        setAutoRe(v);
+                        try { localStorage.setItem('autoReconnect', v ? '1' : '0'); } catch {}
+                      }}
+                    />
+                  </div>
+
+                  {/* Auto Reconnect Banner Mockup */}
+                  <div className={cn(
+                    'rounded-xl border p-3 flex items-center justify-between gap-3 text-xs transition-all',
+                    autoRe ? 'border-amber-500/30 bg-amber-500/5 text-amber-500' : 'border-border bg-muted/40 text-muted-foreground opacity-50'
+                  )}>
+                    <div className="flex items-center gap-2">
+                      <RefreshCw className={cn('size-4', autoRe && 'animate-spin')} />
+                      <span>Verbindung unterbrochen · Neuer Versuch in 3s …</span>
+                    </div>
+                    <span className="font-semibold underline cursor-pointer">Jetzt versuchen</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 3. SFTP TAB */}
+            {featTab === 'sftp' && (
+              <div className="space-y-3.5">
+                {/* Versteckte Dateien anzeigen Card */}
+                <div className="space-y-3 rounded-2xl border bg-card p-4 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary border border-primary/20">
+                        <Eye className="size-4.5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">{t('Versteckte Dateien anzeigen')}</p>
+                        <p className="text-xs text-muted-foreground">{t('Dateien und Ordner mit führendem Punkt (.env, .ssh, .git) im SFTP einblenden')}</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={dotfiles}
+                      onCheckedChange={(v) => {
+                        setDotfiles(v);
+                        try { localStorage.setItem('sftpDotfiles', v ? '1' : '0'); window.dispatchEvent(new Event('sftp-dotfiles')); } catch {}
+                      }}
+                    />
+                  </div>
+
+                  {/* Dotfiles Explorer Preview Mockup */}
+                  <div className="rounded-xl border bg-muted/30 p-2.5 font-mono text-xs space-y-1">
+                    <div className="flex items-center gap-2 text-foreground py-0.5 px-2 rounded hover:bg-accent/40">
+                      <FolderOpen className="size-3.5 text-blue-400" />
+                      <span>src/</span>
+                    </div>
+                    {dotfiles ? (
+                      <div className="flex items-center gap-2 text-muted-foreground py-0.5 px-2 rounded bg-primary/5 border border-primary/20">
+                        <FolderOpen className="size-3.5 text-purple-400" />
+                        <span className="font-semibold text-foreground">.git/</span>
+                        <span className="text-[10px] bg-purple-500/10 text-purple-400 px-1 rounded ml-auto font-sans">Dotfile</span>
+                      </div>
+                    ) : null}
+                    <div className="flex items-center gap-2 text-foreground py-0.5 px-2 rounded hover:bg-accent/40">
+                      <FileText className="size-3.5 text-emerald-400" />
+                      <span>package.json</span>
+                    </div>
+                    {dotfiles ? (
+                      <div className="flex items-center gap-2 text-muted-foreground py-0.5 px-2 rounded bg-primary/5 border border-primary/20">
+                        <Lock className="size-3.5 text-amber-400" />
+                        <span className="font-semibold text-foreground">.env.production</span>
+                        <span className="text-[10px] bg-amber-500/10 text-amber-500 px-1 rounded ml-auto font-sans">Geheim</span>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
+                {/* Dateirechte anzeigen Card */}
+                <div className="space-y-3 rounded-2xl border bg-card p-4 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary border border-primary/20">
+                        <Shield className="size-4.5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">{t('Dateirechte anzeigen')}</p>
+                        <p className="text-xs text-muted-foreground">{t('Rechte-Spalte (rwxr-xr-x / 755) in der SFTP-Dateiliste anzeigen')}</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={sftpPerms}
+                      onCheckedChange={(v) => {
+                        setSftpPerms(v);
+                        try { localStorage.setItem('sftpPermissions', v ? '1' : '0'); window.dispatchEvent(new Event('sftp-permissions')); } catch {}
+                      }}
+                    />
+                  </div>
+
+                  {/* Permissions Column Table Mockup */}
+                  <div className="overflow-hidden rounded-xl border bg-muted/30 font-mono text-xs">
+                    <div className="grid grid-cols-12 border-b border-border bg-muted/60 px-3 py-1.5 text-[11px] font-sans font-semibold text-muted-foreground">
+                      <span className={sftpPerms ? 'col-span-6' : 'col-span-8'}>Name</span>
+                      <span className={sftpPerms ? 'col-span-2' : 'col-span-4'}>Größe</span>
+                      {sftpPerms && <span className="col-span-4 text-primary">Rechte</span>}
+                    </div>
+                    <div className="grid grid-cols-12 px-3 py-1.5 items-center border-b border-border/50 text-[11px]">
+                      <span className={cn('truncate flex items-center gap-1.5', sftpPerms ? 'col-span-6' : 'col-span-8')}>
+                        <FileCode className="size-3.5 text-blue-400 shrink-0" />
+                        entrypoint.sh
+                      </span>
+                      <span className={cn('text-muted-foreground', sftpPerms ? 'col-span-2' : 'col-span-4')}>4.2 KB</span>
+                      {sftpPerms && <span className="col-span-4 text-emerald-500 font-semibold">-rwxr-xr-x (755)</span>}
+                    </div>
+                    <div className="grid grid-cols-12 px-3 py-1.5 items-center text-[11px]">
+                      <span className={cn('truncate flex items-center gap-1.5', sftpPerms ? 'col-span-6' : 'col-span-8')}>
+                        <FileText className="size-3.5 text-zinc-400 shrink-0" />
+                        config.yaml
+                      </span>
+                      <span className={cn('text-muted-foreground', sftpPerms ? 'col-span-2' : 'col-span-4')}>1.8 KB</span>
+                      {sftpPerms && <span className="col-span-4 text-muted-foreground font-semibold">-rw-r--r-- (644)</span>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 4. SICHERHEIT TAB */}
+            {featTab === 'security' && (
+              <div className="space-y-3.5">
+                {/* App-Sperre & Session-Timeout 2-Spalten Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="flex flex-col justify-between rounded-2xl border bg-card p-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div>
+                        <p className="text-sm font-semibold">{t('App-Sperre nach Inaktivität')}</p>
+                        <p className="text-xs text-muted-foreground">{t('Sperrt die Oberfläche automatisch bei Inaktivität, ohne laufende Sitzungen zu trennen')}</p>
+                      </div>
+                      <Timer className="size-4 text-primary shrink-0 mt-0.5" />
+                    </div>
+                    <Select value={autoLockMin} onValueChange={(v) => { setAutoLockMin(v); try { localStorage.setItem('autoLockMin', v); window.dispatchEvent(new Event('lock-cfg')); } catch {} }}>
+                      <SelectTrigger className="w-full mt-2"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">{t('Aus')}</SelectItem>
+                        <SelectItem value="5">5 min</SelectItem>
+                        <SelectItem value="15">15 min</SelectItem>
+                        <SelectItem value="30">30 min</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex flex-col justify-between rounded-2xl border bg-card p-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div>
+                        <p className="text-sm font-semibold">{t('Sitzungs-Inaktivitäts-Timeout')}</p>
+                        <p className="text-xs text-muted-foreground">{t('Trennt inaktive SSH-Sitzungen nach bestimmter Zeit automatisch')}</p>
+                      </div>
+                      <Clock className="size-4 text-primary shrink-0 mt-0.5" />
+                    </div>
+                    <Select value={sessionTimeout} onValueChange={(v) => { setSessionTimeout(v); try { localStorage.setItem('sessionTimeoutMin', v); window.dispatchEvent(new Event('session-timeout-cfg')); } catch {} }}>
+                      <SelectTrigger className="w-full mt-2"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">{t('Aus')}</SelectItem>
+                        <SelectItem value="5">5 min</SelectItem>
+                        <SelectItem value="15">15 min</SelectItem>
+                        <SelectItem value="30">30 min</SelectItem>
+                        <SelectItem value="60">{t('60 min')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Zwischenablage automatisch leeren Card */}
+                <div className="space-y-3 rounded-2xl border bg-card p-4 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary border border-primary/20">
+                        <KeyRound className="size-4.5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">{t('Zwischenablage automatisch leeren')}</p>
+                        <p className="text-xs text-muted-foreground">{t('Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage')}</p>
+                      </div>
+                    </div>
+                    <Switch
+                      checked={clipboardClear}
+                      onCheckedChange={(v) => {
+                        setClipboardClear(v);
+                        try { localStorage.setItem('clipboardClear', v ? '1' : '0'); window.dispatchEvent(new Event('clipboard-clear-cfg')); } catch {}
+                      }}
+                    />
+                  </div>
+
+                  {/* Clipboard Wipe Timeline Mockup */}
+                  <div className={cn(
+                    'flex flex-col sm:flex-row items-center justify-between gap-2 rounded-xl border p-3 text-xs transition-all',
+                    clipboardClear ? 'border-primary/20 bg-primary/5 text-foreground' : 'border-border bg-muted/40 text-muted-foreground opacity-50'
+                  )}>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono bg-background px-2 py-0.5 rounded border text-[11px]">••••••••••••</span>
+                      <span className="text-muted-foreground">→</span>
+                      <span className="font-medium text-amber-500">30s Schutz-Timer</span>
+                    </div>
+                    <span className="text-[11px] text-muted-foreground">Automatisches Überschreiben nach Ablauf</span>
+                  </div>
+                </div>
+
+                {/* Sperr-Passwort / PIN Card */}
+                <div className="space-y-3 rounded-2xl border bg-card p-4 shadow-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-3">
+                      <div className="grid size-9 place-items-center rounded-xl bg-primary/10 text-primary border border-primary/20">
+                        <ShieldCheck className="size-4.5" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">{t('Sperr-Passwort / PIN')}</p>
+                        <p className="text-xs text-muted-foreground">{t('Wird zum Entsperren der App nach Inaktivität oder manuellem Sperren benötigt')}</p>
+                      </div>
                     </div>
                     {hasLockPin && (
-                      <Button variant="outline" size="sm" onClick={() => window.dispatchEvent(new Event('app-lock-now'))}>
-                        <Lock className="size-3.5" />{t('Jetzt sperren')}
+                      <Button variant="outline" size="sm" onClick={() => window.dispatchEvent(new Event('app-lock-now'))} className="gap-1.5 font-medium">
+                        <Lock className="size-3.5" />
+                        {t('Jetzt sperren')}
                       </Button>
                     )}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 pt-1">
                     <Input
                       type="password"
                       value={newPin}
                       onChange={(e) => setNewPin(e.target.value)}
                       placeholder={t('Sperr-Passwort / PIN')}
+                      className="h-10 rounded-xl"
                     />
                     <Button
                       disabled={!newPin.trim()}
                       onClick={async () => {
                         const h = await hashPin(newPin.trim());
-                        try { localStorage.setItem('lockPinHash', h); } catch { /* egal */ }
+                        try { localStorage.setItem('lockPinHash', h); } catch {}
                         setHasLockPin(true);
                         setNewPin('');
                         window.dispatchEvent(new Event('lock-cfg'));
                         toast(t('Gespeichert.'));
                       }}
+                      className="h-10 rounded-xl px-5 font-medium shrink-0"
                     >
                       {t('Speichern')}
                     </Button>
@@ -684,19 +1211,21 @@ export function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogo
                       <Button
                         variant="outline"
                         onClick={() => {
-                          try { localStorage.removeItem('lockPinHash'); } catch { /* egal */ }
+                          try { localStorage.removeItem('lockPinHash'); } catch {}
                           setHasLockPin(false);
                           window.dispatchEvent(new Event('lock-cfg'));
+                          toast(t('Gespeichert.'));
                         }}
+                        className="h-10 rounded-xl font-medium shrink-0"
                       >
                         {t('Entfernen')}
                       </Button>
                     )}
                   </div>
                 </div>
-              </>
+              </div>
             )}
-          </>
+          </div>
         )}
         {tab === 'language' && <LanguageSettings lang={lang} setLang={setLang} />}
         {tab === 'privacy' && <TorSettings />}
