@@ -506,6 +506,7 @@ fn ssh_open(
     host_id: String,
     cols: Option<u16>,
     rows: Option<u16>,
+    user_override: Option<String>,
 ) -> Result<(), String> {
     let hosts_val = deck_store_read("hosts".into()).map_err(|e| e.to_string())?;
     let hosts_arr = hosts_val.as_array().ok_or("hosts is not an array")?;
@@ -516,7 +517,11 @@ fn ssh_open(
 
     let host_str = host_obj.get("host").and_then(|v| v.as_str()).unwrap_or("");
     let port = host_obj.get("port").and_then(|v| v.as_u64()).unwrap_or(22);
-    let user = host_obj.get("user").and_then(|v| v.as_str()).unwrap_or("");
+    let host_user = host_obj.get("user").and_then(|v| v.as_str()).unwrap_or("");
+    let user_to_use = match &user_override {
+        Some(u) if !u.is_empty() => u.as_str(),
+        _ => host_user,
+    };
     let protocol = host_obj.get("protocol").and_then(|v| v.as_str()).unwrap_or("ssh");
     let key_id = host_obj.get("keyId").and_then(|v| v.as_str()).unwrap_or("");
 
@@ -563,8 +568,8 @@ fn ssh_open(
             c.arg("-i");
             c.arg(kp);
         }
-        if !user.is_empty() {
-            c.arg(format!("{}@{}", user, host_str));
+        if !user_to_use.is_empty() {
+            c.arg(format!("{}@{}", user_to_use, host_str));
         } else {
             c.arg(host_str);
         }
@@ -587,15 +592,6 @@ fn ssh_open(
         let mut sessions = SESSIONS.lock().unwrap();
         sessions.insert(sid.clone(), pty_session);
     }
-
-    let _ = app.emit(
-        "ssh-status",
-        SshStatusPayload {
-            sid: sid.clone(),
-            state: "ready".into(),
-            log: vec![format!("Connected to {} on port {}", host_str, port)],
-        },
-    );
 
     let sid_reader = sid.clone();
     let app_reader = app.clone();

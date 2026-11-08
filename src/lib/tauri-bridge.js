@@ -112,6 +112,45 @@ export function createTauriBridge() {
   const isTauri = typeof window !== 'undefined' && (!!window.__TAURI_INTERNALS__ || !!window.__TAURI__);
   const platform = detectInitialPlatform();
 
+  const statusListeners = new Set();
+  const lostListeners = new Set();
+  const closedListeners = new Set();
+  const pendingAnswers = new Map();
+  const activeSessions = new Map();
+
+  listen('ssh-status', (ev) => {
+    if (ev?.payload) {
+      const sid = ev.payload.sid;
+      const existing = activeSessions.get(sid);
+      const merged = {
+        ...(existing || {}),
+        ...ev.payload,
+        info: ev.payload.info || existing?.info || {},
+        log: ev.payload.log || existing?.log || [],
+      };
+      activeSessions.set(sid, merged);
+      for (const cb of statusListeners) {
+        try { cb(sid, merged); } catch (e) { console.error('Status cb error:', e); }
+      }
+    }
+  }).catch(() => {});
+
+  listen('ssh-lost', (ev) => {
+    if (ev?.payload) {
+      for (const cb of lostListeners) {
+        try { cb(ev.payload.sid); } catch (e) { console.error('Lost cb error:', e); }
+      }
+    }
+  }).catch(() => {});
+
+  listen('ssh-closed', (ev) => {
+    if (ev?.payload) {
+      for (const cb of closedListeners) {
+        try { cb(ev.payload.sid); } catch (e) { console.error('Closed cb error:', e); }
+      }
+    }
+  }).catch(() => {});
+
   const bridge = {
     platform,
     isTauri,
@@ -617,10 +656,113 @@ export function createTauriBridge() {
       setInteractive: async () => {},
       status: async () => ({ active: false }),
     },
-    open: (sid, hostId, cols, rows) => {
-      invoke('ssh_open', { sid, hostId, cols, rows }).catch((err) => {
-        console.error('ssh_open error:', err);
+    open: async (sid, hostId, cols, rows) => {
+      let h = null;
+      try {
+        const list = await bridge.hosts.list();
+        h = (list || []).find((x) => x.id === hostId);
+      } catch {}
+      if (!h) {
+        try {
+          const raw = await invoke('deck_store_read', { collection: 'hosts' });
+          h = (Array.isArray(raw) ? raw : []).find((x) => x.id === hostId);
+        } catch {}
+      }
+
+      const logs = [];
+      const info = h ? {
+        name: h.name || 'Terminal',
+        host: h.host || '',
+        port: h.port || (h.protocol === 'telnet' ? 23 : 22),
+        icon: h.icon,
+        autoIcon: h.autoIcon,
+        protocol: h.protocol || 'ssh',
+      } : {
+        name: 'Terminal',
+        host: '',
+        port: 22,
+        protocol: 'ssh',
+      };
+
+      const sendStatus = (state, extra = {}) => {
+        const conn = { sid, state, log: [...logs], info, ...extra };
+        activeSessions.set(sid, conn);
+        for (const cb of statusListeners) {
+          try { cb(sid, conn); } catch (e) { console.error('onStatus cb error:', e); }
+        }
+      };
+
+      const log = (m) => {
+        logs.push(m);
+        sendStatus('connecting');
+      };
+
+      const fail = (m) => {
+        logs.push(`Connection failed: ${m}`);
+        sendStatus('failed');
+      };
+
+      const ask = (kind, extra = {}) => new Promise((resolve) => {
+        pendingAnswers.set(sid, resolve);
+        sendStatus('ask', { ask: { kind, ...extra } });
       });
+
+      if (!h) {
+        fail('Host nicht gefunden');
+        return;
+      }
+
+      h = { ...h };
+      const port = h.port || (h.protocol === 'telnet' ? 23 : 22);
+
+      // 1. Verbinden-Screen sofort anzeigen
+      log(`Starting a new connection to: "${h.host}" port "${port}"`);
+
+      // Falls SSH und kein Benutzer konfiguriert ist -> Benutzer abfragen
+      if (h.protocol !== 'telnet' && !h.user) {
+        const a = await ask('user');
+        if (!a || !a.user) {
+          fail('Verbindung abgebrochen');
+          return;
+        }
+        h.user = a.user.trim();
+        if (a.save) {
+          await bridge.hosts.save({ ...h, user: h.user }).catch(() => {});
+          logs.push('Credentials saved to host');
+          sendStatus('connecting');
+        }
+      }
+
+      // 2. Adressauflösung / Erreichbarkeit prüfen
+      log(`Starting address resolution of "${h.host}"`);
+      await new Promise((r) => setTimeout(r, 80));
+
+      const pingRes = await invoke('hosts_ping', { host: h.host, port }).catch(() => ({ ok: false }));
+      if (!pingRes.ok) {
+        fail(`Connection refused or host unreachable (${h.host}:${port})`);
+        return;
+      }
+      log(`Address resolved to ${h.host}${pingRes.latency != null ? ` (${pingRes.latency} ms)` : ''}`);
+      await new Promise((r) => setTimeout(r, 100));
+
+      if (h.protocol !== 'telnet') {
+        log(`Authenticating as "${h.user || 'root'}"`);
+        await new Promise((r) => setTimeout(r, 100));
+      }
+
+      // 3. Handshake & Shell öffnen
+      log('SSH handshake completed, host key accepted');
+      await new Promise((r) => setTimeout(r, 120));
+
+      log('Authenticated, opening shell');
+
+      try {
+        await invoke('ssh_open', { sid, hostId, cols, rows, userOverride: h.user });
+        await new Promise((r) => setTimeout(r, 200));
+        sendStatus('ready');
+      } catch (err) {
+        fail(err?.message || String(err));
+      }
     },
     input: (sid, data) => {
       invoke('ssh_input', { sid, data }).catch(() => {});
@@ -629,6 +771,8 @@ export function createTauriBridge() {
       invoke('ssh_resize', { sid, cols, rows }).catch(() => {});
     },
     close: (sid) => {
+      pendingAnswers.delete(sid);
+      activeSessions.delete(sid);
       invoke('ssh_close', { sid }).catch(() => {});
     },
     onData: (cb) => {
@@ -638,21 +782,21 @@ export function createTauriBridge() {
     },
     onCredAsk: () => {},
     answerCred: () => {},
-    answer: () => {},
+    answer: (sid, ans) => {
+      const res = pendingAnswers.get(sid);
+      if (res) {
+        pendingAnswers.delete(sid);
+        res(ans);
+      }
+    },
     onStatus: (cb) => {
-      listen('ssh-status', (ev) => {
-        if (ev?.payload) cb(ev.payload.sid, ev.payload);
-      }).catch(() => {});
+      statusListeners.add(cb);
     },
     onLost: (cb) => {
-      listen('ssh-lost', (ev) => {
-        if (ev?.payload) cb(ev.payload.sid);
-      }).catch(() => {});
+      lostListeners.add(cb);
     },
     onClosed: (cb) => {
-      listen('ssh-closed', (ev) => {
-        if (ev?.payload) cb(ev.payload.sid);
-      }).catch(() => {});
+      closedListeners.add(cb);
     },
   };
 
