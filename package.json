@@ -8,6 +8,7 @@
   "description": "Minimaler SSH-Client im Stil von Termius",
   "main": "main.js",
   "scripts": {
+    "dev": "vite",
     "start": "node start.js",
     "test": "node test.js",
     "build": "vite build",
