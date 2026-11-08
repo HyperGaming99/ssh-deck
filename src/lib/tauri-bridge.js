@@ -1220,34 +1220,32 @@ except Exception as e:
 // Synchron sofort initialisieren, falls window.api noch nicht vorhanden ist (z.B. in Tauri oder Browser-Mode)
 if (typeof window !== 'undefined' && !window.api) {
   const b = createTauriBridge();
-  window.api = b;
-  globalThis.api = b;
+  try { window.api = b; } catch {}
+  try { globalThis.api = b; } catch {}
 
   // Asynchron echte Plattform von Rust abfragen
   invoke('get_platform')
     .then((p) => {
       if (p) {
-        window.api.platform = p;
-        globalThis.api.platform = p;
+        try { window.api.platform = p; } catch {}
+        try { globalThis.api.platform = p; } catch {}
       }
     })
     .catch(() => {});
-} else if (typeof window !== 'undefined' && window.api) {
-  globalThis.api = window.api;
 }
 
 export async function initTauriBridge() {
   if (typeof window === 'undefined') return;
   if (!window.api) {
     const b = createTauriBridge();
-    window.api = b;
-    globalThis.api = b;
+    try { window.api = b; } catch {}
+    try { globalThis.api = b; } catch {}
   }
   try {
     const p = await invoke('get_platform');
     if (p) {
-      window.api.platform = p;
-      globalThis.api.platform = p;
+      try { window.api.platform = p; } catch {}
+      try { globalThis.api.platform = p; } catch {}
     }
   } catch {}
 }
