@@ -736,5 +736,19 @@
   "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "يمسح كلمات المرور الحساسة من الحافظة بعد 30 ثانية",
   "Sitzung „{title}“ wegen Inaktivität getrennt.": "تم فصل الجلسة “{title}” بسبب عدم النشاط.",
   "60 min": "60 دقيقة",
-  "Unverschlüsselte Verbindung (Telnet)": "اتصال غير مشفر (Telnet)"
+  "Unverschlüsselte Verbindung (Telnet)": "اتصال غير مشفر (Telnet)",
+  "Sitzung live teilen": "مشاركة الجلسة مباشرة",
+  "Ermöglicht Kollegen das Zuschauen oder gemeinsame Tippen im Terminal über einen lokalen Link oder QR-Code.": "يتيح للزملاء المشاهدة أو الكتابة بشكل تعاوني في الطرفية عبر رابط محلي أو رمز QR.",
+  "Gemeinsam tippen (Paired Programming)": "كتابة تعاونية (البرمجة الزوجية)",
+  "Zuschauer dürfen Befehle eingeben und interaktiv zusammenarbeiten": "يمكن للمشاهدين إدخال الأوامر والتعاون بشكل تفاعلي",
+  "Freigabe aktiv": "المشاركة نشطة",
+  "Freigabe inaktiv": "المشاركة غير نشطة",
+  "Freigabe starten": "بدء المشاركة",
+  "Freigabe beenden": "إيقاف المشاركة",
+  "Link kopieren": "نسخ الرابط",
+  "Link kopiert.": "تم نسخ الرابط.",
+  "{n} Zuschauer verbunden": "تم اتصال {n} من المشاهدين",
+  "Keine Zuschauer": "لا يوجد مشاهدين",
+  "QR-Code zum Beitreten scannen:": "امسح رمز QR للانضمام:",
+  "Freigabe-Link:": "رابط المشاركة:"
 }

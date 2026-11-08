@@ -736,5 +736,19 @@
   "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "Clears sensitive passwords from clipboard after 30 seconds",
   "Sitzung „{title}“ wegen Inaktivität getrennt.": "Session “{title}” disconnected due to inactivity.",
   "60 min": "60 min",
-  "Unverschlüsselte Verbindung (Telnet)": "Unencrypted connection (Telnet)"
+  "Unverschlüsselte Verbindung (Telnet)": "Unencrypted connection (Telnet)",
+  "Sitzung live teilen": "Share session live",
+  "Ermöglicht Kollegen das Zuschauen oder gemeinsame Tippen im Terminal über einen lokalen Link oder QR-Code.": "Allows colleagues to watch or type collaboratively in the terminal via local link or QR code.",
+  "Gemeinsam tippen (Paired Programming)": "Collaborative typing (Paired Programming)",
+  "Zuschauer dürfen Befehle eingeben und interaktiv zusammenarbeiten": "Viewers can enter commands and collaborate interactively",
+  "Freigabe aktiv": "Sharing active",
+  "Freigabe inaktiv": "Sharing inactive",
+  "Freigabe starten": "Start sharing",
+  "Freigabe beenden": "Stop sharing",
+  "Link kopieren": "Copy link",
+  "Link kopiert.": "Link copied.",
+  "{n} Zuschauer verbunden": "{n} viewers connected",
+  "Keine Zuschauer": "No viewers",
+  "QR-Code zum Beitreten scannen:": "Scan QR code to join:",
+  "Freigabe-Link:": "Share link:"
 }

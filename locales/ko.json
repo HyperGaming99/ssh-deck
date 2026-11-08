@@ -736,5 +736,19 @@
   "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "30초 후 클립보드에서 민감한 비밀번호를 지웁니다",
   "Sitzung „{title}“ wegen Inaktivität getrennt.": "유휴 상태로 인해 “{title}” 세션이 연결 해제되었습니다.",
   "60 min": "60분",
-  "Unverschlüsselte Verbindung (Telnet)": "암호화되지 않은 연결 (Telnet)"
+  "Unverschlüsselte Verbindung (Telnet)": "암호화되지 않은 연결 (Telnet)",
+  "Sitzung live teilen": "세션 라이브 공유",
+  "Ermöglicht Kollegen das Zuschauen oder gemeinsame Tippen im Terminal über einen lokalen Link oder QR-Code.": "동료가 로컬 링크나 QR 코드를 통해 터미널을 보거나 함께 입력할 수 있도록 합니다.",
+  "Gemeinsam tippen (Paired Programming)": "공동 입력 (페어 프로그래밍)",
+  "Zuschauer dürfen Befehle eingeben und interaktiv zusammenarbeiten": "시청자가 명령을 입력하고 대화형으로 협업할 수 있습니다",
+  "Freigabe aktiv": "공유 중",
+  "Freigabe inaktiv": "공유 중지됨",
+  "Freigabe starten": "공유 시작",
+  "Freigabe beenden": "공유 종료",
+  "Link kopieren": "링크 복사",
+  "Link kopiert.": "링크가 복사되었습니다.",
+  "{n} Zuschauer verbunden": "{n}명의 시청자 연결됨",
+  "Keine Zuschauer": "시청자 없음",
+  "QR-Code zum Beitreten scannen:": "참여하려면 QR 코드를 스캔하세요:",
+  "Freigabe-Link:": "공유 링크:"
 }

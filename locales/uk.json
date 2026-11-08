@@ -736,5 +736,19 @@
   "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "Видаляє конфіденційні паролі з буфера обміну через 30 секунд",
   "Sitzung „{title}“ wegen Inaktivität getrennt.": "Сесію «{title}» відключено через неактивність.",
   "60 min": "60 хв",
-  "Unverschlüsselte Verbindung (Telnet)": "Незашифроване з'єднання (Telnet)"
+  "Unverschlüsselte Verbindung (Telnet)": "Незашифроване з'єднання (Telnet)",
+  "Sitzung live teilen": "Транслювати сесію наживо",
+  "Ermöglicht Kollegen das Zuschauen oder gemeinsame Tippen im Terminal über einen lokalen Link oder QR-Code.": "Дозволяє колегам переглядати або спільно набирати команди в терміналі за локальним посиланням або QR-кодом.",
+  "Gemeinsam tippen (Paired Programming)": "Спільне введення (Парне програмування)",
+  "Zuschauer dürfen Befehle eingeben und interaktiv zusammenarbeiten": "Глядачі можуть вводити команди та інтерактивно співпрацювати",
+  "Freigabe aktiv": "Трансляція активна",
+  "Freigabe inaktiv": "Трансляція неактивна",
+  "Freigabe starten": "Почати трансляцію",
+  "Freigabe beenden": "Зупинити трансляцію",
+  "Link kopieren": "Скопіювати посилання",
+  "Link kopiert.": "Посилання скопійовано.",
+  "{n} Zuschauer verbunden": "{n} глядачів підключено",
+  "Keine Zuschauer": "Немає глядачів",
+  "QR-Code zum Beitreten scannen:": "Відскануйте QR-код, щоб приєднатися:",
+  "Freigabe-Link:": "Посилання для приєднання:"
 }

@@ -736,5 +736,19 @@
   "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "Limpa senhas confidenciais da área de transferência após 30 segundos",
   "Sitzung „{title}“ wegen Inaktivität getrennt.": "Sessão “{title}” desconectada devido à inatividade.",
   "60 min": "60 min",
-  "Unverschlüsselte Verbindung (Telnet)": "Conexão não criptografada (Telnet)"
+  "Unverschlüsselte Verbindung (Telnet)": "Conexão não criptografada (Telnet)",
+  "Sitzung live teilen": "Compartilhar sessão ao vivo",
+  "Ermöglicht Kollegen das Zuschauen oder gemeinsame Tippen im Terminal über einen lokalen Link oder QR-Code.": "Permite que colegas assistam ou digitem colaborativamente no terminal por meio de um link local ou código QR.",
+  "Gemeinsam tippen (Paired Programming)": "Digitação colaborativa (Programação em par)",
+  "Zuschauer dürfen Befehle eingeben und interaktiv zusammenarbeiten": "Os espectadores podem inserir comandos e colaborar interativamente",
+  "Freigabe aktiv": "Compartilhamento ativo",
+  "Freigabe inaktiv": "Compartilhamento inativo",
+  "Freigabe starten": "Iniciar compartilhamento",
+  "Freigabe beenden": "Parar compartilhamento",
+  "Link kopieren": "Copiar link",
+  "Link kopiert.": "Link copiado.",
+  "{n} Zuschauer verbunden": "{n} espectadores conectados",
+  "Keine Zuschauer": "Sem espectadores",
+  "QR-Code zum Beitreten scannen:": "Escaneie o código QR para entrar:",
+  "Freigabe-Link:": "Link de compartilhamento:"
 }

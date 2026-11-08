@@ -736,5 +736,19 @@
   "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "Czyści poufne hasła ze schowka po 30 sekundach",
   "Sitzung „{title}“ wegen Inaktivität getrennt.": "Sesja „{title}” rozłączona z powodu braku aktywności.",
   "60 min": "60 min",
-  "Unverschlüsselte Verbindung (Telnet)": "Niezaszyfrowane połączenie (Telnet)"
+  "Unverschlüsselte Verbindung (Telnet)": "Niezaszyfrowane połączenie (Telnet)",
+  "Sitzung live teilen": "Udostępnij sesję na żywo",
+  "Ermöglicht Kollegen das Zuschauen oder gemeinsame Tippen im Terminal über einen lokalen Link oder QR-Code.": "Umożliwia współpracownikom oglądanie lub wspólne pisanie w terminalu za pośrednictwem lokalnego linku lub kodu QR.",
+  "Gemeinsam tippen (Paired Programming)": "Wspólne pisanie (Programowanie w parach)",
+  "Zuschauer dürfen Befehle eingeben und interaktiv zusammenarbeiten": "Widzowie mogą wprowadzać polecenia i współpracować interaktywnie",
+  "Freigabe aktiv": "Udostępnianie aktywne",
+  "Freigabe inaktiv": "Udostępnianie nieaktywne",
+  "Freigabe starten": "Rozpocznij udostępnianie",
+  "Freigabe beenden": "Zakończ udostępnianie",
+  "Link kopieren": "Kopiuj link",
+  "Link kopiert.": "Skopiowano link.",
+  "{n} Zuschauer verbunden": "Połączono {n} widzów",
+  "Keine Zuschauer": "Brak widzów",
+  "QR-Code zum Beitreten scannen:": "Zeskanuj kod QR, aby dołączyć:",
+  "Freigabe-Link:": "Link do udostępnienia:"
 }

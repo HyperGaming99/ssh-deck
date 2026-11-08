@@ -26,6 +26,7 @@ const kcTools = require('./keyvault');
 const k8sTools = require('./k8s');
 const dockerTools = require('./docker');
 const healthTools = require('./health');
+const shareTools = require('./share');
 
 const sessions = new Map(); // sid -> { conn, stream }
 const sftps = new Map(); // sid -> { conn, sftp }
@@ -458,8 +459,8 @@ function connect(win, sid, h, cols, rows) {
       const stream = telnetTools.session(sock, { cols, rows });
       sessions.set(sid, { conn, stream, hostId: h.id });
       status('ready');
-      stream.on('data', (d) => send('ssh:data', d.toString('utf8')));
-      stream.on('close', () => { endAll(conn); if (!stale()) { sessions.delete(sid); send('ssh:closed'); } });
+      stream.on('data', (d) => { const str = d.toString('utf8'); shareTools.shareManager.writeOutput(sid, str); send('ssh:data', str); });
+      stream.on('close', () => { shareTools.shareManager.stop(sid); endAll(conn); if (!stale()) { sessions.delete(sid); send('ssh:closed'); } });
       return;
     }
     const done = await completeCreds(h, ask);
@@ -478,11 +479,11 @@ function connect(win, sid, h, cols, rows) {
         sessions.set(sid, { conn, stream, hostId: h.id });
         shell = true;
         status('ready');
-        stream.on('data', (d) => send('ssh:data', d.toString('utf8')));
-        stream.on('close', () => { if (!shell) return; shell = false; endAll(conn); sessions.delete(sid); send('ssh:closed'); });
+        stream.on('data', (d) => { const str = d.toString('utf8'); shareTools.shareManager.writeOutput(sid, str); send('ssh:data', str); });
+        stream.on('close', () => { if (!shell) return; shell = false; shareTools.shareManager.stop(sid); endAll(conn); sessions.delete(sid); send('ssh:closed'); });
       });
     }).on('error', (e) => { if (!shell) fail(e.message); }) // nach dem Start folgt 'close' (z. B. Keepalive-Timeout)
-      .on('close', () => { if (shell && !stale()) { shell = false; sessions.delete(sid); send('ssh:lost'); } });
+      .on('close', () => { if (shell && !stale()) { shell = false; shareTools.shareManager.stop(sid); sessions.delete(sid); send('ssh:lost'); } });
     sshConnectJump(conn, h, sshConfig(h, auth), ask, log, true);
   })();
 }
@@ -1397,11 +1398,25 @@ app.whenReady().then(() => {
     if (res.code !== 0) return { error: res.stderr || 'Aufräumen fehlgeschlagen' };
     return { data: res.stdout };
   });
+  // Live Terminal Sharing
+  ipcMain.handle('share:start', async (_, sid, title) => {
+    return shareTools.shareManager.start(sid, (id) => sessions.get(id), title);
+  });
+  ipcMain.handle('share:stop', async (_, sid) => {
+    return shareTools.shareManager.stop(sid);
+  });
+  ipcMain.handle('share:setInteractive', async (_, sid, interactive) => {
+    return shareTools.shareManager.setInteractive(sid, interactive);
+  });
+  ipcMain.handle('share:status', async (_, sid) => {
+    return shareTools.shareManager.getStatus(sid);
+  });
+
   ipcMain.on('ssh:input', (_, sid, d) => sessions.get(sid)?.stream?.write(d));
   ipcMain.on('cred:answer', (_, id, a) => { credAsks.get(id)?.(a); credAsks.delete(id); });
   ipcMain.on('ssh:answer', (_, sid, a) => { pending.get(sid)?.(a); pending.delete(sid); });
   ipcMain.on('ssh:resize', (_, sid, cols, rows) => sessions.get(sid)?.stream?.setWindow(rows, cols, 0, 0));
-  ipcMain.on('ssh:close', (_, sid) => { pending.get(sid)?.(null); pending.delete(sid); const s = sessions.get(sid); if (s) endAll(s.conn); sessions.delete(sid); });
+  ipcMain.on('ssh:close', (_, sid) => { shareTools.shareManager.stop(sid); pending.get(sid)?.(null); pending.delete(sid); const s = sessions.get(sid); if (s) endAll(s.conn); sessions.delete(sid); });
 });
 
 app.whenReady().then(() => {
@@ -1412,5 +1427,5 @@ app.whenReady().then(() => {
   setInterval(scheduleSync, 5 * 60 * 1000);
   mainWin.on('focus', scheduleSync);
 });
-app.on('before-quit', () => { torTools.stop(); [...edits.keys()].forEach(stopEdits); });
+app.on('before-quit', () => { shareTools.shareManager.stopAll(); torTools.stop(); [...edits.keys()].forEach(stopEdits); });
 app.on('window-all-closed', () => app.quit());

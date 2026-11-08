@@ -194,6 +194,12 @@ contextBridge.exposeInMainWorld('api', {
     removeNetwork: () => ok({ ok: true }),
     prune: () => ok({ ok: true }),
   },
+  share: {
+    start: () => ok({ active: true, port: 8080, token: 'abc', urls: [{ name: 'LAN', ip: '192.168.1.100', url: 'http://192.168.1.100:8080/?token=abc' }], interactive: true, viewers: 1 }),
+    stop: () => ok(true),
+    setInteractive: () => ok(true),
+    status: () => ok(null),
+  },
   sync: {
     status: () => ok({
       configured: true, email: 'alex@example.com', server: 'https://sync.example.com',

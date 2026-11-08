@@ -736,5 +736,19 @@
   "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "Borra contraseñas confidenciales del portapapeles después de 30 segundos",
   "Sitzung „{title}“ wegen Inaktivität getrennt.": "Sesión “{title}” desconectada por inactividad.",
   "60 min": "60 min",
-  "Unverschlüsselte Verbindung (Telnet)": "Conexión no cifrada (Telnet)"
+  "Unverschlüsselte Verbindung (Telnet)": "Conexión no cifrada (Telnet)",
+  "Sitzung live teilen": "Compartir sesión en vivo",
+  "Ermöglicht Kollegen das Zuschauen oder gemeinsame Tippen im Terminal über einen lokalen Link oder QR-Code.": "Permite a los compañeros ver o escribir colaborativamente en la terminal mediante un enlace local o código QR.",
+  "Gemeinsam tippen (Paired Programming)": "Escritura colaborativa (Programación en parejas)",
+  "Zuschauer dürfen Befehle eingeben und interaktiv zusammenarbeiten": "Los espectadores pueden introducir comandos y colaborar de forma interactiva",
+  "Freigabe aktiv": "Compartición activa",
+  "Freigabe inaktiv": "Compartición inactiva",
+  "Freigabe starten": "Iniciar compartición",
+  "Freigabe beenden": "Detener compartición",
+  "Link kopieren": "Copiar enlace",
+  "Link kopiert.": "Enlace copiado.",
+  "{n} Zuschauer verbunden": "{n} espectadores conectados",
+  "Keine Zuschauer": "Sin espectadores",
+  "QR-Code zum Beitreten scannen:": "Escanea el código QR para unirte:",
+  "Freigabe-Link:": "Enlace para compartir:"
 }

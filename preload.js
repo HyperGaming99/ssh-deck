@@ -129,6 +129,12 @@ contextBridge.exposeInMainWorld('api', {
     removeNetwork: (hostId, spec) => unwrap(ipcRenderer.invoke('docker:removeNetwork', hostId, spec)),
     prune: (hostId, spec) => unwrap(ipcRenderer.invoke('docker:prune', hostId, spec)),
   },
+  share: {
+    start: (sid, title) => ipcRenderer.invoke('share:start', sid, title),
+    stop: (sid) => ipcRenderer.invoke('share:stop', sid),
+    setInteractive: (sid, interactive) => ipcRenderer.invoke('share:setInteractive', sid, interactive),
+    status: (sid) => ipcRenderer.invoke('share:status', sid),
+  },
   open: (sid, id, cols, rows) => ipcRenderer.send('ssh:open', sid, id, cols, rows),
   stats: (sid) => ipcRenderer.invoke('stats:get', sid),
   input: (sid, d) => ipcRenderer.send('ssh:input', sid, d),

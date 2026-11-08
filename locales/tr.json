@@ -736,5 +736,19 @@
   "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "Hassas parolaları 30 saniye sonra panodan temizler",
   "Sitzung „{title}“ wegen Inaktivität getrennt.": "“{title}” oturumu hareketsizlik nedeniyle sonlandırıldı.",
   "60 min": "60 dk",
-  "Unverschlüsselte Verbindung (Telnet)": "Şifrelenmemiş bağlantı (Telnet)"
+  "Unverschlüsselte Verbindung (Telnet)": "Şifrelenmemiş bağlantı (Telnet)",
+  "Sitzung live teilen": "Oturumu canlı paylaş",
+  "Ermöglicht Kollegen das Zuschauen oder gemeinsame Tippen im Terminal über einen lokalen Link oder QR-Code.": "Meslektaşların yerel bağlantı veya QR kod ile terminali izlemesini veya birlikte yazmasını sağlar.",
+  "Gemeinsam tippen (Paired Programming)": "Birlikte yazma (Eşli programlama)",
+  "Zuschauer dürfen Befehle eingeben und interaktiv zusammenarbeiten": "İzleyiciler komut girebilir ve etkileşimli olarak işbirliği yapabilir",
+  "Freigabe aktiv": "Paylaşım aktif",
+  "Freigabe inaktiv": "Paylaşım etkin değil",
+  "Freigabe starten": "Paylaşımı başlat",
+  "Freigabe beenden": "Paylaşımı durdur",
+  "Link kopieren": "Bağlantıyı kopyala",
+  "Link kopiert.": "Bağlantı kopyalandı.",
+  "{n} Zuschauer verbunden": "{n} izleyici bağlandı",
+  "Keine Zuschauer": "İzleyici yok",
+  "QR-Code zum Beitreten scannen:": "Katılmak için QR kodunu tarayın:",
+  "Freigabe-Link:": "Paylaşım bağlantısı:"
 }

@@ -736,5 +736,19 @@
   "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "30秒後にクリップボードから機密パスワードを消去します",
   "Sitzung „{title}“ wegen Inaktivität getrennt.": "非アクティブのためセッション「{title}」を切断しました。",
   "60 min": "60分",
-  "Unverschlüsselte Verbindung (Telnet)": "非暗号化接続 (Telnet)"
+  "Unverschlüsselte Verbindung (Telnet)": "非暗号化接続 (Telnet)",
+  "Sitzung live teilen": "セッションをライブ共有",
+  "Ermöglicht Kollegen das Zuschauen oder gemeinsame Tippen im Terminal über einen lokalen Link oder QR-Code.": "同僚がローカルリンクやQRコードを通じてターミナルを閲覧したり、ペアプログラミングしたりできるようにします。",
+  "Gemeinsam tippen (Paired Programming)": "共同入力 (ペアプログラミング)",
+  "Zuschauer dürfen Befehle eingeben und interaktiv zusammenarbeiten": "閲覧者がコマンドを入力してインタラクティブに共同作業できます",
+  "Freigabe aktiv": "共有中",
+  "Freigabe inaktiv": "共有停止中",
+  "Freigabe starten": "共有を開始",
+  "Freigabe beenden": "共有を停止",
+  "Link kopieren": "リンクをコピー",
+  "Link kopiert.": "リンクをコピーしました。",
+  "{n} Zuschauer verbunden": "{n} 人の閲覧者が接続中",
+  "Keine Zuschauer": "閲覧者なし",
+  "QR-Code zum Beitreten scannen:": "参加用QRコードをスキャン:",
+  "Freigabe-Link:": "共有リンク:"
 }

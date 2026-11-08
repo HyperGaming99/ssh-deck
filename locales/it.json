@@ -736,5 +736,19 @@
   "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "Cancella le password sensibili dagli appunti dopo 30 secondi",
   "Sitzung „{title}“ wegen Inaktivität getrennt.": "Sessione “{title}” disconnessa per inattività.",
   "60 min": "60 min",
-  "Unverschlüsselte Verbindung (Telnet)": "Connessione non crittografata (Telnet)"
+  "Unverschlüsselte Verbindung (Telnet)": "Connessione non crittografata (Telnet)",
+  "Sitzung live teilen": "Condividi sessione dal vivo",
+  "Ermöglicht Kollegen das Zuschauen oder gemeinsame Tippen im Terminal über einen lokalen Link oder QR-Code.": "Consente ai colleghi di guardare o digitare in modo collaborativo nel terminale tramite link locale o codice QR.",
+  "Gemeinsam tippen (Paired Programming)": "Digitazione collaborativa (Programmazione in coppia)",
+  "Zuschauer dürfen Befehle eingeben und interaktiv zusammenarbeiten": "Gli spettatori possono inserire comandi e collaborare in modo interattivo",
+  "Freigabe aktiv": "Condivisione attiva",
+  "Freigabe inaktiv": "Condivisione non attiva",
+  "Freigabe starten": "Avvia condivisione",
+  "Freigabe beenden": "Interrompi condivisione",
+  "Link kopieren": "Copia link",
+  "Link kopiert.": "Link copiato.",
+  "{n} Zuschauer verbunden": "{n} spettatori connessi",
+  "Keine Zuschauer": "Nessuno spettatore",
+  "QR-Code zum Beitreten scannen:": "Scansiona il codice QR per unirti:",
+  "Freigabe-Link:": "Link di condivisione:"
 }

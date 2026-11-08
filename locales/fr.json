@@ -736,5 +736,19 @@
   "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "Efface les mots de passe sensibles du presse-papiers après 30 secondes",
   "Sitzung „{title}“ wegen Inaktivität getrennt.": "Session « {title} » déconnectée en raison de l'inactivité.",
   "60 min": "60 min",
-  "Unverschlüsselte Verbindung (Telnet)": "Connexion non chiffrée (Telnet)"
+  "Unverschlüsselte Verbindung (Telnet)": "Connexion non chiffrée (Telnet)",
+  "Sitzung live teilen": "Partager la session en direct",
+  "Ermöglicht Kollegen das Zuschauen oder gemeinsame Tippen im Terminal über einen lokalen Link oder QR-Code.": "Permet aux collègues de regarder ou de taper en collaboration dans le terminal via un lien local ou un code QR.",
+  "Gemeinsam tippen (Paired Programming)": "Saisie collaborative (Pair programming)",
+  "Zuschauer dürfen Befehle eingeben und interaktiv zusammenarbeiten": "Les spectateurs peuvent saisir des commandes et collaborer de manière interactive",
+  "Freigabe aktiv": "Partage actif",
+  "Freigabe inaktiv": "Partage inactif",
+  "Freigabe starten": "Démarrer le partage",
+  "Freigabe beenden": "Arrêter le partage",
+  "Link kopieren": "Copier le lien",
+  "Link kopiert.": "Lien copié.",
+  "{n} Zuschauer verbunden": "{n} spectateurs connectés",
+  "Keine Zuschauer": "Aucun spectateur",
+  "QR-Code zum Beitreten scannen:": "Scannez le code QR pour rejoindre :",
+  "Freigabe-Link:": "Lien de partage :"
 }

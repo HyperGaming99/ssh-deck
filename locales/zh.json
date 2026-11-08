@@ -736,5 +736,19 @@
   "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "30 秒后从剪贴板清除敏感密码",
   "Sitzung „{title}“ wegen Inaktivität getrennt.": "由于长时间未操作，会话“{title}”已断开。",
   "60 min": "60 分钟",
-  "Unverschlüsselte Verbindung (Telnet)": "未加密连接 (Telnet)"
+  "Unverschlüsselte Verbindung (Telnet)": "未加密连接 (Telnet)",
+  "Sitzung live teilen": "实时共享会话",
+  "Ermöglicht Kollegen das Zuschauen oder gemeinsame Tippen im Terminal über einen lokalen Link oder QR-Code.": "允许同事通过局域网链接或二维码观看或在终端中协作输入。",
+  "Gemeinsam tippen (Paired Programming)": "协同输入 (结对编程)",
+  "Zuschauer dürfen Befehle eingeben und interaktiv zusammenarbeiten": "观众可以输入命令并进行交互式协作",
+  "Freigabe aktiv": "共享中",
+  "Freigabe inaktiv": "未共享",
+  "Freigabe starten": "开始共享",
+  "Freigabe beenden": "停止共享",
+  "Link kopieren": "复制链接",
+  "Link kopiert.": "链接已复制。",
+  "{n} Zuschauer verbunden": "{n} 位观众在线",
+  "Keine Zuschauer": "暂无观众",
+  "QR-Code zum Beitreten scannen:": "扫码加入：",
+  "Freigabe-Link:": "共享链接："
 }

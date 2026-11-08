@@ -736,5 +736,19 @@
   "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "Удаляет пароли из буфера обмена через 30 секунд",
   "Sitzung „{title}“ wegen Inaktivität getrennt.": "Сессия «{title}» отключена из-за неактивности.",
   "60 min": "60 мин",
-  "Unverschlüsselte Verbindung (Telnet)": "Незашифрованное соединение (Telnet)"
+  "Unverschlüsselte Verbindung (Telnet)": "Незашифрованное соединение (Telnet)",
+  "Sitzung live teilen": "Транслировать сессию",
+  "Ermöglicht Kollegen das Zuschauen oder gemeinsame Tippen im Terminal über einen lokalen Link oder QR-Code.": "Позволяет коллегам наблюдать или совместно работать в терминале по локальной ссылке или QR-коду.",
+  "Gemeinsam tippen (Paired Programming)": "Совместный ввод (Парное программирование)",
+  "Zuschauer dürfen Befehle eingeben und interaktiv zusammenarbeiten": "Зрители могут вводить команды и интерактивно сотрудничать",
+  "Freigabe aktiv": "Трансляция активна",
+  "Freigabe inaktiv": "Трансляция неактивна",
+  "Freigabe starten": "Начать трансляцию",
+  "Freigabe beenden": "Остановить трансляцию",
+  "Link kopieren": "Скопировать ссылку",
+  "Link kopiert.": "Ссылка скопирована.",
+  "{n} Zuschauer verbunden": "{n} зрителей подключено",
+  "Keine Zuschauer": "Нет зрителей",
+  "QR-Code zum Beitreten scannen:": "Отсканируйте QR-код для подключения:",
+  "Freigabe-Link:": "Ссылка для подключения:"
 }

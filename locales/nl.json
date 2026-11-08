@@ -736,5 +736,19 @@
   "Leert sensible Passwörter nach 30 Sekunden aus der Zwischenablage": "Wist gevoelige wachtwoorden na 30 seconden van het klembord",
   "Sitzung „{title}“ wegen Inaktivität getrennt.": "Sessie “{title}” verbroken wegens inactiviteit.",
   "60 min": "60 min",
-  "Unverschlüsselte Verbindung (Telnet)": "Niet-versleutelde verbinding (Telnet)"
+  "Unverschlüsselte Verbindung (Telnet)": "Niet-versleutelde verbinding (Telnet)",
+  "Sitzung live teilen": "Sessie live delen",
+  "Ermöglicht Kollegen das Zuschauen oder gemeinsame Tippen im Terminal über einen lokalen Link oder QR-Code.": "Hiermee kunnen collega's meekijken of samen typen in de terminal via een lokale link of QR-code.",
+  "Gemeinsam tippen (Paired Programming)": "Samen typen (Pair programming)",
+  "Zuschauer dürfen Befehle eingeben und interaktiv zusammenarbeiten": "Kijkers kunnen commando's invoeren en interactief samenwerken",
+  "Freigabe aktiv": "Delen actief",
+  "Freigabe inaktiv": "Delen inactief",
+  "Freigabe starten": "Delen starten",
+  "Freigabe beenden": "Delen beëindigen",
+  "Link kopieren": "Link kopiëren",
+  "Link kopiert.": "Link gekopieerd.",
+  "{n} Zuschauer verbunden": "{n} kijkers verbonden",
+  "Keine Zuschauer": "Geen kijkers",
+  "QR-Code zum Beitreten scannen:": "Scan QR-code om deel te nemen:",
+  "Freigabe-Link:": "Deellink:"
 }

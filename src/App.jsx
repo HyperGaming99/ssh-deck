@@ -18,6 +18,7 @@ import {
   Search,
   Server,
   Settings as SettingsIcon,
+  Share2,
   Square,
   Sun,
   Terminal as TermIcon,
@@ -41,6 +42,7 @@ import TermPanel from '@/components/TermPanel';
 import SplitView, { MAX_PANES, SplitTools } from '@/components/SplitView';
 import LoginScreen from '@/components/LoginScreen';
 import LanguageSetup from '@/components/LanguageSetup';
+import ShareDialog from '@/components/ShareDialog';
 import { IconButton, LockScreen, Pill, UpdateBanner, VaultSwitcher } from '@/components/common';
 import { VaultCtx } from '@/context/VaultContext';
 import { DockerView, ForwardsView, HostsView, K8sView, KeychainView, KnownHostsView, SettingsView, SnippetsView } from '@/views';
@@ -91,6 +93,7 @@ export default function App() {
   const [active, setActive] = useState('home');
   const [form, setForm] = useState(null);
   const [hostForm, setHostForm] = useState(null); // Host-Details-Panel
+  const [shareTab, setShareTab] = useState(null); // Tab für Live-Sharing
   const [upd, setUpd] = useState(null); // neue Version verfügbar
   const [teams, setTeams] = useState([]);
   const [vault, setVaultState] = useState(() => store('vault', 'personal'));
@@ -349,6 +352,18 @@ export default function App() {
             {tabs.find((x) => x.sid === active && x.panes) && <SplitTools tab={tabs.find((x) => x.sid === active)} split={split} bc={bc} setBc={setBc} sessions={sessions} />}
             {tabs.find((x) => x.sid === active && (x.kind === 'ssh' || !x.kind)) && (() => { const tb = tabs.find((x) => x.sid === active); const on = recs[tb.focus || tb.panes[0].sid]; return <Button variant="ghost" size="icon" className={cn('mhide mr-1 size-8', on && 'text-red-500')} onClick={() => toggleRec(tb)} aria-label={on ? t('Aufzeichnung beenden') : t('Aufzeichnen')} title={on ? t('Aufzeichnung beenden') : t('Aufzeichnen')}><Circle className={cn('size-4', on && 'fill-current')} /></Button>; })()}
             {tabs.find((x) => x.sid === active && (x.kind === 'ssh' || !x.kind)) && <Button variant="ghost" size="icon" className={cn('mr-1 size-8', panel && 'text-primary')} onClick={togglePanel} aria-label={t('Seitenleiste ein-/ausblenden')}><PanelRight className="size-4" /></Button>}
+            {tabs.find((x) => x.sid === active && (x.kind === 'ssh' || !x.kind)) && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="mhide mr-1 size-8"
+                onClick={() => setShareTab(tabs.find((x) => x.sid === active))}
+                aria-label={t('Sitzung live teilen')}
+                title={t('Sitzung live teilen')}
+              >
+                <Share2 className="size-4" />
+              </Button>
+            )}
             {canLock && <Button variant="ghost" size="icon" className="mr-1 size-8" onClick={() => setLocked(true)} aria-label={t('Jetzt sperren')} title={t('Jetzt sperren')}><Lock className="size-4" /></Button>}
             <Button variant="ghost" size="icon" className="mr-1 size-8" onClick={() => setPairOpen(true)} aria-label={t('QR-Code koppeln')}><QrCode className="size-4" /></Button>
             <Button variant="ghost" size="icon" className="mr-1 size-8" onClick={() => setDark(!dark)} aria-label={t('Theme wechseln')}>
@@ -423,6 +438,7 @@ export default function App() {
       <HostSheet spec={hostForm} onClose={() => setHostForm(null)} />
       <CredDialog ask={credAsks[0]} onAnswer={(a) => { api.answerCred(credAsks[0].id, a); setCredAsks((q) => q.slice(1)); }} />
       <HostKeyDialog info={hostKeys[0]} onAnswer={(ok) => { api.answerHostKey(hostKeys[0].id, ok); setHostKeys((q) => q.slice(1)); }} />
+      <ShareDialog open={!!shareTab} onClose={() => setShareTab(null)} tab={shareTab} toast={toast} />
       {error && <div className="fixed bottom-5 right-5 rounded-lg border bg-foreground px-4 py-2.5 text-sm text-background shadow-lg">{error}</div>}
     </VaultCtx.Provider>
     </TooltipProvider>
