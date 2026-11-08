@@ -834,6 +834,7 @@ fn deck_update_apply(download_url: String, filename: String) -> Result<String, S
                     let extracted_bin = extract_dir.join("usr").join("bin").join("ssh-deck");
                     if extracted_bin.exists() {
                         let _ = std::fs::create_dir_all(local_bin.parent().unwrap());
+                        let _ = std::fs::remove_file(&local_bin);
                         let _ = std::fs::copy(&extracted_bin, &local_bin);
                         use std::os::unix::fs::PermissionsExt;
                         let _ = std::fs::set_permissions(&local_bin, std::fs::Permissions::from_mode(0o755));
