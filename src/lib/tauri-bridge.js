@@ -1,64 +1,84 @@
-// Tauri Bridge: initialisiert window.api, wenn die App innerhalb von Tauri läuft
+// Tauri Bridge: initialisiert window.api und globalThis.api, wenn die App innerhalb von Tauri oder Web läuft
 import { invoke } from '@tauri-apps/api/core';
 
-export async function initTauriBridge() {
-  if (typeof window === 'undefined') return;
-  if (!window.__TAURI_INTERNALS__) return; // Läuft in Electron oder reinem Browser
+const coll = (name) => ({
+  list: async () => {
+    try {
+      const raw = localStorage.getItem(`tauri_${name}`);
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  },
+  save: async (item) => {
+    try {
+      const raw = localStorage.getItem(`tauri_${name}`);
+      let list = raw ? JSON.parse(raw) : [];
+      if (!item.id) item.id = 'id_' + Date.now();
+      const idx = list.findIndex((x) => x.id === item.id);
+      if (idx >= 0) list[idx] = item;
+      else list.push(item);
+      localStorage.setItem(`tauri_${name}`, JSON.stringify(list));
+      return item;
+    } catch {
+      return item;
+    }
+  },
+  remove: async (id) => {
+    try {
+      const raw = localStorage.getItem(`tauri_${name}`);
+      let list = raw ? JSON.parse(raw) : [];
+      list = list.filter((x) => x.id !== id);
+      localStorage.setItem(`tauri_${name}`, JSON.stringify(list));
+      return true;
+    } catch {
+      return false;
+    }
+  },
+});
 
-  let platform = 'linux';
-  try {
-    platform = await invoke('get_platform');
-  } catch {}
+function detectInitialPlatform() {
+  if (typeof navigator === 'undefined') return 'linux';
+  const ua = navigator.userAgent || '';
+  if (ua.includes('Mac') || navigator.platform?.includes('Mac')) return 'darwin';
+  if (ua.includes('Win') || navigator.platform?.includes('Win')) return 'win32';
+  return 'linux';
+}
 
-  const coll = (name) => ({
-    list: async () => {
-      try {
-        const raw = localStorage.getItem(`tauri_${name}`);
-        return raw ? JSON.parse(raw) : [];
-      } catch {
-        return [];
-      }
-    },
-    save: async (item) => {
-      try {
-        const raw = localStorage.getItem(`tauri_${name}`);
-        let list = raw ? JSON.parse(raw) : [];
-        if (!item.id) item.id = 'id_' + Date.now();
-        const idx = list.findIndex((x) => x.id === item.id);
-        if (idx >= 0) list[idx] = item;
-        else list.push(item);
-        localStorage.setItem(`tauri_${name}`, JSON.stringify(list));
-        return item;
-      } catch {
-        return item;
-      }
-    },
-    remove: async (id) => {
-      try {
-        const raw = localStorage.getItem(`tauri_${name}`);
-        let list = raw ? JSON.parse(raw) : [];
-        list = list.filter((x) => x.id !== id);
-        localStorage.setItem(`tauri_${name}`, JSON.stringify(list));
-        return true;
-      } catch {
-        return false;
-      }
-    },
-  });
+export function createTauriBridge() {
+  const isTauri = typeof window !== 'undefined' && (!!window.__TAURI_INTERNALS__ || !!window.__TAURI__);
+  const platform = detectInitialPlatform();
 
-  window.api = {
+  const bridge = {
     platform,
-    isTauri: true,
+    isTauri,
+    saveText: async () => true,
+    saveRec: async () => true,
+    stats: async () => ({ cpu: 0, ram: 0 }),
+    importer: { pick: async () => [], commit: async () => 0 },
+    onHostKey: () => {},
+    answerHostKey: () => {},
+    onHostsChanged: () => {},
+    onEdit: () => {},
+    pathOf: (file) => (file ? file.path || file.name || '' : ''),
     win: {
-      minimize: () => invoke('win_minimize'),
-      toggleMax: () => invoke('win_toggle_maximize'),
-      close: () => invoke('win_close'),
+      minimize: () => invoke('win_minimize').catch(() => {}),
+      toggleMax: () => invoke('win_toggle_maximize').catch(() => {}),
+      close: () => invoke('win_close').catch(() => {}),
     },
     hosts: {
       ...coll('hosts'),
       get: async (id) => {
         const list = await coll('hosts').list();
         return list.find((x) => x.id === id) || null;
+      },
+      copy: async (id, vault, move, name) => {
+        const list = await coll('hosts').list();
+        const found = list.find((x) => x.id === id);
+        if (!found) return null;
+        const copyItem = { ...found, id: 'h_' + Date.now(), vault: vault || 'personal', ...(name ? { name } : {}) };
+        if (move) await coll('hosts').remove(id);
+        return await coll('hosts').save(copyItem);
       },
       reorder: async (ids) => {
         try {
@@ -76,8 +96,9 @@ export async function initTauriBridge() {
         }
       },
       pingAll: async (hostsList) => {
+        const list = hostsList || (await coll('hosts').list());
         const out = {};
-        for (const h of hostsList) {
+        for (const h of list) {
           try {
             out[h.id] = await invoke('hosts_ping', { host: h.host, port: h.port || 22 });
           } catch {
@@ -115,9 +136,33 @@ export async function initTauriBridge() {
     },
     snippets: coll('snippets'),
     forwards: coll('forwards'),
+    fwd: {
+      ...coll('fwd'),
+      toggle: async () => true,
+    },
     keys: {
       ...coll('keys'),
       create: async () => ({ id: 'k_' + Date.now() }),
+      generate: async (o) => ({ id: 'k_' + Date.now(), name: o?.name || 'Generated Key', type: o?.type || 'ed25519' }),
+      rescan: async () => 0,
+      setPassphrase: async () => {},
+      import: async (o) => ({ id: 'k_' + Date.now(), ...o }),
+      rename: async (id, name) => {
+        const list = await coll('keys').list();
+        const k = list.find((x) => x.id === id);
+        if (k) { k.name = name; await coll('keys').save(k); }
+      },
+      readFile: async () => '',
+      copy: async (id, vault, move) => {
+        const list = await coll('keys').list();
+        const found = list.find((x) => x.id === id);
+        if (!found) return null;
+        const copyItem = { ...found, id: 'k_' + Date.now(), vault: vault || 'personal' };
+        if (move) await coll('keys').remove(id);
+        return await coll('keys').save(copyItem);
+      },
+      exportPrivate: async () => null,
+      toHost: async () => null,
       readPublic: async () => '',
     },
     known: {
@@ -129,15 +174,28 @@ export async function initTauriBridge() {
       status: async () => ({ configured: false }),
       auth: async () => {},
       now: async () => {},
+      pairCreate: async () => '',
+      pairJoin: async () => {},
       logout: async () => {},
+      deleteAccount: async () => {},
       onStatus: () => {},
     },
     team: {
       list: async () => [],
+      create: async () => ({ id: 't_' + Date.now() }),
+      members: async () => [],
+      invite: async () => {},
+      setRole: async () => {},
+      remove: async () => {},
+      leave: async () => {},
+      delete: async () => {},
       onChanged: () => {},
     },
     update: {
       check: async () => null,
+      install: async () => {},
+      openPage: async () => {},
+      list: async () => [],
       onAvailable: () => {},
       onStep: () => {},
     },
@@ -162,14 +220,48 @@ export async function initTauriBridge() {
         }
       },
     },
+    sftp: {
+      open: async () => {},
+      list: async () => [],
+      mkdir: async () => {},
+      rename: async () => {},
+      remove: async () => {},
+      chmod: async () => {},
+      archive: async () => {},
+      extract: async () => {},
+      downloadArchive: async () => '',
+      upload: async () => {},
+      download: async () => {},
+      edit: async () => true,
+      copy: async () => {},
+      cancel: () => {},
+      onProgress: () => () => {},
+      close: () => {},
+    },
+    local: {
+      list: async () => [],
+      mkdir: async () => {},
+      rename: async () => {},
+      chmod: async () => {},
+      archive: async () => {},
+      extract: async () => {},
+      remove: async () => {},
+      open: async () => {},
+    },
     editors: {
       list: async () => [],
+      pick: async () => '',
     },
     tor: {
       test: async () => ({ state: 'ok', ip: '127.0.0.1' }),
     },
     kc: {
       status: async () => ({ active: false }),
+      enable: async () => {},
+      unlock: async () => {},
+      secret: async () => '',
+      setKey: async () => {},
+      disable: async () => {},
     },
     override: {
       get: async () => null,
@@ -219,6 +311,43 @@ export async function initTauriBridge() {
     onLost: () => {},
     onClosed: () => {},
   };
+
+  return bridge;
+}
+
+// Synchron sofort initialisieren, falls window.api noch nicht vorhanden ist (z.B. in Tauri oder Browser-Mode)
+if (typeof window !== 'undefined' && !window.api) {
+  const b = createTauriBridge();
+  window.api = b;
+  globalThis.api = b;
+
+  // Asynchron echte Plattform von Rust abfragen
+  invoke('get_platform')
+    .then((p) => {
+      if (p) {
+        window.api.platform = p;
+        globalThis.api.platform = p;
+      }
+    })
+    .catch(() => {});
+} else if (typeof window !== 'undefined' && window.api) {
+  globalThis.api = window.api;
+}
+
+export async function initTauriBridge() {
+  if (typeof window === 'undefined') return;
+  if (!window.api) {
+    const b = createTauriBridge();
+    window.api = b;
+    globalThis.api = b;
+  }
+  try {
+    const p = await invoke('get_platform');
+    if (p) {
+      window.api.platform = p;
+      globalThis.api.platform = p;
+    }
+  } catch {}
 }
 
 export default initTauriBridge;
