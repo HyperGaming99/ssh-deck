@@ -227,6 +227,23 @@ export function createTauriBridge() {
       .sort((a, b) => cmpSemVer(cleanVer(b), cleanVer(a)));
   }
 
+  function findAssetForPlatform(assets) {
+    if (!Array.isArray(assets) || assets.length === 0) return null;
+    const p = bridge.platform || 'linux';
+
+    if (p === 'win32') {
+      return assets.find((a) => /\.exe$/i.test(a.name)) ||
+             assets.find((a) => /\.msi$/i.test(a.name));
+    }
+    if (p === 'darwin') {
+      return assets.find((a) => /\.dmg$/i.test(a.name));
+    }
+    // Linux default: prefer .deb, then .AppImage
+    return assets.find((a) => /_amd64\.deb$/i.test(a.name)) ||
+           assets.find((a) => /\.deb$/i.test(a.name)) ||
+           assets.find((a) => /\.AppImage$/i.test(a.name));
+  }
+
   async function doCheckUpdate() {
     const cur = CURRENT_APP_VERSION;
     try {
@@ -253,7 +270,8 @@ export function createTauriBridge() {
       const latestVer = cleanVer(target);
       const isPre = !!target.prerelease || /-dev\./i.test(latestVer) || /-/.test(latestVer);
       const available = isSemVerAvailable(latestVer, cur, isPre);
-      const asset = (target.assets || []).find((a) => /\.(tar\.gz|tgz|deb|rpm|AppImage|exe|dmg|zip)$/i.test(a.name));
+      const asset = findAssetForPlatform(target.assets);
+      const canInstall = !!(asset && asset.browser_download_url);
 
       lastUpdInfo = {
         current: cur,
@@ -264,12 +282,12 @@ export function createTauriBridge() {
         notes: target.body || '',
         page: target.html_url || `https://github.com/${repo}/releases`,
         tarball: (asset && asset.browser_download_url) || target.tarball_url || '',
-        canInstall: false,
+        canInstall,
       };
 
       if (available) {
         updateListeners.forEach((fn) => {
-          try { fn({ latest: latestVer, canInstall: false }); } catch {}
+          try { fn({ latest: latestVer, canInstall }); } catch {}
         });
       }
 
@@ -293,12 +311,13 @@ export function createTauriBridge() {
       const list = cachedReleases.map((x) => {
         const version = cleanVer(x);
         const isDev = !!x.prerelease || /-dev\./i.test(version) || /-/.test(version);
-        const asset = (x.assets || []).find((a) => /\.(tar\.gz|tgz|deb|rpm|AppImage|exe|dmg|zip)$/i.test(a.name));
+        const asset = findAssetForPlatform(x.assets);
         return {
           version,
           name: x.name || version,
           prerelease: isDev,
           tarball: (asset && asset.browser_download_url) || x.tarball_url || '',
+          canInstall: !!(asset && asset.browser_download_url),
           page: x.html_url || `https://github.com/${repo}/releases`,
           publishedAt: x.published_at || x.created_at || '',
           notes: x.body || '',
@@ -577,8 +596,35 @@ export function createTauriBridge() {
     update: {
       check: doCheckUpdate,
       install: async (ver) => {
-        await doOpenReleasePage(ver);
-        return { ok: true };
+        stepListeners.forEach((fn) => { try { fn('download'); } catch {} });
+
+        let target = null;
+        if (ver) {
+          target = (cachedReleases || []).find((x) => cleanVer(x) === String(ver));
+        }
+        if (!target) {
+          target = lastUpdInfo ? (cachedReleases || []).find((x) => cleanVer(x) === lastUpdInfo.latest) : cachedReleases?.[0];
+        }
+        if (!target) {
+          return { error: 'Kein passendes Release gefunden.' };
+        }
+
+        const asset = findAssetForPlatform(target.assets);
+        if (!asset || !asset.browser_download_url) {
+          await doOpenReleasePage(ver || target.tag_name);
+          return { error: 'Kein passendes Installationspaket für diese Plattform gefunden.' };
+        }
+
+        stepListeners.forEach((fn) => { try { fn('install'); } catch {} });
+        try {
+          const res = await invoke('deck_update_apply', {
+            downloadUrl: asset.browser_download_url,
+            filename: asset.name,
+          });
+          return { ok: true, result: res };
+        } catch (err) {
+          return { error: String(err?.message || err) };
+        }
       },
       openPage: doOpenReleasePage,
       list: doListReleases,
