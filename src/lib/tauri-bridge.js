@@ -69,7 +69,7 @@ const coll = (name) => {
         let list = await invoke('deck_store_read', { collection: file });
         if (!Array.isArray(list)) list = [];
         const next = list.map((x) =>
-          x.id === id ? { id, deleted: true, ...(x.vault && { vault: x.vault }), updatedAt: Date.now() } : x
+          x.id === id ? { id, deleted: true, ...(x.path && { path: x.path }), ...(x.vault && { vault: x.vault }), updatedAt: Date.now() } : x
         );
         await invoke('deck_store_write', { collection: file, data: next });
         return true;

@@ -77,7 +77,6 @@ export function KeychainView({ dark, openForm, toast }) {
   const keyMenu = (k) => {
     const others = vaults.filter((x) => x.id !== vault);
     const cloudOk = vault === 'personal' && kc?.enabled && writable;
-    if (!others.length && !cloudOk) return null;
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="size-8" aria-label={t('Mehr')} onClick={(e) => e.stopPropagation()}><Ellipsis className="size-3.5" /></Button></DropdownMenuTrigger>
@@ -91,6 +90,14 @@ export function KeychainView({ dark, openForm, toast }) {
             <DropdownMenuLabel className="text-xs text-muted-foreground">{t('In Tresor verschieben')}</DropdownMenuLabel>
             {others.map((x) => <DropdownMenuItem key={`m${x.id}`} onSelect={() => copyKey(k, x.id, true)}>{x.id === 'personal' ? <User className="size-4" /> : <Users className="size-4" />}{x.name}</DropdownMenuItem>)}
           </>}
+          {writable && (
+            <>
+              {(cloudOk || others.length > 0) && <DropdownMenuSeparator />}
+              <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={async () => { await api.keys.remove(k.id); load(); }}>
+                <Trash2 className="size-4" />{t('Löschen')}
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     );
@@ -151,7 +158,7 @@ export function KeychainView({ dark, openForm, toast }) {
               {k.publicKey && <IconButton label={t('Auf Host exportieren')} onClick={() => toHost(k)}><Send className="size-3.5" /></IconButton>}
               {writable && <IconButton label={t('Schlüssel umbenennen')} onClick={() => rename(k)}><Pencil className="size-3.5" /></IconButton>}
               {!mobile && !k.publicOnly && <IconButton label={t('Privaten Schlüssel speichern')} onClick={async () => { const err = await api.keys.exportPrivate(k.id); err && toast(err); }}><Download className="size-3.5" /></IconButton>}
-              {writable && k.source !== 'imported' && <IconButton label={t('Löschen')} onClick={async () => { await api.keys.remove(k.id); load(); }}><Trash2 className="size-3.5" /></IconButton>}
+              {writable && <IconButton label={t('Löschen')} onClick={async () => { await api.keys.remove(k.id); load(); }}><Trash2 className="size-3.5" /></IconButton>}
             </>} />
         ))}
       </div>
