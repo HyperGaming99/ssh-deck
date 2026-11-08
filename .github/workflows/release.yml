@@ -98,8 +98,45 @@ jobs:
           path: release-artifacts/*
           if-no-files-found: error
 
+  android:
+    needs: prepare
+    if: needs.prepare.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "${{ needs.prepare.outputs.ref }}" }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - name: Setup Android NDK and CMake
+        run: |
+          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "ndk;27.2.12479018" "cmake;3.22.1"
+      - run: npm ci --no-audit --no-fund --prefer-offline
+      - name: Build Web and Mobile Assets
+        run: |
+          sh mobile/fetch-libnode.sh
+          node mobile/build-web.js
+          node mobile/pack-node.js
+          npx cap sync android
+      - name: Build Android APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+          mkdir -p ../android-artifacts
+          cp app/build/outputs/apk/debug/app-debug.apk ../android-artifacts/ssh-deck_${{ needs.prepare.outputs.version }}_android.apk
+          ls -lh ../android-artifacts/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installers-android
+          path: android-artifacts/*.apk
+          if-no-files-found: error
+
   release:
-    needs: [prepare, build]
+    needs: [prepare, build, android]
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
@@ -119,7 +156,7 @@ jobs:
           range=${prev:+$prev..}HEAD
           last_sha=$(git rev-parse --short=7 "$SHORT" 2>/dev/null || echo "$SHORT")
           {
-            echo "## SSH Deck $VERSION (Tauri)"
+            echo "## SSH Deck $VERSION"
             echo
             echo "- **Branch:** \`${GITHUB_REF_NAME}\`"
             echo "- **Last commit:** \`$last_sha\` $(git log -1 --pretty='%s — %an' "$last_sha")"
@@ -128,7 +165,7 @@ jobs:
             echo "### Changes since ${prev:-the beginning}"
             git log $range --no-merges --pretty='- %s (`%h`, %an)' | grep -v 'chore: bump version' || true
             echo
-            echo "### Downloads (Tauri Release)"
+            echo "### Downloads"
             for f in files/*; do echo "- \`$(basename "$f")\`"; done
           } > notes.md
       - name: Publish release
