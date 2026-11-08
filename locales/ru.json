@@ -758,5 +758,16 @@
   "Keine Sprache gefunden.": "Язык не найден.",
   "Die Sprache wird ohne Neustart der Anwendung sofort wirksam.": "Смена языка вступает в силу немедленно без перезапуска приложения.",
   "Rechts-nach-links (RTL)": "Справа налево (RTL)",
-  "Aktiv": "Активно"
+  "Aktiv": "Активно",
+  "Anonymes Onion-Routing": "Анонимная луковая маршрутизация",
+  "Verbindungen über das weltweite Tor-Netzwerk verschleiern und Zensur umgehen": "Маскируйте соединения через глобальную сеть Tor и обходите цензуру",
+  "Onion-Routing (3 Hops)": "Луковая маршрутизация (3 узла)",
+  "DNS-Leckschutz": "Защита от утечек DNS",
+  "Automatischer LAN-Bypass": "Автоматический обход локальной сети",
+  "Lokale Adressen (z. B. 192.168.x.x) bleiben im Heimnetzwerk": "Локальные адреса (например, 192.168.x.x) остаются в домашней сети",
+  "Eingang": "Вход",
+  "Relais": "Ретранслятор",
+  "Ausgang": "Выход",
+  "Tor-Netzwerk aktiv": "Сеть Tor активна",
+  "Tor-Netzwerk inaktiv": "Сеть Tor неактивна"
 }

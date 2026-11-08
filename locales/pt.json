@@ -758,5 +758,16 @@
   "Keine Sprache gefunden.": "Nenhum idioma encontrado.",
   "Die Sprache wird ohne Neustart der Anwendung sofort wirksam.": "A alteração de idioma entra em vigor imediatamente sem reiniciar o aplicativo.",
   "Rechts-nach-links (RTL)": "Da direita para a esquerda (RTL)",
-  "Aktiv": "Ativo"
+  "Aktiv": "Ativo",
+  "Anonymes Onion-Routing": "Roteamento cebola anônimo",
+  "Verbindungen über das weltweite Tor-Netzwerk verschleiern und Zensur umgehen": "Oculte conexões por meio da rede global Tor e contorne a censura",
+  "Onion-Routing (3 Hops)": "Roteamento cebola (3 saltos)",
+  "DNS-Leckschutz": "Proteção contra vazamento de DNS",
+  "Automatischer LAN-Bypass": "Bypass automático de LAN",
+  "Lokale Adressen (z. B. 192.168.x.x) bleiben im Heimnetzwerk": "Endereços locais (ex: 192.168.x.x) permanecem na rede local",
+  "Eingang": "Entrada",
+  "Relais": "Retransmissão",
+  "Ausgang": "Saída",
+  "Tor-Netzwerk aktiv": "Rede Tor ativa",
+  "Tor-Netzwerk inaktiv": "Rede Tor inativa"
 }

@@ -758,5 +758,16 @@
   "Keine Sprache gefunden.": "言語が見つかりません。",
   "Die Sprache wird ohne Neustart der Anwendung sofort wirksam.": "言語の変更はアプリケーションを再起動することなく直ちに適用されます。",
   "Rechts-nach-links (RTL)": "右から左 (RTL)",
-  "Aktiv": "アクティブ"
+  "Aktiv": "アクティブ",
+  "Anonymes Onion-Routing": "匿名オニオンルーティング",
+  "Verbindungen über das weltweite Tor-Netzwerk verschleiern und Zensur umgehen": "グローバルなTorネットワーク経由で接続を匿名化し、検閲を回避します",
+  "Onion-Routing (3 Hops)": "オニオンルーティング (3ホップ)",
+  "DNS-Leckschutz": "DNS漏洩保護",
+  "Automatischer LAN-Bypass": "自動LANバイパス",
+  "Lokale Adressen (z. B. 192.168.x.x) bleiben im Heimnetzwerk": "ローカルアドレス（例：192.168.x.x）はローカルネットワーク内に留まります",
+  "Eingang": "ガード",
+  "Relais": "中継",
+  "Ausgang": "出口",
+  "Tor-Netzwerk aktiv": "Torネットワーク有効",
+  "Tor-Netzwerk inaktiv": "Torネットワーク無効"
 }

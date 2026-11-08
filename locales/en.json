@@ -758,5 +758,16 @@
   "Keine Sprache gefunden.": "No language found.",
   "Die Sprache wird ohne Neustart der Anwendung sofort wirksam.": "The language change takes effect immediately without restarting the application.",
   "Rechts-nach-links (RTL)": "Right-to-left (RTL)",
-  "Aktiv": "Active"
+  "Aktiv": "Active",
+  "Anonymes Onion-Routing": "Anonymous Onion Routing",
+  "Verbindungen über das weltweite Tor-Netzwerk verschleiern und Zensur umgehen": "Obfuscate connections via the global Tor network and bypass censorship",
+  "Onion-Routing (3 Hops)": "Onion Routing (3 Hops)",
+  "DNS-Leckschutz": "DNS Leak Protection",
+  "Automatischer LAN-Bypass": "Automatic LAN Bypass",
+  "Lokale Adressen (z. B. 192.168.x.x) bleiben im Heimnetzwerk": "Local addresses (e.g. 192.168.x.x) stay within your local network",
+  "Eingang": "Guard",
+  "Relais": "Middle",
+  "Ausgang": "Exit",
+  "Tor-Netzwerk aktiv": "Tor Network Active",
+  "Tor-Netzwerk inaktiv": "Tor Network Inactive"
 }

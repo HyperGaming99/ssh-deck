@@ -758,5 +758,16 @@
   "Keine Sprache gefunden.": "未找到语言。",
   "Die Sprache wird ohne Neustart der Anwendung sofort wirksam.": "语言更改会立即生效，无需重启应用程序。",
   "Rechts-nach-links (RTL)": "从右到左 (RTL)",
-  "Aktiv": "已激活"
+  "Aktiv": "已激活",
+  "Anonymes Onion-Routing": "匿名洋葱路由",
+  "Verbindungen über das weltweite Tor-Netzwerk verschleiern und Zensur umgehen": "通过全球 Tor 网络混淆连接并绕过审查",
+  "Onion-Routing (3 Hops)": "洋葱路由 (3 跳)",
+  "DNS-Leckschutz": "DNS 泄漏防护",
+  "Automatischer LAN-Bypass": "自动局域网直连",
+  "Lokale Adressen (z. B. 192.168.x.x) bleiben im Heimnetzwerk": "本地地址（例如 192.168.x.x）保留在本地网络内",
+  "Eingang": "入口守卫",
+  "Relais": "中间中继",
+  "Ausgang": "出口节点",
+  "Tor-Netzwerk aktiv": "Tor 网络已激活",
+  "Tor-Netzwerk inaktiv": "Tor 网络未激活"
 }

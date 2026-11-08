@@ -758,5 +758,16 @@
   "Keine Sprache gefunden.": "일치하는 언어가 없습니다.",
   "Die Sprache wird ohne Neustart der Anwendung sofort wirksam.": "언어 변경은 애플리케이션을 다시 시작하지 않고도 즉시 적용됩니다.",
   "Rechts-nach-links (RTL)": "오른쪽에서 왼쪽 (RTL)",
-  "Aktiv": "활성"
+  "Aktiv": "활성",
+  "Anonymes Onion-Routing": "익명 어니언 라우팅",
+  "Verbindungen über das weltweite Tor-Netzwerk verschleiern und Zensur umgehen": "글로벌 Tor 네트워크를 통해 연결을 난독화하고 검열을 우회합니다",
+  "Onion-Routing (3 Hops)": "어니언 라우팅 (3 홉)",
+  "DNS-Leckschutz": "DNS 유출 방지",
+  "Automatischer LAN-Bypass": "자동 LAN 우회",
+  "Lokale Adressen (z. B. 192.168.x.x) bleiben im Heimnetzwerk": "로컬 주소(예: 192.168.x.x)는 로컬 네트워크 내에 유지됩니다",
+  "Eingang": "가드",
+  "Relais": "릴레이",
+  "Ausgang": "출구",
+  "Tor-Netzwerk aktiv": "Tor 네트워크 활성",
+  "Tor-Netzwerk inaktiv": "Tor 네트워크 비활성"
 }

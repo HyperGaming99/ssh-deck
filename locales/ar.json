@@ -758,5 +758,16 @@
   "Keine Sprache gefunden.": "لم يتم العثور على أي لغة.",
   "Die Sprache wird ohne Neustart der Anwendung sofort wirksam.": "يتم تطبيق تغيير اللغة فوراً دون إعادة تشغيل التطبيق.",
   "Rechts-nach-links (RTL)": "من اليمين إلى اليسار (RTL)",
-  "Aktiv": "نشط"
+  "Aktiv": "نشط",
+  "Anonymes Onion-Routing": "توجيه البصل المجهول",
+  "Verbindungen über das weltweite Tor-Netzwerk verschleiern und Zensur umgehen": "تمويه الاتصالات عبر شبكة تور العالمية وتجاوز الرقابة",
+  "Onion-Routing (3 Hops)": "توجيه البصل (3 قفزات)",
+  "DNS-Leckschutz": "حماية من تسرب DNS",
+  "Automatischer LAN-Bypass": "تجاوز تلقائي للشبكة المحلية",
+  "Lokale Adressen (z. B. 192.168.x.x) bleiben im Heimnetzwerk": "تبقى العناوين المحلية (مثل 192.168.x.x) داخل شبكتك المحلية",
+  "Eingang": "المدخل",
+  "Relais": "المرحل",
+  "Ausgang": "المخرج",
+  "Tor-Netzwerk aktiv": "شبكة تور نشطة",
+  "Tor-Netzwerk inaktiv": "شبكة تور غير نشطة"
 }

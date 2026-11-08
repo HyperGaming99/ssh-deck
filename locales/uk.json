@@ -758,5 +758,16 @@
   "Keine Sprache gefunden.": "Мову не знайдено.",
   "Die Sprache wird ohne Neustart der Anwendung sofort wirksam.": "Зміна мови набирає чинності негайно без перезапуску програми.",
   "Rechts-nach-links (RTL)": "Справа наліво (RTL)",
-  "Aktiv": "Активно"
+  "Aktiv": "Активно",
+  "Anonymes Onion-Routing": "Анонімна цибулева маршрутизація",
+  "Verbindungen über das weltweite Tor-Netzwerk verschleiern und Zensur umgehen": "Маскуйте з'єднання через глобальну мережу Tor та обходьте цензуру",
+  "Onion-Routing (3 Hops)": "Цибулева маршрутизація (3 вузли)",
+  "DNS-Leckschutz": "Захист від витоку DNS",
+  "Automatischer LAN-Bypass": "Автоматичний обхід локальної мережі",
+  "Lokale Adressen (z. B. 192.168.x.x) bleiben im Heimnetzwerk": "Локальні адреси (наприклад, 192.168.x.x) залишаються в домашній мережі",
+  "Eingang": "Вхід",
+  "Relais": "Ретранслятор",
+  "Ausgang": "Вихід",
+  "Tor-Netzwerk aktiv": "Мережа Tor активна",
+  "Tor-Netzwerk inaktiv": "Мережа Tor неактивна"
 }

@@ -758,5 +758,16 @@
   "Keine Sprache gefunden.": "Aucune langue trouvée.",
   "Die Sprache wird ohne Neustart der Anwendung sofort wirksam.": "Le changement de langue prend effet immédiatement sans redémarrer l'application.",
   "Rechts-nach-links (RTL)": "De droite à gauche (RTL)",
-  "Aktiv": "Actif"
+  "Aktiv": "Actif",
+  "Anonymes Onion-Routing": "Routage en oignon anonyme",
+  "Verbindungen über das weltweite Tor-Netzwerk verschleiern und Zensur umgehen": "Brouillez vos connexions via le réseau mondial Tor et contournez la censure",
+  "Onion-Routing (3 Hops)": "Routage en oignon (3 sauts)",
+  "DNS-Leckschutz": "Protection contre les fuites DNS",
+  "Automatischer LAN-Bypass": "Contournement automatique du LAN",
+  "Lokale Adressen (z. B. 192.168.x.x) bleiben im Heimnetzwerk": "Les adresses locales (ex. 192.168.x.x) restent dans votre réseau local",
+  "Eingang": "Entrée",
+  "Relais": "Relais",
+  "Ausgang": "Sortie",
+  "Tor-Netzwerk aktiv": "Réseau Tor actif",
+  "Tor-Netzwerk inaktiv": "Réseau Tor inactif"
 }

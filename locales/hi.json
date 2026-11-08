@@ -758,5 +758,16 @@
   "Keine Sprache gefunden.": "कोई भाषा नहीं मिली।",
   "Die Sprache wird ohne Neustart der Anwendung sofort wirksam.": "एप्लिकेशन को पुनरारंभ किए बिना भाषा परिवर्तन तुरंत लागू होता है।",
   "Rechts-nach-links (RTL)": "दाएं से बाएं (RTL)",
-  "Aktiv": "सक्रिय"
+  "Aktiv": "सक्रिय",
+  "Anonymes Onion-Routing": "गुमनाम अनियन रूटिंग",
+  "Verbindungen über das weltweite Tor-Netzwerk verschleiern und Zensur umgehen": "वैश्विक टॉर नेटवर्क के माध्यम से कनेक्शन छुपाएं और सेंसरशिप से बचें",
+  "Onion-Routing (3 Hops)": "अनियन रूटिंग (3 हॉप्स)",
+  "DNS-Leckschutz": "डीएनएस लीक सुरक्षा",
+  "Automatischer LAN-Bypass": "स्वचालित लैन बाईपास",
+  "Lokale Adressen (z. B. 192.168.x.x) bleiben im Heimnetzwerk": "स्थानीय पते (जैसे 192.168.x.x) आपके स्थानीय नेटवर्क में रहते हैं",
+  "Eingang": "प्रवेश",
+  "Relais": "रिले",
+  "Ausgang": "निकास",
+  "Tor-Netzwerk aktiv": "टॉर नेटवर्क सक्रिय",
+  "Tor-Netzwerk inaktiv": "टॉर नेटवर्क निष्क्रिय"
 }

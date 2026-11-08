@@ -758,5 +758,16 @@
   "Keine Sprache gefunden.": "Dil bulunamadı.",
   "Die Sprache wird ohne Neustart der Anwendung sofort wirksam.": "Dil değişikliği uygulamayı yeniden başlatmadan anında uygulanır.",
   "Rechts-nach-links (RTL)": "Sağdan sola (RTL)",
-  "Aktiv": "Aktif"
+  "Aktiv": "Aktif",
+  "Anonymes Onion-Routing": "Anonim Onion Yönlendirme",
+  "Verbindungen über das weltweite Tor-Netzwerk verschleiern und Zensur umgehen": "Küresel Tor ağı üzerinden bağlantıları gizleyin ve sansürü atlatın",
+  "Onion-Routing (3 Hops)": "Onion Yönlendirme (3 Atlama)",
+  "DNS-Leckschutz": "DNS Sızıntı Koruması",
+  "Automatischer LAN-Bypass": "Otomatik Yerel Ağ Geçişi",
+  "Lokale Adressen (z. B. 192.168.x.x) bleiben im Heimnetzwerk": "Yerel adresler (örn. 192.168.x.x) yerel ağınızda kalır",
+  "Eingang": "Giriş",
+  "Relais": "Röle",
+  "Ausgang": "Çıkış",
+  "Tor-Netzwerk aktiv": "Tor Ağı Aktif",
+  "Tor-Netzwerk inaktiv": "Tor Ağı Devre Dışı"
 }
