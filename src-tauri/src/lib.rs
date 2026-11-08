@@ -112,6 +112,37 @@ fn deck_store_write(collection: String, data: serde_json::Value) -> Result<(), S
     Ok(())
 }
 
+fn get_host_connection_info(host_id: &str) -> Result<(String, u64, String, Option<String>), String> {
+    let hosts_val = deck_store_read("hosts".into()).map_err(|e| e.to_string())?;
+    let hosts_arr = hosts_val.as_array().ok_or("hosts is not an array")?;
+    let host_obj = hosts_arr
+        .iter()
+        .find(|h| h.get("id").and_then(|v| v.as_str()) == Some(host_id))
+        .ok_or("Host not found")?;
+
+    let host_str = host_obj.get("host").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let port = host_obj.get("port").and_then(|v| v.as_u64()).unwrap_or(22);
+    let user = host_obj.get("user").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let key_id = host_obj.get("keyId").and_then(|v| v.as_str()).unwrap_or("");
+
+    let mut key_path: Option<String> = None;
+    if !key_id.is_empty() {
+        if let Ok(keys_val) = deck_store_read("keys".into()) {
+            if let Some(keys_arr) = keys_val.as_array() {
+                if let Some(k) = keys_arr.iter().find(|k| k.get("id").and_then(|v| v.as_str()) == Some(key_id)) {
+                    if let Some(p) = k.get("path").and_then(|v| v.as_str()) {
+                        if !p.is_empty() {
+                            key_path = Some(p.to_string());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Ok((host_str, port, user, key_path))
+}
+
 #[tauri::command]
 fn exec_remote_or_local(host_id: Option<String>, cmd: String) -> Result<ExecResult, String> {
     if host_id.is_none() || host_id.as_deref() == Some("local") || host_id.as_deref() == Some("") {
@@ -130,32 +161,7 @@ fn exec_remote_or_local(host_id: Option<String>, cmd: String) -> Result<ExecResu
     }
 
     let hid = host_id.unwrap();
-    let hosts_val = deck_store_read("hosts".into()).map_err(|e| e.to_string())?;
-    let hosts_arr = hosts_val.as_array().ok_or("hosts is not an array")?;
-    let host_obj = hosts_arr
-        .iter()
-        .find(|h| h.get("id").and_then(|v| v.as_str()) == Some(&hid))
-        .ok_or("Host not found")?;
-
-    let host_str = host_obj.get("host").and_then(|v| v.as_str()).unwrap_or("");
-    let port = host_obj.get("port").and_then(|v| v.as_u64()).unwrap_or(22);
-    let user = host_obj.get("user").and_then(|v| v.as_str()).unwrap_or("");
-    let key_id = host_obj.get("keyId").and_then(|v| v.as_str()).unwrap_or("");
-
-    let mut key_path: Option<String> = None;
-    if !key_id.is_empty() {
-        if let Ok(keys_val) = deck_store_read("keys".into()) {
-            if let Some(keys_arr) = keys_val.as_array() {
-                if let Some(k) = keys_arr.iter().find(|k| k.get("id").and_then(|v| v.as_str()) == Some(key_id)) {
-                    if let Some(p) = k.get("path").and_then(|v| v.as_str()) {
-                        if !p.is_empty() {
-                            key_path = Some(p.to_string());
-                        }
-                    }
-                }
-            }
-        }
-    }
+    let (host_str, port, user, key_path) = get_host_connection_info(&hid)?;
 
     let mut command = std::process::Command::new("ssh");
     command.arg("-p").arg(port.to_string());
@@ -179,6 +185,112 @@ fn exec_remote_or_local(host_id: Option<String>, cmd: String) -> Result<ExecResu
         stderr: String::from_utf8_lossy(&output.stderr).to_string(),
         error: None,
     })
+}
+
+#[tauri::command]
+fn scp_upload(
+    host_id: String,
+    local_paths: Vec<String>,
+    remote_dir: String,
+) -> Result<(), String> {
+    let (host_str, port, user, key_path) = get_host_connection_info(&host_id)?;
+    let mut cmd = std::process::Command::new("scp");
+    cmd.arg("-r");
+    cmd.arg("-P").arg(port.to_string());
+    cmd.arg("-o").arg("StrictHostKeyChecking=accept-new");
+    cmd.arg("-o").arg("BatchMode=yes");
+    if let Some(ref kp) = key_path {
+        cmd.arg("-i").arg(kp);
+    }
+    for lp in local_paths {
+        cmd.arg(lp);
+    }
+    let target = if !user.is_empty() {
+        format!("{}@{}:{}", user, host_str, remote_dir)
+    } else {
+        format!("{}:{}", host_str, remote_dir)
+    };
+    cmd.arg(target);
+
+    let output = cmd.output().map_err(|e| e.to_string())?;
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).to_string());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn scp_download(
+    host_id: String,
+    remote_paths: Vec<String>,
+    local_dir: String,
+) -> Result<(), String> {
+    let (host_str, port, user, key_path) = get_host_connection_info(&host_id)?;
+    let mut cmd = std::process::Command::new("scp");
+    cmd.arg("-r");
+    cmd.arg("-P").arg(port.to_string());
+    cmd.arg("-o").arg("StrictHostKeyChecking=accept-new");
+    cmd.arg("-o").arg("BatchMode=yes");
+    if let Some(ref kp) = key_path {
+        cmd.arg("-i").arg(kp);
+    }
+    for rp in remote_paths {
+        let src = if !user.is_empty() {
+            format!("{}@{}:{}", user, host_str, rp)
+        } else {
+            format!("{}:{}", host_str, rp)
+        };
+        cmd.arg(src);
+    }
+    cmd.arg(local_dir);
+
+    let output = cmd.output().map_err(|e| e.to_string())?;
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).to_string());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn scp_download_archive(
+    host_id: String,
+    dir: String,
+    names: Vec<String>,
+    target: String,
+) -> Result<(), String> {
+    let (host_str, port, user, key_path) = get_host_connection_info(&host_id)?;
+    let quoted_names: Vec<String> = names
+        .iter()
+        .map(|n| format!("'{}'", n.replace('\'', "'\\''")))
+        .collect();
+    let remote_cmd = format!(
+        "tar -czf - -C '{}' -- {}",
+        dir.replace('\'', "'\\''"),
+        quoted_names.join(" ")
+    );
+
+    let mut cmd = std::process::Command::new("ssh");
+    cmd.arg("-p").arg(port.to_string());
+    cmd.arg("-o").arg("StrictHostKeyChecking=accept-new");
+    cmd.arg("-o").arg("BatchMode=yes");
+    if let Some(ref kp) = key_path {
+        cmd.arg("-i").arg(kp);
+    }
+    if !user.is_empty() {
+        cmd.arg(format!("{}@{}", user, host_str));
+    } else {
+        cmd.arg(host_str);
+    }
+    cmd.arg(remote_cmd);
+
+    let file = std::fs::File::create(&target).map_err(|e| e.to_string())?;
+    cmd.stdout(file);
+
+    let output = cmd.output().map_err(|e| e.to_string())?;
+    if !output.status.success() {
+        return Err(String::from_utf8_lossy(&output.stderr).to_string());
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -691,6 +803,9 @@ pub fn run() {
             ssh_input,
             ssh_resize,
             ssh_close,
+            scp_upload,
+            scp_download,
+            scp_download_archive,
         ])
         .run(tauri::generate_context!())
         .expect("error while building tauri application");

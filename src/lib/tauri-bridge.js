@@ -117,6 +117,10 @@ export function createTauriBridge() {
   const closedListeners = new Set();
   const pendingAnswers = new Map();
   const activeSessions = new Map();
+  const sftpSessions = new Map();
+  const sftpProgressListeners = new Set();
+
+  const shQuote = (s) => "'" + String(s).replace(/'/g, "'\\''") + "'";
 
   listen('ssh-status', (ev) => {
     if (ev?.payload) {
@@ -435,22 +439,221 @@ export function createTauriBridge() {
       },
     },
     sftp: {
-      open: async () => {},
-      list: async (sid, p) => ({ path: p || '/', entries: [] }),
-      mkdir: async () => {},
-      rename: async () => {},
-      remove: async () => {},
-      chmod: async () => {},
-      archive: async () => ({ data: '' }),
-      extract: async () => ({ data: null }),
-      downloadArchive: async () => '',
-      upload: async () => ({ data: true }),
-      download: async () => ({ data: true }),
-      edit: async () => true,
-      copy: async () => ({ data: null }),
-      cancel: () => {},
-      onProgress: () => () => {},
-      close: () => {},
+      open: async (psid, hostId) => {
+        if (!hostId || hostId === 'local') throw new Error('Ungültiger Host');
+        const list = await bridge.hosts.list().catch(() => []);
+        const h = (list || []).find((x) => x.id === hostId);
+        if (!h) throw new Error('Host nicht gefunden');
+        if (h.protocol === 'telnet') throw new Error('SFTP gibt es nicht für Telnet.');
+
+        const res = await execRemoteOrLocal(hostId, 'echo OK');
+        if (res.code !== 0 && res.error) {
+          throw new Error(res.error || res.stderr || 'Verbindung fehlgeschlagen');
+        }
+        sftpSessions.set(psid, hostId);
+        return { data: null };
+      },
+      list: async (psid, dir) => {
+        const hostId = sftpSessions.get(psid);
+        if (!hostId) throw new Error('Nicht verbunden');
+
+        const targetDir = dir && dir !== '.' ? dir : '~';
+        const pyScript = `python3 -c "
+import os, sys, json
+try:
+    p = os.path.realpath(os.path.expanduser(sys.argv[1]))
+    entries = []
+    for f in os.scandir(p):
+        try:
+            st = f.stat()
+            entries.append({
+                'name': f.name,
+                'dir': f.is_dir(),
+                'size': st.st_size,
+                'mtime': int(st.st_mtime * 1000),
+                'mode': st.st_mode & 0o777
+            })
+        except:
+            pass
+    entries.sort(key=lambda x: (not x['dir'], x['name'].lower()))
+    print(json.dumps({'path': p, 'entries': entries}))
+except Exception as e:
+    print(json.dumps({'error': str(e)}))
+" ${shQuote(targetDir)}`;
+
+        const res = await execRemoteOrLocal(hostId, pyScript);
+        if (res.code === 0 && res.stdout.trim().startsWith('{')) {
+          try {
+            const parsed = JSON.parse(res.stdout.trim());
+            if (parsed.error) throw new Error(parsed.error);
+            return parsed;
+          } catch (e) {
+            if (e.message && !e.message.includes('JSON')) throw e;
+          }
+        }
+
+        const shScript = `cd ${targetDir === '~' ? '$HOME' : shQuote(targetDir)} 2>/dev/null && pwd && ls -la`;
+        const shRes = await execRemoteOrLocal(hostId, shScript);
+        if (shRes.code !== 0) throw new Error(shRes.stderr || 'Verzeichnis konnte nicht gelesen werden');
+
+        const lines = shRes.stdout.trim().split('\n');
+        const realPath = lines[0] || (dir || '/');
+        const entries = [];
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line || line.startsWith('total ')) continue;
+          const match = line.match(/^([drwxls-]{10})\s+\d+\s+\S+\s+\S+\s+(\d+)\s+[A-Za-z]+\s+\d+\s+[\d:]+\s+(.+)$/);
+          if (match) {
+            const modeStr = match[1];
+            const isDir = modeStr.startsWith('d');
+            const size = parseInt(match[2], 10) || 0;
+            const name = match[3];
+            if (name === '.' || name === '..') continue;
+            entries.push({
+              name,
+              dir: isDir,
+              size,
+              mtime: Date.now(),
+              mode: isDir ? 0o755 : 0o644,
+            });
+          }
+        }
+        entries.sort((a, b) => b.dir - a.dir || a.name.localeCompare(b.name));
+        return { path: realPath, entries };
+      },
+      mkdir: async (psid, dir) => {
+        const hostId = sftpSessions.get(psid);
+        if (!hostId) throw new Error('Nicht verbunden');
+        const res = await execRemoteOrLocal(hostId, `mkdir -p ${shQuote(dir)}`);
+        if (res.code !== 0) throw new Error(res.stderr || 'Ordner erstellen fehlgeschlagen');
+        return { data: null };
+      },
+      rename: async (psid, a, b) => {
+        const hostId = sftpSessions.get(psid);
+        if (!hostId) throw new Error('Nicht verbunden');
+        const res = await execRemoteOrLocal(hostId, `mv ${shQuote(a)} ${shQuote(b)}`);
+        if (res.code !== 0) throw new Error(res.stderr || 'Umbenennen fehlgeschlagen');
+        return { data: null };
+      },
+      remove: async (psid, p) => {
+        const hostId = sftpSessions.get(psid);
+        if (!hostId) throw new Error('Nicht verbunden');
+        const res = await execRemoteOrLocal(hostId, `rm -rf ${shQuote(p)}`);
+        if (res.code !== 0) throw new Error(res.stderr || 'Löschen fehlgeschlagen');
+        return { data: null };
+      },
+      chmod: async (psid, p, mode) => {
+        const hostId = sftpSessions.get(psid);
+        if (!hostId) throw new Error('Nicht verbunden');
+        const oct = (Number(mode) & 0o777).toString(8);
+        const res = await execRemoteOrLocal(hostId, `chmod ${oct} ${shQuote(p)}`);
+        if (res.code !== 0) throw new Error(res.stderr || 'Berechtigungen ändern fehlgeschlagen');
+        return { data: null };
+      },
+      archive: async (psid, dir, names, format = 'tar.gz') => {
+        const hostId = sftpSessions.get(psid);
+        if (!hostId) throw new Error('Nicht verbunden');
+        const list = (Array.isArray(names) ? names : [names]).filter(Boolean);
+        if (!list.length) throw new Error('Keine Dateien gewählt');
+        const ext = format === 'zip' ? '.zip' : '.tar.gz';
+        const outName = `${list.length === 1 ? list[0] : 'archive'}${ext}`;
+        const quoted = list.map(shQuote).join(' ');
+        const cmd = format === 'zip'
+          ? `cd ${shQuote(dir)} && (zip -rq ${shQuote(outName)} -- ${quoted} || python3 -m zipfile -c ${shQuote(outName)} ${quoted})`
+          : `tar -czf ${shQuote(dir + '/' + outName)} -C ${shQuote(dir)} -- ${quoted}`;
+        const res = await execRemoteOrLocal(hostId, cmd);
+        if (res.code !== 0) throw new Error(res.stderr || 'Archivieren fehlgeschlagen');
+        return { data: outName };
+      },
+      extract: async (psid, dir, name) => {
+        const hostId = sftpSessions.get(psid);
+        if (!hostId) throw new Error('Nicht verbunden');
+        const full = dir + '/' + name;
+        let cmd;
+        if (/\.zip$/i.test(name)) {
+          cmd = `cd ${shQuote(dir)} && (unzip -oq ${shQuote(name)} || python3 -m zipfile -e ${shQuote(name)} .)`;
+        } else if (/\.(tar\.gz|tgz)$/i.test(name)) {
+          cmd = `tar -xzf ${shQuote(full)} -C ${shQuote(dir)}`;
+        } else if (/\.tar$/i.test(name)) {
+          cmd = `tar -xf ${shQuote(full)} -C ${shQuote(dir)}`;
+        } else {
+          throw new Error('Archivformat wird nicht unterstützt.');
+        }
+        const res = await execRemoteOrLocal(hostId, cmd);
+        if (res.code !== 0) throw new Error(res.stderr || 'Entpacken fehlgeschlagen');
+        return { data: null };
+      },
+      downloadArchive: async (psid, dir, names, localDir) => {
+        const hostId = sftpSessions.get(psid);
+        if (!hostId) throw new Error('Nicht verbunden');
+        const list = (Array.isArray(names) ? names : [names]).filter(Boolean);
+        if (!list.length) throw new Error('Keine Dateien gewählt');
+        const outName = `${list.length === 1 ? list[0] : 'archive'}.tar.gz`;
+        const dest = (localDir || '/home/leon') + '/' + outName;
+        await invoke('scp_download_archive', { hostId, dir, names: list, target: dest });
+        return { data: outName };
+      },
+      upload: async (psid, localPaths, remoteDir) => {
+        const hostId = sftpSessions.get(psid);
+        if (!hostId) throw new Error('Nicht verbunden');
+        const paths = Array.isArray(localPaths) ? localPaths : [localPaths];
+        for (const cb of sftpProgressListeners) cb({ sid: psid, direction: 'upload', filesDone: 0, filesTotal: paths.length, percent: 10 });
+        await invoke('scp_upload', { hostId, localPaths: paths, remoteDir });
+        for (const cb of sftpProgressListeners) cb({ sid: psid, direction: 'upload', filesDone: paths.length, filesTotal: paths.length, percent: 100, done: true });
+        return { data: true };
+      },
+      download: async (psid, remotePaths, localDir) => {
+        const hostId = sftpSessions.get(psid);
+        if (!hostId) throw new Error('Nicht verbunden');
+        const paths = Array.isArray(remotePaths) ? remotePaths : [remotePaths];
+        for (const cb of sftpProgressListeners) cb({ sid: psid, direction: 'download', filesDone: 0, filesTotal: paths.length, percent: 10 });
+        await invoke('scp_download', { hostId, remotePaths: paths, localDir: localDir || '.' });
+        for (const cb of sftpProgressListeners) cb({ sid: psid, direction: 'download', filesDone: paths.length, filesTotal: paths.length, percent: 100, done: true });
+        return { data: true };
+      },
+      edit: async (psid, p, cmd) => {
+        const hostId = sftpSessions.get(psid);
+        if (!hostId) throw new Error('Nicht verbunden');
+        const base = p.split('/').filter(Boolean).pop() || 'file';
+        const tmp = `/tmp/ssh_deck_edit_${Date.now()}_${base}`;
+        await invoke('scp_download', { hostId, remotePaths: [p], localDir: tmp });
+        const ed = cmd || 'xdg-open';
+        await execRemoteOrLocal(null, `${ed} ${shQuote(tmp)}`);
+        const rDir = p.substring(0, p.lastIndexOf('/')) || '/';
+        await invoke('scp_upload', { hostId, localPaths: [tmp], remoteDir: rDir });
+        return { data: true };
+      },
+      copy: async (fromPsid, paths, toPsid, destDir) => {
+        const fromHostId = sftpSessions.get(fromPsid);
+        const toHostId = sftpSessions.get(toPsid);
+        if (!fromHostId || !toHostId) throw new Error('Nicht verbunden');
+        const list = Array.isArray(paths) ? paths : [paths];
+        if (fromHostId === toHostId) {
+          const quoted = list.map(shQuote).join(' ');
+          const res = await execRemoteOrLocal(fromHostId, `cp -r ${quoted} ${shQuote(destDir)}`);
+          if (res.code !== 0) throw new Error(res.stderr || 'Kopieren fehlgeschlagen');
+          return { data: null };
+        }
+        for (let i = 0; i < list.length; i++) {
+          const item = list[i];
+          const base = item.split('/').filter(Boolean).pop() || 'item';
+          const tmp = `/tmp/ssh_deck_copy_${Date.now()}_${base}`;
+          await invoke('scp_download', { hostId: fromHostId, remotePaths: [item], localDir: tmp });
+          await invoke('scp_upload', { hostId: toHostId, localPaths: [tmp], remoteDir: destDir });
+          try { await invoke('local_remove', { path: tmp }); } catch {}
+          for (const cb of sftpProgressListeners) cb({ sid: fromPsid, direction: 'copy', filesDone: i + 1, filesTotal: list.length, percent: Math.round(((i + 1) / list.length) * 100) });
+        }
+        for (const cb of sftpProgressListeners) cb({ sid: fromPsid, direction: 'copy', done: true, percent: 100 });
+        return { data: null };
+      },
+      cancel: (sid) => {},
+      onProgress: (cb) => {
+        sftpProgressListeners.add(cb);
+        return () => sftpProgressListeners.delete(cb);
+      },
+      close: (psid) => {
+        sftpSessions.delete(psid);
+      },
     },
     local: {
       list: async (d) => {
@@ -475,14 +678,42 @@ export function createTauriBridge() {
           await invoke('local_chmod', { path: p, mode: Number(mode) });
         } catch {}
       },
-      archive: async () => '',
-      extract: async () => {},
+      archive: async (dir, names, format = 'tar.gz') => {
+        const list = (Array.isArray(names) ? names : [names]).filter(Boolean);
+        if (!list.length) return '';
+        const ext = format === 'zip' ? '.zip' : '.tar.gz';
+        const outName = `${list.length === 1 ? list[0] : 'archive'}${ext}`;
+        const quoted = list.map(shQuote).join(' ');
+        const cmd = format === 'zip'
+          ? `cd ${shQuote(dir)} && zip -rq ${shQuote(outName)} -- ${quoted}`
+          : `tar -czf ${shQuote(dir + '/' + outName)} -C ${shQuote(dir)} -- ${quoted}`;
+        await execRemoteOrLocal(null, cmd);
+        return outName;
+      },
+      extract: async (dir, name) => {
+        const full = dir + '/' + name;
+        let cmd;
+        if (/\.zip$/i.test(name)) {
+          cmd = `cd ${shQuote(dir)} && unzip -oq ${shQuote(name)}`;
+        } else if (/\.(tar\.gz|tgz)$/i.test(name)) {
+          cmd = `tar -xzf ${shQuote(full)} -C ${shQuote(dir)}`;
+        } else if (/\.tar$/i.test(name)) {
+          cmd = `tar -xf ${shQuote(full)} -C ${shQuote(dir)}`;
+        } else {
+          return;
+        }
+        await execRemoteOrLocal(null, cmd);
+      },
       remove: async (p) => {
         try {
           await invoke('local_remove', { path: p });
         } catch {}
       },
-      open: async () => {},
+      open: async (p, cmd) => {
+        const ed = cmd || 'xdg-open';
+        await execRemoteOrLocal(null, `${ed} ${shQuote(p)}`);
+        return true;
+      },
     },
     editors: {
       list: async () => [
