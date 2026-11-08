@@ -195,7 +195,7 @@ async function runSync() {
 const scheduleSync = () => { if (!loadSyncCfg()) return; clearTimeout(syncTimer); syncTimer = setTimeout(runSync, 3000); };
 
 // Änderungen über diese Kanäle lösen einen Sync aus
-const MUTATING = new Set(['hosts:save', 'hosts:copy', 'hosts:remove', 'hosts:reorder', 'override:set', 'keys:copy', 'keys:generate', 'keys:import', 'keys:remove', 'keys:rename', 'keys:setPassphrase', 'groups:create', 'groups:rename', 'groups:remove', 'snippets:save', 'snippets:remove', 'fwd:save', 'fwd:remove', 'known:remove', 'known:import', 'import:commit']);
+const MUTATING = new Set(['hosts:save', 'hosts:copy', 'hosts:remove', 'hosts:reorder', 'override:set', 'keys:copy', 'keys:generate', 'keys:import', 'keys:remove', 'keys:rename', 'keys:setPassphrase', 'groups:create', 'groups:rename', 'groups:save', 'groups:remove', 'snippets:save', 'snippets:remove', 'fwd:save', 'fwd:remove', 'known:remove', 'known:import', 'import:commit']);
 const handle = (ch, fn) => ipcMain.handle(ch, MUTATING.has(ch) ? async (...a) => { const r = await fn(...a); scheduleSync(); return r; } : fn);
 
 
@@ -931,11 +931,31 @@ app.whenReady().then(() => {
   });
   ipcMain.on('hostkey:answer', (_, id, ok) => { hostKeyAsk.get(id)?.(!!ok); hostKeyAsk.delete(id); });
   handle('groups:list', () => groups.list());
-  handle('groups:create', (_, name, vault = 'personal') => {
+  handle('groups:create', (_, name, vault = 'personal', extra = {}) => {
     name = String(name).trim();
     if (!name) return 'Name fehlt';
     if (groups.list().some((g) => g.name === name && vOf(g) === vault)) return 'Gruppe existiert bereits';
-    groups.save({ name, ...(vault !== 'personal' && { vault }) });
+    groups.save({ name, ...(extra || {}), ...(vault !== 'personal' && { vault }) });
+    return null;
+  });
+  handle('groups:save', (_, g) => {
+    if (!g || !g.name || !String(g.name).trim()) return 'Name fehlt';
+    const name = String(g.name).trim();
+    const vault = g.vault || 'personal';
+    const existing = g.id ? groups.list().find((x) => x.id === g.id) : null;
+    if (groups.list().some((x) => x.name.toLowerCase() === name.toLowerCase() && x.id !== g.id && vOf(x) === vault)) {
+      return 'Gruppe existiert bereits';
+    }
+    if (existing && existing.name !== name) {
+      reGroup(existing.name, name, vault);
+    }
+    const clean = {
+      ...(existing || {}),
+      ...g,
+      name,
+      vault: vault === 'personal' ? undefined : vault,
+    };
+    groups.save(clean);
     return null;
   });
   handle('groups:rename', (_, id, name) => {

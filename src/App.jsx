@@ -9,6 +9,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import ShinyText from '@/components/ShinyText';
 import SpotlightCard from '@/components/SpotlightCard';
 import HostIcon from '@/components/HostIcon';
+import GroupIcon from '@/components/GroupIcon';
+import GroupDialog from '@/components/GroupDialog';
 import FormDialog from '@/components/FormDialog';
 import CredDialog from '@/components/CredDialog';
 import Logo from '@/components/Logo';
@@ -72,12 +74,17 @@ function IconButton({ label, onClick, children }) {
 }
 
 // Karte mit Spotlight; icon darf beliebiger Node sein
-function Item({ icon, title, sub, onClick, actions, dark, compact, leading, className, ...rest }) {
+function Item({ icon, title, sub, onClick, actions, dark, compact, leading, className, iconStyle, ...rest }) {
   return (
     <SpotlightCard theme={dark ? 'dark' : 'light'} className={cn('cursor-pointer p-0!', className)} onClick={onClick} style={{ borderRadius: 18 }} {...rest}>
       <div className={cn('group relative flex items-center mcard', compact ? 'gap-3 p-3' : 'gap-4 p-5')}>
         {leading}
-        <div className={cn('grid shrink-0 place-items-center', compact ? 'size-11 rounded-lg bg-primary/10 text-primary' : 'size-14 rounded-xl bg-secondary [&>img]:size-9 [&>svg]:size-7')}>{icon}</div>
+        <div
+          className={cn('grid shrink-0 place-items-center overflow-hidden', compact ? 'size-11 rounded-lg bg-primary/10 text-primary' : 'size-14 rounded-xl bg-secondary [&>img]:size-9 [&>img]:object-contain [&>svg]:size-7')}
+          style={iconStyle}
+        >
+          {icon}
+        </div>
         <div className={cn('min-w-0 flex-1', compact ? 'space-y-0.5' : 'space-y-1')}>
           <div className={cn('truncate font-semibold', compact ? 'text-sm' : 'text-base')}>{title}</div>
           <div className={cn('truncate text-muted-foreground', compact ? 'text-xs' : 'text-sm')}>{sub}</div>
@@ -237,19 +244,23 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
       onDelete: async (id) => { await api.hosts.remove(id); load(); },
     });
   };
-  const newGroup = () => openForm({
-    title: t('Neue Gruppe'), fields: [{ name: 'name', label: t('Name'), required: true }],
-    onSubmit: async (v) => { const err = await api.groups.create(v.name, vault); err ? toast(err) : load(); },
-  });
-  const renameGroup = (g) => openForm({
-    title: t('Gruppe umbenennen'), values: g, fields: [{ name: 'name', label: t('Name'), required: true }],
-    onSubmit: async (v) => {
-      const err = await api.groups.rename(g.id, v.name);
-      if (err) return toast(err);
-      if (current === g.name) setCurrent(v.name.trim());
-      load();
-    },
-  });
+  const [groupDialog, setGroupDialog] = useState(null); // { open: true, group: null | g }
+  const newGroup = () => setGroupDialog({ open: true, group: null });
+  const editGroup = (g) => setGroupDialog({ open: true, group: g });
+  const handleSaveGroup = async (g) => {
+    let err;
+    if (g.id) {
+      err = await api.groups.save(g);
+      if (!err && current === groupDialog?.group?.name && g.name !== groupDialog?.group?.name) {
+        setCurrent(g.name);
+      }
+    } else {
+      err = await api.groups.create(g.name, vault, { color: g.color, icon: g.icon, customLogo: g.customLogo });
+    }
+    if (err) return err;
+    load();
+    return null;
+  };
   const removeGroup = async (g) => {
     if (!confirm(t('Gruppe „{name}“ löschen? Die Hosts bleiben erhalten.', { name: g.name }))) return;
     await api.groups.remove(g.id);
@@ -328,7 +339,26 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
         )}
         icon={<HostIcon slug={h.icon || h.autoIcon} />}
         sub={h.protocol === 'telnet' ? `telnet://${h.host}:${h.port}` : `${h.user}@${h.host}:${h.port}`}
-        title={<span className="flex items-center gap-2">{h.name}{(h.tags || []).slice(0, 2).map((tg) => <Badge key={tg} variant="secondary" className="px-1.5 py-0 text-xs">{tg}</Badge>)}</span>}
+        title={<span className="flex items-center gap-2">
+          {h.name}
+          {!current && h.group && (() => {
+            const grp = groups.find((g) => g.name === h.group);
+            return (
+              <span
+                className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium border"
+                style={{
+                  backgroundColor: grp?.color ? `${grp.color}15` : 'var(--muted)',
+                  borderColor: grp?.color ? `${grp.color}35` : 'transparent',
+                  color: grp?.color || 'inherit',
+                }}
+              >
+                {grp && <GroupIcon group={grp} className="size-3 shrink-0" />}
+                <span className="max-w-24 truncate">{h.group}</span>
+              </span>
+            );
+          })()}
+          {(h.tags || []).slice(0, 2).map((tg) => <Badge key={tg} variant="secondary" className="px-1.5 py-0 text-xs">{tg}</Badge>)}
+        </span>}
         onClick={() => connect(h)}
         actions={<>{h.protocol !== 'telnet' && <IconButton label="SFTP" onClick={() => openSftp(h)}><FolderOpen className="size-3.5" /></IconButton>}
           {hostMenu(h)}
@@ -343,6 +373,7 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
   const searching = q.trim() !== '';
   const found = hosts.filter((h) => matches(q, h.name, h.host, h.user, h.group, (h.tags || []).join(' ')));
   const inGroup = hosts.filter((h) => h.group === current);
+  const currentGroup = current !== null ? groups.find((g) => g.name === current) : null;
   const favs = hosts.filter((h) => h.fav);
   const lastUsed = hosts.filter((h) => !h.fav && h.lastUsed).sort((a, b) => b.lastUsed - a.lastUsed).slice(0, 5);
   const ungrouped = hosts.filter((h) => !h.group || !groups.some((g) => g.name === h.group));
@@ -362,40 +393,69 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
       </div>
 
       <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} onDone={load} toast={toast} vault={vault} />
+      <GroupDialog
+        open={!!groupDialog}
+        group={groupDialog?.group}
+        serverCount={groupDialog?.group ? hosts.filter((h) => h.group === groupDialog.group.name).length : 0}
+        onClose={() => setGroupDialog(null)}
+        onSave={handleSaveGroup}
+      />
       {searching ? (
         <>{!found.length && <Empty>{t('Keine Treffer.')}</Empty>}{grid(found.map(hostCard))}</>
       ) : current !== null ? (
         <>
-          <button
-            className={cn(
-              'mb-4 flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-muted-foreground transition-all hover:text-foreground',
-              dragOverBreadcrumb && 'bg-primary/15 text-primary ring-2 ring-primary',
-            )}
-            onClick={() => setCurrent(null)}
-            onDragOver={(e) => {
-              if (draggedHost) {
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <button
+              className={cn(
+                'flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm text-muted-foreground transition-all hover:text-foreground',
+                dragOverBreadcrumb && 'bg-primary/15 text-primary ring-2 ring-primary',
+              )}
+              onClick={() => setCurrent(null)}
+              onDragOver={(e) => {
+                if (draggedHost) {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                  setDragOverBreadcrumb(true);
+                }
+              }}
+              onDragLeave={() => setDragOverBreadcrumb(false)}
+              onDrop={async (e) => {
                 e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-                setDragOverBreadcrumb(true);
-              }
-            }}
-            onDragLeave={() => setDragOverBreadcrumb(false)}
-            onDrop={async (e) => {
-              e.preventDefault();
-              setDragOverBreadcrumb(false);
-              const sId = draggedHost?.id || e.dataTransfer.getData('application/x-deck-host');
-              setDraggedHost(null);
-              if (!sId) return;
-              const h = hosts.find((x) => x.id === sId);
-              if (h && h.group) {
-                await api.hosts.save({ ...h, group: '' });
-                toast(t('Host „{host}“ aus Gruppe entfernt.', { host: h.name }));
-                load();
-              }
-            }}
-          >
-            <ChevronLeft className="size-4" />{t('Alle Hosts')}<span className="mx-1">/</span><span className="font-medium text-foreground">{current}</span>
-          </button>
+                setDragOverBreadcrumb(false);
+                const sId = draggedHost?.id || e.dataTransfer.getData('application/x-deck-host');
+                setDraggedHost(null);
+                if (!sId) return;
+                const h = hosts.find((x) => x.id === sId);
+                if (h && h.group) {
+                  await api.hosts.save({ ...h, group: '' });
+                  toast(t('Host „{host}“ aus Gruppe entfernt.', { host: h.name }));
+                  load();
+                }
+              }}
+            >
+              <ChevronLeft className="size-4" />{t('Alle Hosts')}<span className="mx-1">/</span>
+              {currentGroup && (
+                <div
+                  className="inline-flex size-5 shrink-0 items-center justify-center rounded-md border mr-1 overflow-hidden"
+                  style={{
+                    backgroundColor: currentGroup.color ? `${currentGroup.color}20` : 'var(--secondary)',
+                    borderColor: currentGroup.color ? `${currentGroup.color}44` : 'transparent',
+                  }}
+                >
+                  <GroupIcon group={currentGroup} className="size-3.5" />
+                </div>
+              )}
+              <span className="font-semibold text-foreground flex items-center gap-1.5">
+                {current}
+                {currentGroup?.color && <span className="size-2 rounded-full inline-block" style={{ backgroundColor: currentGroup.color }} />}
+              </span>
+            </button>
+            {writable && currentGroup && (
+              <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground" onClick={() => editGroup(currentGroup)}>
+                <Pencil className="size-3.5" />{t('Gruppe bearbeiten')}
+              </Button>
+            )}
+          </div>
           {!inGroup.length && <Empty>{t('Diese Gruppe ist leer. Weise einem Host über „Bearbeiten“ diese Gruppe zu.')}</Empty>}
           {grid(inGroup.map(hostCard))}
         </>
@@ -412,8 +472,16 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
                   <Item
                     key={g.id}
                     dark={dark}
-                    icon={<Folder className="size-5 text-primary" />}
-                    title={g.name}
+                    icon={<GroupIcon group={g} className="size-7" />}
+                    iconStyle={g.color ? {
+                      backgroundColor: `${g.color}18`,
+                      borderColor: `${g.color}44`,
+                      borderWidth: 1,
+                    } : undefined}
+                    title={<span className="flex items-center gap-2">
+                      <span>{g.name}</span>
+                      {g.color && <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: g.color }} />}
+                    </span>}
                     sub={t('{n} Server', { n })}
                     onClick={() => setCurrent(g.name)}
                     onDragOver={(e) => onDragOverGroupCard(e, g)}
@@ -424,7 +492,7 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
                       dragOverGroup === g.id && 'ring-2 ring-primary bg-primary/10 border-primary scale-[1.02]',
                     )}
                     actions={<>{!mobile && <IconButton label={t('Als SSH-Config exportieren')} onClick={() => exportConfig(hosts.filter((h) => h.group === g.name), g.name)}><FileText className="size-3.5" /></IconButton>}
-                      {writable && <><IconButton label={t('Umbenennen')} onClick={() => renameGroup(g)}><Pencil className="size-3.5" /></IconButton>
+                      {writable && <><IconButton label={t('Bearbeiten')} onClick={() => editGroup(g)}><Pencil className="size-3.5" /></IconButton>
                       <IconButton label={t('Gruppe löschen')} onClick={() => removeGroup(g)}><Trash2 className="size-3.5" /></IconButton></>}</>}
                   />
                 );

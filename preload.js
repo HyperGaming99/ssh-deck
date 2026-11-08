@@ -24,7 +24,8 @@ contextBridge.exposeInMainWorld('api', {
   },
   groups: {
     list: () => ipcRenderer.invoke('groups:list'),
-    create: (n, vault) => ipcRenderer.invoke('groups:create', n, vault),
+    create: (n, vault, extra) => ipcRenderer.invoke('groups:create', n, vault, extra),
+    save: (g) => ipcRenderer.invoke('groups:save', g),
     rename: (id, n) => ipcRenderer.invoke('groups:rename', id, n),
     remove: (id) => ipcRenderer.invoke('groups:remove', id),
   },

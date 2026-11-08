@@ -763,6 +763,29 @@ const mock = {
   console.log('vaults ok');
 })();
 
+// Gruppen: Anlegen, Farbe & Logo speichern, Bearbeiten, Icons und Custom Logos
+(() => {
+  const { plain, hosts: mkHosts } = require('./store');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'deck-grp-'));
+  const crypt = { encrypt: (x) => x, decrypt: (x) => x };
+  const grps = plain(path.join(dir, 'g.json'));
+  const hosts = mkHosts(path.join(dir, 'h.json'), crypt);
+  const id1 = grps.save({ name: 'Web', color: '#3b82f6', icon: 'server' });
+  const id2 = grps.save({ name: 'Cluster', color: '#10b981', customLogo: 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=' });
+  assert.equal(grps.list().length, 2);
+  const g1 = grps.list().find((x) => x.id === id1);
+  assert.equal(g1.color, '#3b82f6');
+  assert.equal(g1.icon, 'server');
+  const g2 = grps.list().find((x) => x.id === id2);
+  assert.equal(g2.customLogo, 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=');
+  // Update
+  grps.save({ ...g1, color: '#ef4444', icon: 'docker' });
+  assert.equal(grps.list().find((x) => x.id === id1).color, '#ef4444');
+  assert.equal(grps.list().find((x) => x.id === id1).icon, 'docker');
+  fs.rmSync(dir, { recursive: true, force: true });
+  console.log('groups ok');
+})();
+
 // Host klonen/verschieben zwischen Tresoren (gleiche Logik wie hosts:copy in main.js, hier mit echten Speichern)
 (() => {
   const { plain, hosts: mkHosts } = require('./store');
