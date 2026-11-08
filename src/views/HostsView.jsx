@@ -10,6 +10,7 @@ import {
   GripVertical,
   Pencil,
   Plus,
+  RefreshCw,
   Search,
   Star,
   Trash2,
@@ -53,6 +54,44 @@ export function HostsView({ dark, connect, openSftp, openForm, openHost, toast, 
   const [groupDropTarget, setGroupDropTarget] = useState(null); // { id, pos: 'before' | 'after' }
   const [dragOverGroup, setDragOverGroup] = useState(null);
   const [dragOverBreadcrumb, setDragOverBreadcrumb] = useState(false);
+  const [showHealth, setShowHealth] = useState(() => {
+    try { return localStorage.getItem('hostHealth') !== '0'; } catch { return true; }
+  });
+  const [healthMap, setHealthMap] = useState({});
+  const [pinging, setPinging] = useState(false);
+
+  useEffect(() => {
+    const handler = () => {
+      try {
+        setShowHealth(localStorage.getItem('hostHealth') !== '0');
+      } catch { /* egal */ }
+    };
+    window.addEventListener('host-health-cfg', handler);
+    return () => window.removeEventListener('host-health-cfg', handler);
+  }, []);
+
+  const refreshHealth = useCallback(async (targets) => {
+    const list = targets || hosts;
+    if (!showHealth || !list.length || !api.hosts?.pingAll) return;
+    setPinging(true);
+    try {
+      const res = await api.hosts.pingAll(list);
+      if (res && typeof res === 'object') {
+        setHealthMap((prev) => ({ ...prev, ...res }));
+      }
+    } catch {
+      /* egal */
+    } finally {
+      setPinging(false);
+    }
+  }, [hosts, showHealth]);
+
+  useEffect(() => {
+    if (!showHealth || !hosts.length) return;
+    refreshHealth(hosts);
+    const iv = setInterval(() => refreshHealth(hosts), 45000);
+    return () => clearInterval(iv);
+  }, [showHealth, hosts, refreshHealth]);
   const load = useCallback(() => {
     api.hosts.list().then((l) => setHosts(l.filter((h) => inV(h, vault))));
     api.groups.list().then((l) => setGroups(l.filter((g) => inV(g, vault))));
@@ -256,6 +295,16 @@ export function HostsView({ dark, connect, openSftp, openForm, openHost, toast, 
         <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
           <DropdownMenuItem onSelect={() => copyCmd(h)}><Copy className="size-4" />{t('SSH-Befehl kopieren')}</DropdownMenuItem>
           <DropdownMenuItem onSelect={() => copyConfig(h)}><FileText className="size-4" />{t('Als SSH-Config exportieren')}</DropdownMenuItem>
+          {showHealth && (
+            <DropdownMenuItem onSelect={async () => {
+              try {
+                const r = await api.hosts.ping(h);
+                if (r) setHealthMap((prev) => ({ ...prev, [h.id]: r }));
+              } catch { /* egal */ }
+            }}>
+              <RefreshCw className="size-4" />{t('Status aktualisieren')}
+            </DropdownMenuItem>
+          )}
           {writable && <DropdownMenuItem onSelect={() => copyTo(h, vault, false)}><Copy className="size-4" />{t('Klonen')}</DropdownMenuItem>}
           {others.length > 0 && <>
             <DropdownMenuSeparator />
@@ -275,6 +324,7 @@ export function HostsView({ dark, connect, openSftp, openForm, openHost, toast, 
     const isDragging = draggedHost?.id === h.id;
     const isTarget = dropTarget?.id === h.id;
     const canDrag = writable && !searching && !mobile;
+    const health = showHealth ? healthMap[h.id] : null;
 
     return (
       <Item
@@ -302,7 +352,37 @@ export function HostsView({ dark, connect, openSftp, openForm, openHost, toast, 
           isTarget && 'ring-2 ring-primary border-primary bg-primary/5 shadow-md scale-[1.01]',
         )}
         icon={<HostIcon slug={h.icon || h.autoIcon} />}
-        sub={h.protocol === 'telnet' ? `telnet://${h.host}:${h.port}` : `${h.user}@${h.host}:${h.port}`}
+        sub={
+          <span className="flex items-center justify-between gap-2">
+            <span className="truncate">{h.protocol === 'telnet' ? `telnet://${h.host}:${h.port}` : `${h.user}@${h.host}:${h.port}`}</span>
+            {showHealth && (
+              health ? (
+                health.online ? (
+                  <span
+                    className="inline-flex shrink-0 items-center gap-1.5 text-xs font-mono font-medium text-emerald-600 dark:text-emerald-400"
+                    title={t('Online ({ms} ms)', { ms: health.ms ?? 0 })}
+                  >
+                    <span className={cn('size-2 rounded-full', (health.ms ?? 999) < 120 ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]' : 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)]')} />
+                    <span>{health.ms}ms</span>
+                  </span>
+                ) : (
+                  <span
+                    className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400"
+                    title={health.error || t('Offline')}
+                  >
+                    <span className="size-2 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.5)]" />
+                    <span>{health.error === 'ETIMEDOUT' ? t('Timeout') : t('Offline')}</span>
+                  </span>
+                )
+              ) : pinging ? (
+                <span className="inline-flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground/60">
+                  <span className="size-2 rounded-full bg-muted-foreground/40 animate-pulse" />
+                  <span>{t('Wird geprüft …')}</span>
+                </span>
+              ) : null
+            )}
+          </span>
+        }
         title={<span className="flex items-center gap-2">
           {h.name}
           {!current && h.group && (() => {
@@ -349,6 +429,11 @@ export function HostsView({ dark, connect, openSftp, openForm, openHost, toast, 
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input className="pl-9" placeholder={t('Suchen …')} value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
+        {showHealth && (
+          <Button variant="outline" size="icon" title={t('Status aktualisieren')} onClick={() => refreshHealth(hosts)} disabled={pinging}>
+            <RefreshCw className={cn('size-4', pinging && 'animate-spin')} />
+          </Button>
+        )}
         {!mobile && <Button variant="outline" onClick={() => exportConfig(current !== null ? inGroup : hosts, 'ssh_config')}><FileText className="size-4" />{t('Als SSH-Config exportieren')}</Button>}
         {writable && <>
         {!mobile && <Button variant="outline" onClick={() => setImportOpen(true)}><Download className="size-4" />{t('Importieren')}</Button>}

@@ -131,6 +131,14 @@ contextBridge.exposeInMainWorld('api', {
     remove: () => ok(),
     reorder: () => ok(),
     copy: () => ok({}),
+    ping: (h) => ok({ id: h?.id, online: true, ms: 24, at: Date.now() }),
+    pingAll: () => {
+      const res = {};
+      for (const h of hosts) {
+        res[h.id] = { id: h.id, online: h.id !== 'h10', ms: h.id === 'h1' ? 18 : h.id === 'h2' ? 24 : h.id === 'h3' ? 32 : h.id === 'h9' ? 112 : 54, at: Date.now() };
+      }
+      return ok(res);
+    },
   },
   win: { minimize() {}, toggleMax() {}, close() {} },
   groups: {

@@ -657,5 +657,12 @@
   "Dateirechte anzeigen": "Pokaż uprawnienia plików",
   "Rechte-Spalte (rwxr-xr-x / 755) in der SFTP-Dateiliste anzeigen": "Pokaż kolumnę uprawnień (rwxr-xr-x / 755) na liście plików SFTP",
   "Kubernetes-Manager": "Menedżer Kubernetes",
-  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "Pokaż dedykowaną zakładkę Kubernetes w menu głównym"
+  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "Pokaż dedykowaną zakładkę Kubernetes w menu głównym",
+  "Host-Status & Ping": "Stan hosta i ping",
+  "Erreichbarkeit und Latenz (ms) auf Host-Karten anzeigen": "Pokaż dostępność i opóźnienie (ms) na kartach hostów",
+  "Status aktualisieren": "Odśwież stan",
+  "Online ({ms} ms)": "Online ({ms} ms)",
+  "Offline": "Offline",
+  "Timeout": "Przekroczono limit czasu",
+  "Wird geprüft …": "Sprawdzanie …"
 }

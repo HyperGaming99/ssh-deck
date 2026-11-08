@@ -76,6 +76,7 @@ export function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogo
   const [featTab, setFeatTab] = useState('server');
   const [srvStats, setSrvStats] = useState(() => { try { return localStorage.getItem('serverStats') !== '0'; } catch { return true; } });
   const [k8sSetting, setK8sSetting] = useState(() => { try { return localStorage.getItem('k8sFeature') === '1'; } catch { return false; } });
+  const [hostHealth, setHostHealth] = useState(() => { try { return localStorage.getItem('hostHealth') !== '0'; } catch { return true; } });
   const [dotfiles, setDotfiles] = useState(() => { try { return localStorage.getItem('sftpDotfiles') !== '0'; } catch { return true; } });
   const [sftpPerms, setSftpPerms] = useState(() => { try { return localStorage.getItem('sftpPermissions') !== '0'; } catch { return true; } });
   const [autoLockMin, setAutoLockMin] = useState(() => { try { return localStorage.getItem('autoLockMin') || '0'; } catch { return '0'; } });
@@ -140,6 +141,10 @@ export function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogo
                 <div className={row}>
                   <div><p className="text-sm font-medium">{t('Kubernetes-Manager')}</p><p className="text-xs text-muted-foreground">{t('Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen')}</p></div>
                   <Switch checked={k8sSetting} onCheckedChange={(v) => { setK8sSetting(v); try { localStorage.setItem('k8sFeature', v ? '1' : '0'); window.dispatchEvent(new Event('k8s-cfg')); } catch { /* egal */ } }} />
+                </div>
+                <div className={row}>
+                  <div><p className="text-sm font-medium">{t('Host-Status & Ping')}</p><p className="text-xs text-muted-foreground">{t('Erreichbarkeit und Latenz (ms) auf Host-Karten anzeigen')}</p></div>
+                  <Switch checked={hostHealth} onCheckedChange={(v) => { setHostHealth(v); try { localStorage.setItem('hostHealth', v ? '1' : '0'); window.dispatchEvent(new Event('host-health-cfg')); } catch { /* egal */ } }} />
                 </div>
               </>
             )}

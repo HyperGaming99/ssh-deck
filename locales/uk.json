@@ -657,5 +657,12 @@
   "Dateirechte anzeigen": "Показувати права доступу до файлів",
   "Rechte-Spalte (rwxr-xr-x / 755) in der SFTP-Dateiliste anzeigen": "Показувати стовпець прав (rwxr-xr-x / 755) у списку файлів SFTP",
   "Kubernetes-Manager": "Менеджер Kubernetes",
-  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "Показувати окрему вкладку Kubernetes у головній навігації"
+  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "Показувати окрему вкладку Kubernetes у головній навігації",
+  "Host-Status & Ping": "Статус хоста та пінг",
+  "Erreichbarkeit und Latenz (ms) auf Host-Karten anzeigen": "Показувати доступність і затримку (мс) на картках хостів",
+  "Status aktualisieren": "Оновити статус",
+  "Online ({ms} ms)": "В мережі ({ms} мс)",
+  "Offline": "Офлайн",
+  "Timeout": "Таймаут",
+  "Wird geprüft …": "Перевірка …"
 }

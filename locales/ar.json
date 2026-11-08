@@ -657,5 +657,12 @@
   "Dateirechte anzeigen": "إظهار أذونات الملفات",
   "Rechte-Spalte (rwxr-xr-x / 755) in der SFTP-Dateiliste anzeigen": "إظهار عمود الأذونات (rwxr-xr-x / 755) في قائمة ملفات SFTP",
   "Kubernetes-Manager": "مدير Kubernetes",
-  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "إظهار علامة تبويب Kubernetes مخصصة في شريط التنقل الرئيسي"
+  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "إظهار علامة تبويب Kubernetes مخصصة في شريط التنقل الرئيسي",
+  "Host-Status & Ping": "حالة المضيف و Ping",
+  "Erreichbarkeit und Latenz (ms) auf Host-Karten anzeigen": "إظهار التوفر ووقت الاستجابة (مللي ثانية) على بطاقات المضيف",
+  "Status aktualisieren": "تحديث الحالة",
+  "Online ({ms} ms)": "متصل ({ms} مللي ثانية)",
+  "Offline": "غير متصل",
+  "Timeout": "انتهت المهلة",
+  "Wird geprüft …": "جارٍ الفحص …"
 }

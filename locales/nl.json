@@ -657,5 +657,12 @@
   "Dateirechte anzeigen": "Bestandsrechten weergeven",
   "Rechte-Spalte (rwxr-xr-x / 755) in der SFTP-Dateiliste anzeigen": "Toon rechtenkolom (rwxr-xr-x / 755) in de SFTP-bestandenlijst",
   "Kubernetes-Manager": "Kubernetes-beheerder",
-  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "Toon eigen Kubernetes-tabblad in de hoofdnavigatie"
+  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "Toon eigen Kubernetes-tabblad in de hoofdnavigatie",
+  "Host-Status & Ping": "Hoststatus & ping",
+  "Erreichbarkeit und Latenz (ms) auf Host-Karten anzeigen": "Beschikbaarheid en latentie (ms) op hostkaarten tonen",
+  "Status aktualisieren": "Status vernieuwen",
+  "Online ({ms} ms)": "Online ({ms} ms)",
+  "Offline": "Offline",
+  "Timeout": "Time-out",
+  "Wird geprüft …": "Controleren …"
 }

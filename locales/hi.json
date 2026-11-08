@@ -657,5 +657,12 @@
   "Dateirechte anzeigen": "फ़ाइल अनुमतियाँ दिखाएं",
   "Rechte-Spalte (rwxr-xr-x / 755) in der SFTP-Dateiliste anzeigen": "SFTP फ़ाइल सूची में अनुमति कॉलम (rwxr-xr-x / 755) दिखाएं",
   "Kubernetes-Manager": "कुबेरनेट्स प्रबंधक",
-  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "मुख्य नेविगेशन में समर्पित कुबेरनेट्स टैब दिखाएं"
+  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "मुख्य नेविगेशन में समर्पित कुबेरनेट्स टैब दिखाएं",
+  "Host-Status & Ping": "होस्ट स्थिति और पिंग",
+  "Erreichbarkeit und Latenz (ms) auf Host-Karten anzeigen": "होस्ट कार्ड पर उपलब्धता और लेटेंसी (ms) दिखाएं",
+  "Status aktualisieren": "स्थिति ताज़ा करें",
+  "Online ({ms} ms)": "ऑनलाइन ({ms} ms)",
+  "Offline": "ऑफ़लाइन",
+  "Timeout": "टाइमआउट",
+  "Wird geprüft …": "जाँच हो रही है …"
 }

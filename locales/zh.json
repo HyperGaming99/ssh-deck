@@ -657,5 +657,12 @@
   "Dateirechte anzeigen": "显示文件权限",
   "Rechte-Spalte (rwxr-xr-x / 755) in der SFTP-Dateiliste anzeigen": "在 SFTP 文件列表中显示权限列 (rwxr-xr-x / 755)",
   "Kubernetes-Manager": "Kubernetes 管理器",
-  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "在主导航中显示专用的 Kubernetes 标签页"
+  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "在主导航中显示专用的 Kubernetes 标签页",
+  "Host-Status & Ping": "主机状态与 Ping",
+  "Erreichbarkeit und Latenz (ms) auf Host-Karten anzeigen": "在主机卡片上显示可用性与延迟 (ms)",
+  "Status aktualisieren": "刷新状态",
+  "Online ({ms} ms)": "在线 ({ms} ms)",
+  "Offline": "离线",
+  "Timeout": "超时",
+  "Wird geprüft …": "检查中 …"
 }

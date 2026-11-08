@@ -15,7 +15,7 @@ const unwrap = async (promise) => {
 const sftpCall = (name) => (sid, ...a) => unwrap(ipcRenderer.invoke(`sftp:${name}`, sid, ...a));
 
 contextBridge.exposeInMainWorld('api', {
-  hosts: { ...coll('hosts'), get: (id) => ipcRenderer.invoke('hosts:get', id), copy: (id, vault, move, name) => ipcRenderer.invoke('hosts:copy', id, vault, move, name), jumpCandidates: (id, vault) => ipcRenderer.invoke('hosts:jumpCandidates', id, vault), reorder: (ids) => ipcRenderer.invoke('hosts:reorder', ids) },
+  hosts: { ...coll('hosts'), get: (id) => ipcRenderer.invoke('hosts:get', id), copy: (id, vault, move, name) => ipcRenderer.invoke('hosts:copy', id, vault, move, name), jumpCandidates: (id, vault) => ipcRenderer.invoke('hosts:jumpCandidates', id, vault), reorder: (ids) => ipcRenderer.invoke('hosts:reorder', ids), ping: (h) => ipcRenderer.invoke('hosts:ping', h), pingAll: () => ipcRenderer.invoke('hosts:pingAll') },
   saveText: (name, text) => ipcRenderer.invoke('saveText', name, text),
   win: {
     minimize: () => ipcRenderer.send('win:minimize'),

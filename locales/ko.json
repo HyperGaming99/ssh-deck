@@ -657,5 +657,12 @@
   "Dateirechte anzeigen": "파일 권한 표시",
   "Rechte-Spalte (rwxr-xr-x / 755) in der SFTP-Dateiliste anzeigen": "SFTP 파일 목록에 권한 열(rwxr-xr-x / 755) 표시",
   "Kubernetes-Manager": "Kubernetes 관리자",
-  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "기본 내비게이션에 전용 Kubernetes 탭 표시"
+  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "기본 내비게이션에 전용 Kubernetes 탭 표시",
+  "Host-Status & Ping": "호스트 상태 및 Ping",
+  "Erreichbarkeit und Latenz (ms) auf Host-Karten anzeigen": "호스트 카드에 가용성 및 지연 시간(ms) 표시",
+  "Status aktualisieren": "상태 새로고침",
+  "Online ({ms} ms)": "온라인 ({ms} ms)",
+  "Offline": "오프라인",
+  "Timeout": "시간 초과",
+  "Wird geprüft …": "확인 중 …"
 }

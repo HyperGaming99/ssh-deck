@@ -24,6 +24,7 @@ const updater = require('./updater');
 const teamTools = require('./teams');
 const kcTools = require('./keyvault');
 const k8sTools = require('./k8s');
+const healthTools = require('./health');
 
 const sessions = new Map(); // sid -> { conn, stream }
 const sftps = new Map(); // sid -> { conn, sftp }
@@ -869,6 +870,11 @@ app.whenReady().then(() => {
   });
   handle('hosts:remove', (_, id) => hosts.remove(id));
   handle('hosts:reorder', (_, ids) => hosts.reorder(ids));
+  handle('hosts:ping', async (_, hostOrId) => {
+    const h = typeof hostOrId === 'object' && hostOrId !== null ? hostOrId : hosts.get(hostOrId);
+    return healthTools.pingHost(h);
+  });
+  handle('hosts:pingAll', async () => healthTools.pingHosts(hosts.list()));
   // Gruppen: Rückgabe null oder Fehlertext. Namen sind je Tresor eindeutig.
   const reGroup = (from, to, vault) => hosts.list().filter((h) => h.group === from && vOf(h) === vault).forEach((h) => hosts.save({ ...h, group: to }));
   // ---- Host-Import (Vorschau, dann übernehmen). Die geparsten Hosts bleiben im Hauptprozess; die Oberfläche sieht keine Passwörter. ----

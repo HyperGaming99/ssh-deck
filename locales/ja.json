@@ -657,5 +657,12 @@
   "Dateirechte anzeigen": "ファイル権限を表示",
   "Rechte-Spalte (rwxr-xr-x / 755) in der SFTP-Dateiliste anzeigen": "SFTPファイル一覧で権限列（rwxr-xr-x / 755）を表示",
   "Kubernetes-Manager": "Kubernetesマネージャー",
-  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "メインナビゲーションに専用のKubernetesタブを表示"
+  "Eigenen Kubernetes-Reiter in der Hauptnavigation anzeigen": "メインナビゲーションに専用のKubernetesタブを表示",
+  "Host-Status & Ping": "ホストの状態とPing",
+  "Erreichbarkeit und Latenz (ms) auf Host-Karten anzeigen": "ホストカードに可用性と遅延 (ms) を表示",
+  "Status aktualisieren": "状態を更新",
+  "Online ({ms} ms)": "オンライン ({ms} ms)",
+  "Offline": "オフライン",
+  "Timeout": "タイムアウト",
+  "Wird geprüft …": "確認中 …"
 }
