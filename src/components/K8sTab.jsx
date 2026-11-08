@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/dialog';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
+import HostSelectDropdown from '@/components/HostSelectDropdown';
 
 export default function K8sTab({ hosts = [], connect, toast, dark }) {
   const t = useT();
@@ -204,21 +205,7 @@ export default function K8sTab({ hosts = [], connect, toast, dark }) {
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-card p-3">
         <div className="flex flex-wrap items-center gap-2">
           {/* Host Dropdown */}
-          <div className="relative">
-            <select
-              value={selectedHost}
-              onChange={(e) => setSelectedHost(e.target.value)}
-              className="h-9 rounded-xl border bg-background px-3 pe-8 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <option value="local">💻 {t('Lokal (dieser Rechner)')}</option>
-              {hosts.map((h) => (
-                <option key={h.id} value={h.id}>
-                  🖥️ {h.name} ({h.user}@{h.host})
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute end-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          </div>
+          <HostSelectDropdown hosts={hosts} selectedHost={selectedHost} onSelect={setSelectedHost} />
 
           <Button
             variant="outline"
