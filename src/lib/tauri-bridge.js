@@ -186,26 +186,35 @@ export function createTauriBridge() {
   const cleanVer = (x) => String(x.tag_name || x.version || '').replace(/^v/i, '');
 
   async function fetchGitHubReleases(repo) {
-    const targetRepo = repo && /^[\w.-]+\/[\w.-]+$/.test(repo) ? repo : 'HyperGaming99/ssh-deck';
+    const targetRepo = repo && /^[\w.-]+\/[\w.-]+$/.test(String(repo).trim()) ? String(repo).trim() : 'HyperGaming99/ssh-deck';
     const url = `https://api.github.com/repos/${targetRepo}/releases?per_page=100`;
     let data = null;
+
+    // 1. In Tauri: native curl via execRemoteOrLocal (bypasses browser CORS & unsafe headers)
     try {
-      const res = await fetch(url, { headers: { accept: 'application/vnd.github+json', 'user-agent': 'ssh-deck' } });
-      if (res.ok) {
-        data = await res.json();
+      const curlRes = await execRemoteOrLocal(null, `curl -sL --max-time 8 -H "User-Agent: ssh-deck" -H "Accept: application/vnd.github+json" "${url}"`);
+      if (curlRes?.stdout) {
+        const parsed = JSON.parse(curlRes.stdout);
+        if (Array.isArray(parsed)) {
+          data = parsed;
+        }
       }
-    } catch (err) {
-      console.warn('Direct fetch failed, falling back to curl:', err);
+    } catch (e) {
+      console.warn('Native curl release fetch failed:', e);
     }
 
+    // 2. Fallback: web fetch (do NOT pass user-agent in browser as it throws Refused to set unsafe header)
     if (!data || !Array.isArray(data)) {
       try {
-        const curlRes = await invoke('deck_shell_cmd', { cmd: `curl -s -H "User-Agent: ssh-deck" -H "Accept: application/vnd.github+json" "${url}"` });
-        if (curlRes?.stdout) {
-          data = JSON.parse(curlRes.stdout);
+        const res = await fetch(url, { headers: { accept: 'application/vnd.github+json' } });
+        if (res.ok) {
+          const parsed = await res.json();
+          if (Array.isArray(parsed)) {
+            data = parsed;
+          }
         }
-      } catch (e) {
-        console.warn('Curl fallback failed:', e);
+      } catch (err) {
+        console.warn('Direct fetch failed:', err);
       }
     }
 
@@ -316,7 +325,7 @@ export function createTauriBridge() {
     }
 
     try {
-      await invoke('deck_shell_cmd', { cmd: `xdg-open "${url}" || open "${url}"` });
+      await execRemoteOrLocal(null, `xdg-open "${url}" || open "${url}"`);
     } catch {
       window.open(url, '_blank');
     }
