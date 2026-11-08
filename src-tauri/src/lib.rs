@@ -26,6 +26,51 @@ pub struct LocalListResult {
     pub entries: Vec<FileEntry>,
 }
 
+fn get_deck_data_dir() -> PathBuf {
+    #[cfg(target_os = "macos")]
+    let base = std::env::var("HOME")
+        .map(|h| PathBuf::from(h).join("Library/Application Support"))
+        .unwrap_or_else(|_| PathBuf::from("."));
+
+    #[cfg(target_os = "windows")]
+    let base = std::env::var("APPDATA")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| PathBuf::from("."));
+
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    let base = std::env::var("XDG_CONFIG_HOME")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| {
+            std::env::var("HOME")
+                .map(|h| PathBuf::from(h).join(".config"))
+                .unwrap_or_else(|_| PathBuf::from("."))
+        });
+
+    base.join("ssh-deck")
+}
+
+#[tauri::command]
+fn deck_store_read(collection: String) -> Result<serde_json::Value, String> {
+    let dir = get_deck_data_dir();
+    let file = dir.join(format!("{}.json", collection));
+    if !file.exists() {
+        return Ok(serde_json::Value::Null);
+    }
+    let content = std::fs::read_to_string(&file).map_err(|e| e.to_string())?;
+    let val: serde_json::Value = serde_json::from_str(&content).map_err(|e| e.to_string())?;
+    Ok(val)
+}
+
+#[tauri::command]
+fn deck_store_write(collection: String, data: serde_json::Value) -> Result<(), String> {
+    let dir = get_deck_data_dir();
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    let file = dir.join(format!("{}.json", collection));
+    let content = serde_json::to_string_pretty(&data).map_err(|e| e.to_string())?;
+    std::fs::write(&file, content).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 #[tauri::command]
 fn win_minimize(app: AppHandle) {
     if let Some(win) = app.get_webview_window("main") {
@@ -159,6 +204,8 @@ pub fn run() {
             get_platform,
             hosts_ping,
             local_list,
+            deck_store_read,
+            deck_store_write,
         ])
         .run(tauri::generate_context!())
         .expect("error while building tauri application");

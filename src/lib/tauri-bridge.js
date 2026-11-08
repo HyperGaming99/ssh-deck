@@ -1,41 +1,90 @@
 // Tauri Bridge: initialisiert window.api und globalThis.api, wenn die App innerhalb von Tauri oder Web läuft
 import { invoke } from '@tauri-apps/api/core';
 
-const coll = (name) => ({
-  list: async () => {
-    try {
-      const raw = localStorage.getItem(`tauri_${name}`);
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  },
-  save: async (item) => {
-    try {
-      const raw = localStorage.getItem(`tauri_${name}`);
-      let list = raw ? JSON.parse(raw) : [];
-      if (!item.id) item.id = 'id_' + Date.now();
-      const idx = list.findIndex((x) => x.id === item.id);
-      if (idx >= 0) list[idx] = item;
-      else list.push(item);
-      localStorage.setItem(`tauri_${name}`, JSON.stringify(list));
-      return item;
-    } catch {
-      return item;
-    }
-  },
-  remove: async (id) => {
-    try {
-      const raw = localStorage.getItem(`tauri_${name}`);
-      let list = raw ? JSON.parse(raw) : [];
-      list = list.filter((x) => x.id !== id);
-      localStorage.setItem(`tauri_${name}`, JSON.stringify(list));
-      return true;
-    } catch {
-      return false;
-    }
-  },
-});
+const mapCollectionName = (n) => {
+  if (n === 'fwd' || n === 'forwards') return 'forwards';
+  if (n === 'known' || n === 'known_hosts') return 'known_hosts';
+  return n;
+};
+
+const coll = (name) => {
+  const file = mapCollectionName(name);
+  return {
+    list: async () => {
+      try {
+        const raw = await invoke('deck_store_read', { collection: file });
+        if (Array.isArray(raw)) {
+          return raw
+            .filter((r) => !r.deleted)
+            .sort((a, b) => {
+              const oa = typeof a.order === 'number' ? a.order : Infinity;
+              const ob = typeof b.order === 'number' ? b.order : Infinity;
+              if (oa !== ob) return oa - ob;
+              return 0;
+            });
+        }
+      } catch (e) {
+        console.warn(`deck_store_read failed for ${file}:`, e);
+      }
+      try {
+        const raw = localStorage.getItem(`tauri_${name}`);
+        return raw ? JSON.parse(raw) : [];
+      } catch {
+        return [];
+      }
+    },
+    save: async (item) => {
+      try {
+        let list = await invoke('deck_store_read', { collection: file });
+        if (!Array.isArray(list)) list = [];
+        if (!item.id) item.id = 'id_' + Date.now();
+        item.updatedAt = Date.now();
+        delete item.deleted;
+        const idx = list.findIndex((x) => x.id === item.id);
+        if (idx >= 0) list[idx] = item;
+        else list.push(item);
+        await invoke('deck_store_write', { collection: file, data: list });
+        return item;
+      } catch (e) {
+        console.warn(`deck_store_write failed for ${file}:`, e);
+      }
+      try {
+        const raw = localStorage.getItem(`tauri_${name}`);
+        let list = raw ? JSON.parse(raw) : [];
+        if (!item.id) item.id = 'id_' + Date.now();
+        const idx = list.findIndex((x) => x.id === item.id);
+        if (idx >= 0) list[idx] = item;
+        else list.push(item);
+        localStorage.setItem(`tauri_${name}`, JSON.stringify(list));
+        return item;
+      } catch {
+        return item;
+      }
+    },
+    remove: async (id) => {
+      try {
+        let list = await invoke('deck_store_read', { collection: file });
+        if (!Array.isArray(list)) list = [];
+        const next = list.map((x) =>
+          x.id === id ? { id, deleted: true, ...(x.vault && { vault: x.vault }), updatedAt: Date.now() } : x
+        );
+        await invoke('deck_store_write', { collection: file, data: next });
+        return true;
+      } catch (e) {
+        console.warn(`deck_store_write remove failed for ${file}:`, e);
+      }
+      try {
+        const raw = localStorage.getItem(`tauri_${name}`);
+        let list = raw ? JSON.parse(raw) : [];
+        list = list.filter((x) => x.id !== id);
+        localStorage.setItem(`tauri_${name}`, JSON.stringify(list));
+        return true;
+      } catch {
+        return false;
+      }
+    },
+  };
+};
 
 function detectInitialPlatform() {
   if (typeof navigator === 'undefined') return 'linux';
@@ -84,6 +133,21 @@ export function createTauriBridge() {
       },
       reorder: async (ids) => {
         try {
+          let list = await invoke('deck_store_read', { collection: 'hosts' });
+          if (Array.isArray(list)) {
+            const idToOrder = new Map(ids.map((id, idx) => [id, idx]));
+            const now = Date.now();
+            for (const item of list) {
+              if (idToOrder.has(item.id)) {
+                item.order = idToOrder.get(item.id);
+                item.updatedAt = now;
+              }
+            }
+            await invoke('deck_store_write', { collection: 'hosts', data: list });
+            return;
+          }
+        } catch {}
+        try {
           const list = await coll('hosts').list();
           const map = new Map(list.map((h) => [h.id, h]));
           const sorted = ids.map((id) => map.get(id)).filter(Boolean);
@@ -129,6 +193,21 @@ export function createTauriBridge() {
       },
       reorder: async (ids) => {
         try {
+          let list = await invoke('deck_store_read', { collection: 'groups' });
+          if (Array.isArray(list)) {
+            const idToOrder = new Map(ids.map((id, idx) => [id, idx]));
+            const now = Date.now();
+            for (const item of list) {
+              if (idToOrder.has(item.id)) {
+                item.order = idToOrder.get(item.id);
+                item.updatedAt = now;
+              }
+            }
+            await invoke('deck_store_write', { collection: 'groups', data: list });
+            return;
+          }
+        } catch {}
+        try {
           const list = await coll('groups').list();
           const map = new Map(list.map((g) => [g.id, g]));
           const sorted = ids.map((id) => map.get(id)).filter(Boolean);
@@ -168,8 +247,7 @@ export function createTauriBridge() {
       readPublic: async () => '',
     },
     known: {
-      list: async () => [],
-      remove: async () => {},
+      ...coll('known'),
       import: async () => {},
     },
     sync: {
@@ -177,15 +255,15 @@ export function createTauriBridge() {
         let cfg = null;
         let settings = {};
         try {
-          cfg = JSON.parse(localStorage.getItem('tauri_sync_cfg') || 'null');
-          settings = JSON.parse(localStorage.getItem('tauri_settings') || '{}');
+          cfg = await invoke('deck_store_read', { collection: 'sync' });
+          settings = (await invoke('deck_store_read', { collection: 'settings' })) || {};
         } catch {}
         return {
-          configured: !!cfg,
+          configured: !!(cfg && cfg.token),
           email: cfg?.email || '',
-          server: cfg?.server || settings.syncServer || DEFAULT_SERVER,
+          server: cfg?.server || settings?.syncServer || DEFAULT_SERVER,
           defaultServer: DEFAULT_SERVER,
-          status: cfg ? 'ok' : 'idle',
+          status: cfg?.token ? 'ok' : 'idle',
           lastSync: cfg?.lastSync || null,
           error: '',
         };
@@ -211,7 +289,7 @@ export function createTauriBridge() {
             token: 'tauri_session_' + Date.now(),
             lastSync: Date.now(),
           };
-          localStorage.setItem('tauri_sync_cfg', JSON.stringify(cfg));
+          await invoke('deck_store_write', { collection: 'sync', data: cfg });
           return { ok: true };
         } catch (e) {
           return { error: e?.message || 'Aktion fehlgeschlagen' };
@@ -221,10 +299,14 @@ export function createTauriBridge() {
       pairCreate: async () => '',
       pairJoin: async () => ({ ok: true }),
       logout: async () => {
-        localStorage.removeItem('tauri_sync_cfg');
+        try {
+          await invoke('deck_store_write', { collection: 'sync', data: null });
+        } catch {}
       },
       deleteAccount: async () => {
-        localStorage.removeItem('tauri_sync_cfg');
+        try {
+          await invoke('deck_store_write', { collection: 'sync', data: null });
+        } catch {}
         return { ok: true };
       },
       onStatus: () => () => {},
@@ -251,6 +333,10 @@ export function createTauriBridge() {
     settings: {
       get: async () => {
         try {
+          const res = await invoke('deck_store_read', { collection: 'settings' });
+          if (res && typeof res === 'object' && !Array.isArray(res)) return res;
+        } catch {}
+        try {
           const raw = localStorage.getItem('tauri_settings');
           return raw ? JSON.parse(raw) : {};
         } catch {
@@ -258,6 +344,13 @@ export function createTauriBridge() {
         }
       },
       set: async (patch) => {
+        try {
+          let cur = await invoke('deck_store_read', { collection: 'settings' });
+          if (!cur || typeof cur !== 'object' || Array.isArray(cur)) cur = {};
+          const n = { ...cur, ...patch };
+          await invoke('deck_store_write', { collection: 'settings', data: n });
+          return n;
+        } catch {}
         try {
           const raw = localStorage.getItem('tauri_settings');
           const cur = raw ? JSON.parse(raw) : {};
