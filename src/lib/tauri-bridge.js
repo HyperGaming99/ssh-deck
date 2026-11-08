@@ -1,5 +1,6 @@
 // Tauri Bridge: initialisiert window.api und globalThis.api, wenn die App innerhalb von Tauri oder Web läuft
 import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 
 const mapCollectionName = (n) => {
   if (n === 'fwd' || n === 'forwards') return 'forwards';
@@ -156,9 +157,10 @@ export function createTauriBridge() {
       },
       ping: async (host) => {
         try {
-          return await invoke('hosts_ping', { host: host.host, port: host.port || 22 });
+          const res = await invoke('hosts_ping', { host: host.host, port: host.port || 22 });
+          return { id: host.id, online: !!res.ok, ms: res.latency, at: Date.now() };
         } catch {
-          return { ok: false, latency: null };
+          return { id: host.id, online: false, ms: null, error: 'failed', at: Date.now() };
         }
       },
       pingAll: async (hostsList) => {
@@ -166,9 +168,10 @@ export function createTauriBridge() {
         const out = {};
         for (const h of list) {
           try {
-            out[h.id] = await invoke('hosts_ping', { host: h.host, port: h.port || 22 });
+            const res = await invoke('hosts_ping', { host: h.host, port: h.port || (h.protocol === 'telnet' ? 23 : 22) });
+            out[h.id] = { id: h.id, online: !!res.ok, ms: res.latency, at: Date.now() };
           } catch {
-            out[h.id] = { ok: false, latency: null };
+            out[h.id] = { id: h.id, online: false, ms: null, error: 'failed', at: Date.now() };
           }
         }
         return out;
@@ -447,17 +450,43 @@ export function createTauriBridge() {
       setInteractive: async () => {},
       status: async () => ({ active: false }),
     },
-    open: () => {},
-    input: () => {},
-    resize: () => {},
-    close: () => {},
-    onData: () => {},
+    open: (sid, hostId, cols, rows) => {
+      invoke('ssh_open', { sid, hostId, cols, rows }).catch((err) => {
+        console.error('ssh_open error:', err);
+      });
+    },
+    input: (sid, data) => {
+      invoke('ssh_input', { sid, data }).catch(() => {});
+    },
+    resize: (sid, cols, rows) => {
+      invoke('ssh_resize', { sid, cols, rows }).catch(() => {});
+    },
+    close: (sid) => {
+      invoke('ssh_close', { sid }).catch(() => {});
+    },
+    onData: (cb) => {
+      listen('ssh-data', (ev) => {
+        if (ev?.payload) cb(ev.payload.sid, ev.payload.data);
+      }).catch(() => {});
+    },
     onCredAsk: () => {},
     answerCred: () => {},
     answer: () => {},
-    onStatus: () => {},
-    onLost: () => {},
-    onClosed: () => {},
+    onStatus: (cb) => {
+      listen('ssh-status', (ev) => {
+        if (ev?.payload) cb(ev.payload.sid, ev.payload);
+      }).catch(() => {});
+    },
+    onLost: (cb) => {
+      listen('ssh-lost', (ev) => {
+        if (ev?.payload) cb(ev.payload.sid);
+      }).catch(() => {});
+    },
+    onClosed: (cb) => {
+      listen('ssh-closed', (ev) => {
+        if (ev?.payload) cb(ev.payload.sid);
+      }).catch(() => {});
+    },
   };
 
   return bridge;

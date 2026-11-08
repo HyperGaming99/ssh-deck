@@ -1,7 +1,11 @@
+use std::collections::HashMap;
+use std::io::{Read, Write};
 use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 use std::time::Instant;
+use portable_pty::{native_pty_system, CommandBuilder, MasterPty, PtySize};
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 use tokio::net::TcpStream;
 use tokio::time::{timeout, Duration};
 
@@ -25,6 +29,32 @@ pub struct LocalListResult {
     pub path: String,
     pub entries: Vec<FileEntry>,
 }
+
+#[derive(Serialize, Clone, Debug)]
+pub struct SshDataPayload {
+    pub sid: String,
+    pub data: String,
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct SshStatusPayload {
+    pub sid: String,
+    pub state: String,
+    pub log: Vec<String>,
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct SshSimplePayload {
+    pub sid: String,
+}
+
+struct PtySession {
+    writer: Arc<Mutex<Box<dyn Write + Send>>>,
+    master: Arc<Mutex<Box<dyn MasterPty + Send>>>,
+}
+
+static SESSIONS: std::sync::LazyLock<Mutex<HashMap<String, PtySession>>> =
+    std::sync::LazyLock::new(|| Mutex::new(HashMap::new()));
 
 fn get_deck_data_dir() -> PathBuf {
     #[cfg(target_os = "macos")]
@@ -184,6 +214,168 @@ fn local_list(dir: Option<String>) -> Result<LocalListResult, String> {
     })
 }
 
+#[tauri::command]
+fn ssh_open(
+    app: AppHandle,
+    sid: String,
+    host_id: String,
+    cols: Option<u16>,
+    rows: Option<u16>,
+) -> Result<(), String> {
+    let hosts_val = deck_store_read("hosts".into()).map_err(|e| e.to_string())?;
+    let hosts_arr = hosts_val.as_array().ok_or("hosts is not an array")?;
+    let host_obj = hosts_arr
+        .iter()
+        .find(|h| h.get("id").and_then(|v| v.as_str()) == Some(&host_id))
+        .ok_or("Host not found")?;
+
+    let host_str = host_obj.get("host").and_then(|v| v.as_str()).unwrap_or("");
+    let port = host_obj.get("port").and_then(|v| v.as_u64()).unwrap_or(22);
+    let user = host_obj.get("user").and_then(|v| v.as_str()).unwrap_or("");
+    let protocol = host_obj.get("protocol").and_then(|v| v.as_str()).unwrap_or("ssh");
+    let key_id = host_obj.get("keyId").and_then(|v| v.as_str()).unwrap_or("");
+
+    let mut key_path: Option<String> = None;
+    if !key_id.is_empty() {
+        if let Ok(keys_val) = deck_store_read("keys".into()) {
+            if let Some(keys_arr) = keys_val.as_array() {
+                if let Some(k) = keys_arr.iter().find(|k| k.get("id").and_then(|v| v.as_str()) == Some(key_id)) {
+                    if let Some(p) = k.get("path").and_then(|v| v.as_str()) {
+                        if !p.is_empty() {
+                            key_path = Some(p.to_string());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let pty_system = native_pty_system();
+    let size = PtySize {
+        rows: rows.unwrap_or(24),
+        cols: cols.unwrap_or(80),
+        pixel_width: 0,
+        pixel_height: 0,
+    };
+
+    let pair = pty_system.openpty(size).map_err(|e| e.to_string())?;
+
+    let mut cmd = if protocol == "telnet" {
+        let mut c = CommandBuilder::new("telnet");
+        c.arg(host_str);
+        c.arg(port.to_string());
+        c
+    } else {
+        let mut c = CommandBuilder::new("ssh");
+        c.arg("-tt");
+        c.arg("-p");
+        c.arg(port.to_string());
+        c.arg("-o");
+        c.arg("StrictHostKeyChecking=accept-new");
+        c.arg("-o");
+        c.arg("LogLevel=ERROR");
+        if let Some(ref kp) = key_path {
+            c.arg("-i");
+            c.arg(kp);
+        }
+        if !user.is_empty() {
+            c.arg(format!("{}@{}", user, host_str));
+        } else {
+            c.arg(host_str);
+        }
+        c
+    };
+
+    cmd.env("TERM", "xterm-256color");
+
+    let _child = pair.slave.spawn_command(cmd).map_err(|e| e.to_string())?;
+
+    let writer = pair.master.take_writer().map_err(|e| e.to_string())?;
+    let mut reader = pair.master.try_clone_reader().map_err(|e| e.to_string())?;
+
+    let pty_session = PtySession {
+        writer: Arc::new(Mutex::new(writer)),
+        master: Arc::new(Mutex::new(pair.master)),
+    };
+
+    {
+        let mut sessions = SESSIONS.lock().unwrap();
+        sessions.insert(sid.clone(), pty_session);
+    }
+
+    let _ = app.emit(
+        "ssh-status",
+        SshStatusPayload {
+            sid: sid.clone(),
+            state: "ready".into(),
+            log: vec![format!("Connected to {} on port {}", host_str, port)],
+        },
+    );
+
+    let sid_reader = sid.clone();
+    let app_reader = app.clone();
+    std::thread::spawn(move || {
+        let mut buf = [0u8; 4096];
+        loop {
+            match reader.read(&mut buf) {
+                Ok(0) => break,
+                Ok(n) => {
+                    let text = String::from_utf8_lossy(&buf[..n]).to_string();
+                    let _ = app_reader.emit(
+                        "ssh-data",
+                        SshDataPayload {
+                            sid: sid_reader.clone(),
+                            data: text,
+                        },
+                    );
+                }
+                Err(_) => break,
+            }
+        }
+
+        {
+            let mut sessions = SESSIONS.lock().unwrap();
+            sessions.remove(&sid_reader);
+        }
+        let _ = app_reader.emit("ssh-closed", SshSimplePayload { sid: sid_reader });
+    });
+
+    Ok(())
+}
+
+#[tauri::command]
+fn ssh_input(sid: String, data: String) -> Result<(), String> {
+    let sessions = SESSIONS.lock().unwrap();
+    if let Some(sess) = sessions.get(&sid) {
+        let mut w = sess.writer.lock().unwrap();
+        let _ = w.write_all(data.as_bytes());
+        let _ = w.flush();
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn ssh_resize(sid: String, cols: u16, rows: u16) -> Result<(), String> {
+    let sessions = SESSIONS.lock().unwrap();
+    if let Some(sess) = sessions.get(&sid) {
+        let m = sess.master.lock().unwrap();
+        let _ = m.resize(PtySize {
+            rows,
+            cols,
+            pixel_width: 0,
+            pixel_height: 0,
+        });
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn ssh_close(sid: String) -> Result<(), String> {
+    let mut sessions = SESSIONS.lock().unwrap();
+    sessions.remove(&sid);
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -206,6 +398,10 @@ pub fn run() {
             local_list,
             deck_store_read,
             deck_store_write,
+            ssh_open,
+            ssh_input,
+            ssh_resize,
+            ssh_close,
         ])
         .run(tauri::generate_context!())
         .expect("error while building tauri application");
