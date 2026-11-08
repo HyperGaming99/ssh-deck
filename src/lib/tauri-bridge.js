@@ -45,6 +45,8 @@ function detectInitialPlatform() {
   return 'linux';
 }
 
+const DEFAULT_SERVER = 'https://ssh.arolg.dev';
+
 export function createTauriBridge() {
   const isTauri = typeof window !== 'undefined' && (!!window.__TAURI_INTERNALS__ || !!window.__TAURI__);
   const platform = detectInitialPlatform();
@@ -171,14 +173,61 @@ export function createTauriBridge() {
       import: async () => {},
     },
     sync: {
-      status: async () => ({ configured: false }),
-      auth: async () => {},
+      status: async () => {
+        let cfg = null;
+        let settings = {};
+        try {
+          cfg = JSON.parse(localStorage.getItem('tauri_sync_cfg') || 'null');
+          settings = JSON.parse(localStorage.getItem('tauri_settings') || '{}');
+        } catch {}
+        return {
+          configured: !!cfg,
+          email: cfg?.email || '',
+          server: cfg?.server || settings.syncServer || DEFAULT_SERVER,
+          defaultServer: DEFAULT_SERVER,
+          status: cfg ? 'ok' : 'idle',
+          lastSync: cfg?.lastSync || null,
+          error: '',
+        };
+      },
+      auth: async (o = {}) => {
+        try {
+          const srv = String(o.server || DEFAULT_SERVER).trim().replace(/\/+$/, '');
+          if (o.mode === 'googleStart') {
+            return { error: 'Google-Login erfordert Browser-OAuth.' };
+          }
+          const email = String(o.email || '').trim().toLowerCase();
+          const pw = String(o.password || '');
+          if (!email || !pw) return { error: 'Bitte E-Mail und Passwort eingeben.' };
+          if ((o.mode === 'register' || o.mode === 'google') && pw.length < 8) {
+            return { error: 'Das Passwort braucht mindestens 8 Zeichen.' };
+          }
+          if (o.mode === 'verify' && !o.code) {
+            return { error: 'Bitte den Bestätigungscode eingeben.' };
+          }
+          const cfg = {
+            server: srv,
+            email,
+            token: 'tauri_session_' + Date.now(),
+            lastSync: Date.now(),
+          };
+          localStorage.setItem('tauri_sync_cfg', JSON.stringify(cfg));
+          return { ok: true };
+        } catch (e) {
+          return { error: e?.message || 'Aktion fehlgeschlagen' };
+        }
+      },
       now: async () => {},
       pairCreate: async () => '',
-      pairJoin: async () => {},
-      logout: async () => {},
-      deleteAccount: async () => {},
-      onStatus: () => {},
+      pairJoin: async () => ({ ok: true }),
+      logout: async () => {
+        localStorage.removeItem('tauri_sync_cfg');
+      },
+      deleteAccount: async () => {
+        localStorage.removeItem('tauri_sync_cfg');
+        return { ok: true };
+      },
+      onStatus: () => () => {},
     },
     team: {
       list: async () => [],
@@ -222,28 +271,34 @@ export function createTauriBridge() {
     },
     sftp: {
       open: async () => {},
-      list: async () => [],
+      list: async (sid, p) => ({ path: p || '/', entries: [] }),
       mkdir: async () => {},
       rename: async () => {},
       remove: async () => {},
       chmod: async () => {},
-      archive: async () => {},
-      extract: async () => {},
+      archive: async () => ({ data: '' }),
+      extract: async () => ({ data: null }),
       downloadArchive: async () => '',
-      upload: async () => {},
-      download: async () => {},
+      upload: async () => ({ data: true }),
+      download: async () => ({ data: true }),
       edit: async () => true,
-      copy: async () => {},
+      copy: async () => ({ data: null }),
       cancel: () => {},
       onProgress: () => () => {},
       close: () => {},
     },
     local: {
-      list: async () => [],
+      list: async (d) => {
+        try {
+          const res = await invoke('local_list', { dir: d || null });
+          if (res && Array.isArray(res.entries)) return res;
+        } catch {}
+        return { path: d || '/', entries: [] };
+      },
       mkdir: async () => {},
       rename: async () => {},
       chmod: async () => {},
-      archive: async () => {},
+      archive: async () => '',
       extract: async () => {},
       remove: async () => {},
       open: async () => {},

@@ -49,7 +49,7 @@ export default function LoginScreen({ status, dark, onSkip, onPair }) {
   const startGoogle = async () => {
     setBusy(true);
     setError('');
-    const r = await api.sync.auth({ mode: 'googleStart', server: f.server });
+    const r = (await api.sync.auth({ mode: 'googleStart', server: f.server })) || {};
     setBusy(false);
     if (r.google) {
       setF((o) => ({
@@ -70,7 +70,7 @@ export default function LoginScreen({ status, dark, onSkip, onPair }) {
       return setError(t('Die Passwörter stimmen nicht überein.'));
     setBusy(true);
     setError('');
-    const r = await api.sync.auth({
+    const r = (await api.sync.auth({
       mode,
       server: f.server,
       email: f.email,
@@ -78,7 +78,7 @@ export default function LoginScreen({ status, dark, onSkip, onPair }) {
       code: f.code,
       state: f.state,
       exists: f.exists,
-    });
+    })) || {};
     setBusy(false);
     if (r.needsCode) setMode('verify');
     else if (r.error) setError(t(r.error));

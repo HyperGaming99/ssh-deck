@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::time::Instant;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
@@ -8,6 +9,21 @@ use tokio::time::{timeout, Duration};
 struct PingResult {
     ok: bool,
     latency: Option<u64>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct FileEntry {
+    pub name: String,
+    pub dir: bool,
+    pub size: u64,
+    pub mtime: u64,
+    pub mode: u32,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LocalListResult {
+    pub path: String,
+    pub entries: Vec<FileEntry>,
 }
 
 #[tauri::command]
@@ -65,6 +81,64 @@ async fn hosts_ping(host: String, port: Option<u16>) -> PingResult {
     }
 }
 
+#[tauri::command]
+fn local_list(dir: Option<String>) -> Result<LocalListResult, String> {
+    let home = std::env::var("HOME").unwrap_or_else(|_| ".".into());
+    let target = match dir {
+        Some(ref d) if !d.is_empty() => PathBuf::from(d),
+        _ => PathBuf::from(&home),
+    };
+
+    let real_path = target
+        .canonicalize()
+        .unwrap_or_else(|_| target.clone())
+        .to_string_lossy()
+        .to_string();
+
+    let rd = std::fs::read_dir(&target).map_err(|e| e.to_string())?;
+    let mut entries = Vec::new();
+
+    for item in rd.flatten() {
+        let name = item.file_name().to_string_lossy().to_string();
+        let meta = item.metadata().ok();
+        let is_dir = meta.as_ref().map(|m| m.is_dir()).unwrap_or(false);
+        let size = meta.as_ref().map(|m| m.len()).unwrap_or(0);
+        let mtime = meta
+            .as_ref()
+            .and_then(|m| m.modified().ok())
+            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0);
+
+        #[cfg(unix)]
+        let mode = {
+            use std::os::unix::fs::MetadataExt;
+            meta.as_ref().map(|m| m.mode() & 0o777).unwrap_or(0o644)
+        };
+        #[cfg(not(unix))]
+        let mode = if is_dir { 0o755 } else { 0o644 };
+
+        entries.push(FileEntry {
+            name,
+            dir: is_dir,
+            size,
+            mtime,
+            mode,
+        });
+    }
+
+    entries.sort_by(|a, b| {
+        b.dir
+            .cmp(&a.dir)
+            .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
+    });
+
+    Ok(LocalListResult {
+        path: real_path,
+        entries,
+    })
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -84,6 +158,7 @@ pub fn run() {
             win_close,
             get_platform,
             hosts_ping,
+            local_list,
         ])
         .run(tauri::generate_context!())
         .expect("error while building tauri application");

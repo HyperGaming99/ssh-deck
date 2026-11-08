@@ -227,9 +227,12 @@ function usePane(side, tabSid, initialSrc, showDotfiles, toast) {
 
   const go = useCallback(async (p) => {
     try {
-      const r = await ops.list(p);
-      setPath(r.path); setEntries(r.entries); setSel(new Set()); setQuery('');
-    } catch (e) { toast(e.message); }
+      const r = (await ops.list(p)) || {};
+      setPath(r.path || '');
+      setEntries(Array.isArray(r.entries) ? r.entries : []);
+      setSel(new Set());
+      setQuery('');
+    } catch (e) { toast(e?.message || 'Fehler beim Laden'); }
   }, [ops, toast]);
 
   useEffect(() => {
