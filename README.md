@@ -35,14 +35,17 @@ SSH Deck is a desktop app (Electron + React) to connect to your servers. You kee
 - **Ten terminal themes** (Dracula, Nord, Tokyo Night, One Dark, Gruvbox, Monokai, Solarized, …) that recolor the whole window; bundled monospace fonts with live size preview
 - Connection screen with a live log, host key check right in the tab, and **smart login**: it asks only for what the server needs (username, password, key from your keychain, one-time code)
 
-**Hosts**
-- Groups, tags, search, **favorites** and a *recently used* section, OS icons that are detected automatically
+**Hosts &amp; Groups**
+- Groups with **custom colors and icons/logos**, **drag &amp; drop reordering** for both hosts and groups, tags, search, **favorites** and a *recently used* section, OS icons detected automatically
+- Move hosts between groups with drag and drop; breadcrumb navigation
 - Import from `~/.ssh/config`, CSV, PuTTY, MobaXterm and SecureCRT; quick connect with <kbd>Ctrl</kbd>+<kbd>K</kbd>
 - **Copy the `ssh` command** of a host or **export hosts as `~/.ssh/config`** entries (no passwords)
 
+**Kubernetes Manager** – optional dedicated tab in the main sidebar to manage your clusters: view **Nodes, Pods, Deployments and Services**, inspect live pod logs, scale replicas, restart workloads, run new images and describe resources
+
 **Connection routes** – per host: **jump hosts** (chains of up to three, also for SFTP and forwarding), **proxy chains** (SOCKS4/SOCKS5 one after another, like proxychains; Tor goes first when it is on), **Cloudflare Tunnel** (needs `cloudflared` on your computer) and **Telnet** for old devices
 
-**SFTP** – two panes, drag &amp; drop, server to server, open with your editor and upload edits automatically
+**SFTP** – two panes, drag &amp; drop, server to server, open with your editor and upload edits automatically, with toggleable file permissions and dotfile visibility
 
 **Keychain &amp; Known hosts** – generate or import keys, export them to a host, import `~/.ssh`; fingerprints and host names are masked by default
 
@@ -58,16 +61,18 @@ SSH Deck is a desktop app (Electron + React) to connect to your servers. You kee
 
 | | |
 |---|---|
+| ![Hosts & Groups](docs/hosts.jpg) | ![Kubernetes Manager](docs/k8s.jpg) |
+| Hosts with custom group colors, icons & drag-and-drop | Kubernetes Manager: nodes, pods, services & deployments |
 | ![Connect](docs/connect.jpg) | ![Themes, dark](docs/themes-dark.jpg) |
 | Host key check inside the tab | Ten themes, applied to the whole window |
 | ![Themes, light](docs/themes-light.jpg) | ![SFTP](docs/sftp.jpg) |
-| Light themes work too | SFTP, drag &amp; drop between panes and servers |
-| ![Keychain](docs/keychain.jpg) | ![Languages](docs/languages.jpg) |
-| Keychain with masked fingerprints | 16 languages |
+| Light themes work too | SFTP with dual panes & toggleable permissions |
+| ![Keychain](docs/keychain.jpg) | ![Port forwarding](docs/forwarding.jpg) |
+| Keychain with masked fingerprints & cloud tags | Port forwarding with a guided wizard |
+| ![Settings](docs/settings.jpg) | ![Snippets](docs/snippets.jpg) |
+| Granular feature & security settings | Reusable command snippets with variables |
 | ![Teams](docs/teams.jpg) | ![Team vaults](docs/vaults.jpg) |
 | Teams with roles and verifiable key fingerprints | Switch between *Personal* and team vaults in the title bar |
-| ![Cloud keychain](docs/cloud-keychain.jpg) | ![Port forwarding](docs/forwarding.jpg) |
-| Cloud keychain, end-to-end encrypted | Port forwarding with a guided wizard |
 
 **Android**
 
