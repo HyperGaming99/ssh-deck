@@ -48,7 +48,13 @@ function StatusTab({ sid }) {
 // Seitenleiste neben dem Terminal: Forwarding dieses Hosts, Snippets, Verlauf, Themes + Schrift
 export default function TermPanel({ sid, hostId, dark, history, themeId, setThemeId, font, setFont, toast, rev, onClose }) {
   const t = useT();
-  const [tab, setTab] = useState(() => { try { return localStorage.getItem('termPanelTab') || 'themes'; } catch { return 'themes'; } });
+  const statsOn = (() => { try { return localStorage.getItem('serverStats') !== '0'; } catch { return true; } })();
+  const [tab, setTab] = useState(() => {
+    try {
+      const saved = localStorage.getItem('termPanelTab') || 'themes';
+      return !statsOn && saved === 'status' ? 'themes' : saved;
+    } catch { return 'themes'; }
+  });
   const [fontOpen, setFontOpen] = useState(false);
   const [rules, setRules] = useState([]);
   const [snippets, setSnippets] = useState([]);
@@ -65,7 +71,7 @@ export default function TermPanel({ sid, hostId, dark, history, themeId, setThem
   const load = useCallback(() => { api.fwd.list().then((l) => setRules(l.filter((r) => r.hostId === hostId))); api.snippets.list().then(setSnippets); }, [hostId]);
   useEffect(() => { load(); }, [load, rev]);
   useEffect(() => { api.hosts.get(hostId).then((x) => setTelnet(x?.protocol === 'telnet')); }, [hostId, rev]);
-  const TABS = [...(telnet ? [] : [['fwd', t('Forwarding'), ArrowLeftRight]]), ['snip', t('Snippets'), Code2], ['hist', t('Verlauf'), Clock], ['status', t('Status'), Activity], ['themes', t('Terminal-Themes'), Palette]];
+  const TABS = [...(telnet ? [] : [['fwd', t('Forwarding'), ArrowLeftRight]]), ['snip', t('Snippets'), Code2], ['hist', t('Verlauf'), Clock], ...(statsOn ? [['status', t('Status'), Activity]] : []), ['themes', t('Terminal-Themes'), Palette]];
   const label = (r) => r.label || `${r.type} ${r.bindPort}`;
   const Row = ({ onClick, children }) => <button type="button" onClick={onClick} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-start text-sm hover:bg-accent">{children}</button>;
 
@@ -118,7 +124,7 @@ export default function TermPanel({ sid, hostId, dark, history, themeId, setThem
             {[...history].reverse().map((c, i) => <Row key={i} onClick={() => api.input(sid, c)}><span className="truncate font-mono text-xs">{c}</span></Row>)}
           </>
         )}
-        {tab === 'status' && <StatusTab sid={sid} />}
+        {tab === 'status' && statsOn && <StatusTab sid={sid} />}
         {tab === 'fwd' && !telnet && (
           <>
             <Row onClick={async () => setSheet({ rule: { hostId }, hosts: await api.hosts.list(), onSave: async (v) => { await api.fwd.save(v); load(); } })}><Plus className="size-4 text-primary" /><span className="font-medium">{t('Neues Forwarding')}</span></Row>

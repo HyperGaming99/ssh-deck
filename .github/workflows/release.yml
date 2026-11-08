@@ -1,4 +1,4 @@
-# dev-Push  -> Test, Version automatisch erhöhen, Installer für Linux/Windows/macOS bauen, Vorab-Release (Pre-release) veröffentlichen
+# dev-Push  -> Test, Version automatisch erhöhen, Tauri-Installer für Linux/Windows/macOS bauen, Vorab-Release (Pre-release) veröffentlichen
 # main-Push -> dasselbe als stabiles Release (kommt nur per Pull Request aus dev)
 name: Build & Release
 on:
@@ -42,6 +42,8 @@ jobs:
             if ! newer "$pkg" "$stable"; then
               IFS=. read -r a b c <<< "$stable"; pkg="$a.$b.$((c+1))"
               npm version "$pkg" --no-git-tag-version --allow-same-version >/dev/null
+              node -e "const f = 'src-tauri/tauri.conf.json'; const c = JSON.parse(fs.readFileSync(f)); c.version = '$pkg'; fs.writeFileSync(f, JSON.stringify(c, null, 2) + '\n');"
+              node -e "const f = 'src-tauri/Cargo.toml'; let c = fs.readFileSync(f, 'utf8'); c = c.replace(/^version = \"[^\"]+\"/m, 'version = \"$pkg\"'); fs.writeFileSync(f, c);"
               git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
               git commit -qam "chore: bump version to $pkg [skip ci]"
               git push origin HEAD:dev
@@ -57,59 +59,84 @@ jobs:
     needs: prepare
     if: needs.prepare.outputs.skip != 'true'
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-latest, name: linux, args: "--linux AppImage deb" }
-          - { os: windows-latest, name: windows, args: "--win nsis --x64" }
-          - { os: macos-latest, name: macos, args: "--mac dmg zip --x64 --arm64" }
+          - { os: ubuntu-22.04, name: linux }
+          - { os: windows-latest, name: windows }
+          - { os: macos-latest, name: macos }
     runs-on: ${{ matrix.os }}
     defaults:
       run: { shell: bash }
-    env:
-      SHORT_SHA: ${{ needs.prepare.outputs.short_sha }}
-      CSC_IDENTITY_AUTO_DISCOVERY: "false"
     steps:
       - uses: actions/checkout@v4
         with: { ref: "${{ needs.prepare.outputs.ref }}" }
       - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      # Schneller: node_modules (inkl. Electron-Binärdatei) und die Werkzeug-Caches von electron-builder werden je Betriebssystem zwischengespeichert.
-      # Auf Windows dauerte allein "npm ci" fast zwei Minuten.
-      - id: nm
-        uses: actions/cache@v4
+        with: { node-version: 22, cache: npm }
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
         with:
-          path: node_modules
-          key: nm-${{ runner.os }}-${{ runner.arch }}-node22-${{ hashFiles('package-lock.json') }}
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/electron
-            ~/.cache/electron-builder
-            ~/Library/Caches/electron
-            ~/Library/Caches/electron-builder
-            ~/AppData/Local/electron/Cache
-            ~/AppData/Local/electron-builder/Cache
-          key: eb-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
+          workspaces: './src-tauri -> target'
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
       - run: npm ci --no-audit --no-fund --prefer-offline
-        if: steps.nm.outputs.cache-hit != 'true'
       - run: npm test
         if: matrix.name == 'linux'
-      - run: npm run build
-      - run: npx electron-builder --publish never ${{ matrix.args }} -c.extraMetadata.version=${{ needs.prepare.outputs.build_version }}
+      - name: Build Tauri
+        run: npx tauri build --config "{\"version\":\"${{ needs.prepare.outputs.version }}\"}"
+      - name: Collect artifacts
+        run: |
+          mkdir -p release-artifacts
+          find src-tauri/target/release/bundle -type f \( -name "*.deb" -o -name "*.AppImage" -o -name "*.msi" -o -name "*.exe" -o -name "*.dmg" -o -name "*.tar.gz" \) -exec cp {} release-artifacts/ \;
+          ls -la release-artifacts/
       - uses: actions/upload-artifact@v4
         with:
           name: installers-${{ matrix.name }}
-          path: |
-            release/*.AppImage
-            release/*.deb
-            release/*.exe
-            release/*.dmg
-            release/*.zip
+          path: release-artifacts/*
+          if-no-files-found: error
+
+  android:
+    needs: prepare
+    if: needs.prepare.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "${{ needs.prepare.outputs.ref }}" }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - name: Setup Android NDK and CMake
+        run: |
+          echo "y" | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "ndk;27.2.12479018" "cmake;3.22.1"
+      - run: npm ci --no-audit --no-fund --prefer-offline
+      - name: Build Web and Mobile Assets
+        run: |
+          sh mobile/fetch-libnode.sh
+          node mobile/build-web.js
+          node mobile/pack-node.js
+          npx cap sync android
+      - name: Build Android APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+          mkdir -p ../android-artifacts
+          cp app/build/outputs/apk/debug/app-debug.apk ../android-artifacts/ssh-deck_${{ needs.prepare.outputs.version }}_android.apk
+          ls -lh ../android-artifacts/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installers-android
+          path: android-artifacts/*.apk
           if-no-files-found: error
 
   release:
-    needs: [prepare, build]
+    needs: [prepare, build, android]
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}

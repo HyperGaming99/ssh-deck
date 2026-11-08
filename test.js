@@ -3,9 +3,9 @@ const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { hosts, plain, keys } = require('./store');
-const keyTools = require('./keys');
-const serverStats = require('./serverstats');
+const { hosts, plain, keys } = require('./electron/store');
+const keyTools = require('./electron/keys');
+const serverStats = require('./electron/serverstats');
 {
   const out = '0.50 0.40 0.30 1/200 999\n---\n4\n---\nMemTotal:       8000000 kB\nMemFree: 1 kB\nMemAvailable:   2000000 kB\n---\nFilesystem 1024-blocks Used Available Capacity Mounted on\n/dev/sda1 10000000 4000000 6000000 40% /\n---\n90061.5 1000.0\n';
   const r = serverStats.parse(out);
@@ -36,6 +36,15 @@ assert.equal(s.list()[0].group, 'prod');
 s.remove(id);
 assert.equal(s.list().length, 0);
 
+// Hosts reorder
+const h1 = s.save({ name: 'h1', host: '1' });
+const h2 = s.save({ name: 'h2', host: '2' });
+const h3 = s.save({ name: 'h3', host: '3' });
+assert.deepEqual(s.list().map((x) => x.id), [h1, h2, h3]);
+s.reorder([h3, h1, h2]);
+assert.deepEqual(s.list().map((x) => x.id), [h3, h1, h2]);
+s.remove(h1); s.remove(h2); s.remove(h3);
+
 const p = plain(path.join(dir, 'sn.json'));
 const sid = p.save({ name: 'ls', cmd: 'ls -la' });
 p.save({ id: sid, name: 'ls2', cmd: 'ls' });
@@ -45,6 +54,10 @@ assert.equal(p.list()[0].name, 'ls2');
 // Keychain: generieren, aus Verzeichnis importieren, Passphrase verschlüsselt, Install-Befehl
 const g = keyTools.generate({ type: 'ed25519', comment: 'test' });
 assert(g.fingerprint.startsWith('SHA256:') && g.publicKey.startsWith('ssh-ed25519 '));
+const gRsa2048 = keyTools.generate({ type: 'rsa', bits: 2048, comment: 'rsa2048' });
+assert(gRsa2048.publicKey.startsWith('ssh-rsa '));
+const gEcdsa = keyTools.generate({ type: 'ecdsa', bits: 384, comment: 'ecdsa384' });
+assert(gEcdsa.publicKey.startsWith('ecdsa-sha2-nistp384 '));
 const sshDir = path.join(dir, 'ssh');
 fs.mkdirSync(sshDir);
 fs.writeFileSync(path.join(sshDir, 'id_test'), g.privateKey);
@@ -72,7 +85,7 @@ assert(fs.readFileSync(path.join(dir, 'h2.json'), 'utf8').includes('ENC:pw'), 'S
 assert.equal(hs2.raw()[0].secret, 'pw');
 
 // Cloud-Sync: Verschlüsselung, Merge, Schlüsselableitung
-const sync = require('./sync');
+const sync = require('./electron/sync');
 const keysA = sync.deriveKeys('A@x.de', 'geheim'), keysB = sync.deriveKeys('a@x.de ', 'geheim');
 assert.deepEqual(keysA.enc, keysB.enc, 'E-Mail wird normalisiert');
 assert.notEqual(keysA.auth, sync.deriveKeys('a@x.de', 'anders').auth);
@@ -126,6 +139,45 @@ const listen = (opts) => new Promise((res) => { const srv = createServer({ db: o
     await assert.rejects(bk().login('d@x.de', kD.auth), /falsch/);
     assert((await bk().login('e@x.de', kE.auth)), 'andere Konten bleiben');
     s2.srv.close();
+  }
+  { // Google-Login + Tresor-Passwort (Zero-Knowledge): nur wenn google konfiguriert ist
+    await assert.rejects(new sync.Backend({ url }).googleStart(), /Aktion fehlgeschlagen/, 'ohne GOOGLE_CLIENT_ID abgelehnt');
+    const gSrv = await listen({
+      verify: true,
+      google: {
+        clientId: 'cid-123',
+        exchange: async (code) => { if (code === 'bad') throw new Error('nope'); return 'Google.User@x.de'; },
+        verifyIdToken: async (tok) => { if (tok !== 'valid-android-idtoken') throw new Error('bad'); return 'Google.User@x.de'; },
+      },
+    });
+    const bg = new sync.Backend({ url: gSrv.url });
+    const start1 = await bg.googleStart();
+    assert(start1.state && start1.clientId === 'cid-123' && start1.url.includes('client_id=cid-123'), 'OAuth-URL erzeugt');
+    assert.deepEqual(await bg.googlePoll(start1.state), { done: false }, 'vor Callback noch offen');
+    const cbRes = await fetch(`${gSrv.url}/api/google/callback?state=${encodeURIComponent(start1.state)}&code=ok-code`);
+    assert.equal(cbRes.status, 200);
+    const poll1 = await bg.googlePoll(start1.state);
+    assert.deepEqual(poll1, { done: true, email: 'google.user@x.de', exists: false }, 'neuer Nutzer erkannt, E-Mail normalisiert');
+    const kG = sync.deriveKeys('google.user@x.de', 'mein-tresor-pw'), kWrong = sync.deriveKeys('google.user@x.de', 'falsch-pw');
+    const tokG1 = await bg.googleComplete(start1.state, kG.auth);
+    assert(tokG1.length > 20, 'Konto per Google + Tresor-Passwort angelegt und direkt bestätigt');
+    await assert.rejects(bg.googleComplete(start1.state, kG.auth), /ungültig|abgelaufen/, 'State nur einmal nutzbar');
+    // Bestehendes Konto: erneuter Google-Login prüft das Tresor-Passwort
+    const start2 = await bg.googleStart();
+    await fetch(`${gSrv.url}/api/google/callback?state=${encodeURIComponent(start2.state)}&code=ok-code`);
+    const poll2 = await bg.googlePoll(start2.state);
+    assert.deepEqual(poll2, { done: true, email: 'google.user@x.de', exists: true }, 'bestehendes Konto erkannt');
+    await assert.rejects(bg.googleComplete(start2.state, kWrong.auth), /falsch/, 'falsches Tresor-Passwort wird abgelehnt');
+    const tokG2 = await bg.googleComplete(start2.state, kG.auth);
+    assert(tokG2.length > 20, 'richtiges Tresor-Passwort liefert Sitzung');
+    // Nativer Android-Flow (idToken direkt von Google Play Services)
+    await assert.rejects(bg.googleToken('bad-token'), /Anmeldung fehlgeschlagen/);
+    const androidRes = await bg.googleToken('valid-android-idtoken');
+    assert.equal(androidRes.email, 'google.user@x.de');
+    assert.equal(androidRes.exists, true);
+    const tokG3 = await bg.googleComplete(androidRes.state, kG.auth);
+    assert(tokG3.length > 20, 'Android-idToken + Tresor-Passwort liefert Sitzung');
+    gSrv.srv.close();
   }
 
 
@@ -185,14 +237,14 @@ const listen = (opts) => new Promise((res) => { const srv = createServer({ db: o
     for (const m of s.matchAll(/\b[tT]\(\s*'((?:[^'\\]|\\.)*)'/g)) used.add(m[1].replace(/\\'/g, "'"));
     for (const m of s.matchAll(/\bt\(\s*"((?:[^"\\]|\\.)*)"/g)) used.add(m[1]);
   }
-  const srv = fs.readFileSync('server/server.js', 'utf8'), mainJs = fs.readFileSync('main.js', 'utf8');
+  const srv = walk('server').filter((f) => f.endsWith('.js')).map((f) => fs.readFileSync(f, 'utf8')).join('\n'), mainJs = fs.readFileSync(path.join('electron', 'main.js'), 'utf8');
   const msgs = new Set([
     ...[...srv.matchAll(/fail\(\d+, '([^']+)'/g)].map((m) => m[1]).filter((m) => m !== 'blob fehlt'),
     ...[...mainJs.matchAll(/(?:error: |new Error\()'([^']+)'/g)].map((m) => m[1]),
     ...[...mainJs.matchAll(/return '([A-ZÄÖÜ][^']+)'/g)].map((m) => m[1]),
-    ...[...fs.readFileSync('sync.js', 'utf8').matchAll(/new Error\('([^']+)'/g)].map((m) => m[1]),
-    ...[...fs.readFileSync('importers.js', 'utf8').matchAll(/new Error\('([^']+)'/g)].map((m) => m[1]),
-    ...[...fs.readFileSync('keys.js', 'utf8').matchAll(/new Error\('([^']+)'/g)].map((m) => m[1]),
+    ...[...fs.readFileSync(path.join('electron', 'sync.js'), 'utf8').matchAll(/new Error\('([^']+)'/g)].map((m) => m[1]),
+    ...[...fs.readFileSync(path.join('electron', 'importers.js'), 'utf8').matchAll(/new Error\('([^']+)'/g)].map((m) => m[1]),
+    ...[...fs.readFileSync(path.join('electron', 'keys.js'), 'utf8').matchAll(/new Error\('([^']+)'/g)].map((m) => m[1]),
     'Wähle zuerst einen Host.', // SftpTab
   ]);
   const ph = (s) => (s.match(/\{\w+\}/g) || []).sort().join();
@@ -209,7 +261,7 @@ const listen = (opts) => new Promise((res) => { const srv = createServer({ db: o
 })();
 
 // Tor: private Ziele direkt, Rest über SOCKS5 (echter Mini-Proxy im Test)
-const torTools = require('./tor');
+const torTools = require('./electron/tor');
 for (const h of ['localhost', '127.0.0.1', '10.0.0.50', '192.168.1.5', '172.20.0.1', '169.254.1.1', 'nas', 'pi.local', '::1', 'fd00::1']) assert(torTools.isPrivateHost(h), `${h} ist privat`);
 for (const h of ['example.com', '8.8.8.8', '172.32.0.1', 'abcdefghij234567.onion', '2001:4860:4860::8888']) assert(!torTools.isPrivateHost(h), `${h} ist öffentlich`);
 (async () => {
@@ -241,11 +293,28 @@ for (const h of ['example.com', '8.8.8.8', '172.32.0.1', 'abcdefghij234567.onion
   const got = await new Promise((r) => { sock.once('data', (d) => r(d.toString())); sock.write('ping'); });
   assert.equal(got, 'ping', 'Daten fließen durch den Proxy');
   sock.destroy(); proxy.close(); echo.close();
+  // CRX3-Entpacker für das Trezor-Tor-Paket
+  const zlib = require('zlib');
+  const rawBin = Buffer.from('#!/bin/sh\necho tor\n');
+  const deflated = zlib.deflateRawSync(rawBin);
+  const nameBuf = Buffer.from('tor-0.4.9.12-linux-brave-0');
+  const lfh = Buffer.alloc(30);
+  lfh.writeUInt32LE(0x04034b50, 0);
+  lfh.writeUInt16LE(8, 8); // deflate
+  lfh.writeUInt32LE(deflated.length, 18);
+  lfh.writeUInt32LE(rawBin.length, 22);
+  lfh.writeUInt16LE(nameBuf.length, 26);
+  const crxHdr = Buffer.alloc(16);
+  crxHdr.write('Cr24', 0);
+  crxHdr.writeUInt32LE(3, 4);
+  crxHdr.writeUInt32LE(4, 8); // 4 Bytes Dummy-Header
+  const fakeCrx = Buffer.concat([crxHdr, lfh, nameBuf, deflated]);
+  assert.deepEqual(torTools.extractCrxTor(fakeCrx), rawBin, 'CRX3-Tor-Paket wird sauber entpackt');
   console.log('tor ok');
 })().catch((e) => { console.error(e); process.exit(1); });
 
 // Known Hosts: echte ssh2-Verbindung liefert den Host-Schlüssel an hostVerifier
-const knownTools = require('./known');
+const knownTools = require('./electron/known');
 (async () => {
   const { Server, Client, utils } = require('ssh2');
   const hk = utils.generateKeyPairSync('ed25519');
@@ -282,7 +351,7 @@ const knownTools = require('./known');
 })().catch((e) => { console.error(e); process.exit(1); });
 
 // OS-Icon aus os-release
-const { osIcon } = require('./osicon');
+const { osIcon } = require('./electron/osicon');
 assert.equal(osIcon('NAME="Ubuntu"\nID=ubuntu\nID_LIKE=debian\n'), 'ubuntu-linux');
 assert.equal(osIcon('ID="rocky"\nID_LIKE="rhel centos fedora"'), 'rocky-linux');
 assert.equal(osIcon('ID=pop\nID_LIKE="ubuntu debian"'), 'ubuntu-linux', 'Derivat über ID_LIKE');
@@ -331,7 +400,7 @@ assert.equal(s.list().find((x) => x.id === fid).fav, false);
   assert.equal(P.parentPath('C:\\Users', '\\'), 'C:\\', 'Wurzel behält den Schrägstrich');
   assert.equal(P.parentPath('C:\\', '\\'), P.DRIVES, 'über C:\\ kommt die Laufwerksliste');
   assert.equal(P.joinPath(P.DRIVES, 'D:\\', '\\'), 'D:\\', 'Laufwerk aus der Liste öffnen');
-  const sftpT = require('./sftp');
+  const sftpT = require('./electron/sftp');
   assert.deepEqual(sftpT.listDrives((d) => d === 'C:\\' || d === 'E:\\'), ['C:\\', 'E:\\']);
   const dr = sftpT.listLocal('::drives', '/', { platform: 'win32', exists: (d) => d === 'C:\\' });
   assert.deepEqual(dr.entries.map((e) => [e.name, e.dir]), [['C:\\', true]]);
@@ -340,7 +409,7 @@ assert.equal(s.list().find((x) => x.id === fid).fav, false);
 
 // Host-Import: fünf Formate mit Beispieldateien
 (() => {
-  const imp = require('./importers');
+  const imp = require('./electron/importers');
   // ~/.ssh/config: Aliase, Muster werden übersprungen, Standardwerte aus "Host *", ~ wird ersetzt
   const cfg = imp.parseSshConfig(['Host *', '  User deploy', '  Port 2200', '', 'Host web db', '  HostName 10.0.0.5', '  IdentityFile ~/.ssh/id_ed25519', '',
     'Host staging', '  HostName=stage.example.com', '  User root', '  Port 22', '', 'Host *.internal', '  User x', '', 'Match host foo', '  User nope'].join('\n'), { home: '/home/u', defaultUser: 'me' });
@@ -414,7 +483,7 @@ assert.equal(s.list().find((x) => x.id === fid).fav, false);
 })().catch((e) => { console.error(e); process.exit(1); });
 
 // Editor-Erkennung: Fake-PATH mit zwei ausführbaren Dateien
-const editors = require('./editors');
+const editors = require('./electron/editors');
 const bin = path.join(dir, 'bin');
 fs.mkdirSync(bin);
 for (const n of ['gedit', 'code']) fs.writeFileSync(path.join(bin, n), '#!/bin/sh\n', { mode: 0o755 });
@@ -427,6 +496,8 @@ assert.equal(editors.pick('default', 'gedit', found).cmd, 'gedit', 'Einstellung 
 assert.equal(editors.pick('default', 'system', found), null);
 assert.equal(editors.pick('default', 'weg', found), null, 'unbekannter Editor: Systemstandard');
 assert.equal(editors.pick('gedit', 'code', found).cmd, 'gedit', 'explizite Wahl schlägt Einstellung');
+assert.deepEqual(editors.pick('default', 'custom', found, '/usr/bin/myedit', { platform: 'linux' }), { cmd: 'custom', name: 'myedit', bin: '/usr/bin/myedit' }, 'eigenes Programm');
+assert.deepEqual(editors.customEntry('/Applications/Zed.app', { platform: 'darwin' }), { cmd: 'custom', name: 'Zed', bin: '/usr/bin/open', args: ['-a', '/Applications/Zed.app'] });
 // Windows/macOS: feste Orte bzw. Programme in /Applications (Dateisystem ersetzt)
 const winEnv = { LOCALAPPDATA: 'C:\\Users\\u\\AppData\\Local', ProgramFiles: 'C:\\Program Files', SystemRoot: 'C:\\Windows' };
 const winHas = new Set(['C:\\Users\\u\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe', 'C:\\Windows\\System32\\notepad.exe']);
@@ -440,7 +511,7 @@ assert.deepEqual(mac[0].args, ['-a', '/Applications/Visual Studio Code.app']);
 assert.equal(mac[0].bin, '/usr/bin/open', 'macOS startet über open -a');
 
 // SFTP: Mock auf lokalem Dateisystem (gleiche Callback-Signaturen wie ssh2)
-const sftpTools = require('./sftp');
+const sftpTools = require('./electron/sftp');
 const cb = (fn) => (...a) => { const done = a.pop(); try { done(null, fn(...a)); } catch (e) { done(e); } };
 const mock = {
   realpath: cb((p) => fs.realpathSync(p)),
@@ -480,6 +551,11 @@ const mock = {
   ac.abort();
   await assert.rejects(sftpTools.upload(mock, path.join(src, 'proj'), remote, { signal: ac.signal }), /Abgebrochen/);
   assert(!sftpTools.safeName('../x') && !sftpTools.safeName('..') && sftpTools.safeName('ok.txt'));
+  assert.equal(sftpTools.archiveCmd('/var/www', ['app'], 'tar.gz').outName, 'app.tar.gz');
+  assert(sftpTools.archiveCmd('/var/www', ['a', 'b'], 'zip').cmd.includes("'archive.zip'"));
+  assert(sftpTools.extractCmd('/var/www', 'app.tar.gz').includes('tar -xzf'));
+  assert(sftpTools.extractCmd('/var/www', 'app.zip').includes('unzip -oq'));
+  assert.throws(() => sftpTools.archiveCmd('/var/www', ['../evil']), /Ungültiger Dateiname/);
   assert(sftpTools.listLocal('', os.homedir()).entries.length >= 0);
   console.log('ok');
 })();
@@ -487,7 +563,7 @@ const mock = {
 // Anmeldung: Methoden vom Server erfragen, dann Schlüssel / Passwort / Code abfragen (echte ssh2-Server)
 (async () => {
   const { Client, Server, utils } = require('ssh2');
-  const { createAuth } = require('./auth');
+  const { createAuth } = require('./electron/auth');
   const good = utils.generateKeyPairSync('ed25519');
   const goodPub = utils.parseKey(good.public);
   const hostKey = utils.generateKeyPairSync('ed25519').private;
@@ -537,7 +613,7 @@ const mock = {
 (async () => {
   const http = require('http');
   const { execFileSync } = require('child_process');
-  const updater = require('./updater');
+  const updater = require('./electron/updater');
   assert(updater.isNewer('0.2.0', '0.1.9') && updater.isNewer('v1.0.0', '0.9.9') && !updater.isNewer('0.1.0', '0.1.0') && !updater.isNewer('0.1.0', '0.1.1'), 'Versionsvergleich');
 
   const work = fs.mkdtempSync(path.join(os.tmpdir(), 'deck-upd-test-'));
@@ -592,7 +668,7 @@ const mock = {
 
 // Teams: Schlüsselaustausch, geteilter Tresor, Rollen, Entfernen mit neuem Schlüssel (echter Server, drei Nutzer)
 (async () => {
-  const teams = require('./teams');
+  const teams = require('./electron/teams');
   const { srv, url } = await listen({});
   const mk = async (email) => {
     const k = sync.deriveKeys(email, 'pw'), b = new sync.Backend({ url });
@@ -656,8 +732,8 @@ const mock = {
 
 // Tresore lokal: Team-Einträge bleiben getrennt vom persönlichen Tresor (Speicher, Löschmarker, Anwenden, Entfernen)
 (() => {
-  const teams = require('./teams');
-  const { plain, hosts: mkHosts, keys: mkKeys } = require('./store');
+  const teams = require('./electron/teams');
+  const { plain, hosts: mkHosts, keys: mkKeys } = require('./electron/store');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'deck-vault-'));
   const crypt = { encrypt: (x) => 'enc:' + x, decrypt: (x) => String(x).replace(/^enc:/, '') };
   const st = { hosts: mkHosts(path.join(dir, 'h.json'), crypt), groups: plain(path.join(dir, 'g.json')), snippets: plain(path.join(dir, 's.json')), forwards: plain(path.join(dir, 'f.json')), known: plain(path.join(dir, 'k.json')), keys: mkKeys(path.join(dir, 'keys.json'), crypt) };
@@ -687,9 +763,37 @@ const mock = {
   console.log('vaults ok');
 })();
 
+// Gruppen: Anlegen, Farbe & Logo speichern, Bearbeiten, Icons und Custom Logos
+(() => {
+  const { plain, hosts: mkHosts } = require('./electron/store');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'deck-grp-'));
+  const crypt = { encrypt: (x) => x, decrypt: (x) => x };
+  const grps = plain(path.join(dir, 'g.json'));
+  const hosts = mkHosts(path.join(dir, 'h.json'), crypt);
+  const id1 = grps.save({ name: 'Web', color: '#3b82f6', icon: 'server' });
+  const id2 = grps.save({ name: 'Cluster', color: '#10b981', customLogo: 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=' });
+  assert.equal(grps.list().length, 2);
+  const g1 = grps.list().find((x) => x.id === id1);
+  assert.equal(g1.color, '#3b82f6');
+  assert.equal(g1.icon, 'server');
+  const g2 = grps.list().find((x) => x.id === id2);
+  assert.equal(g2.customLogo, 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=');
+  // Update
+  grps.save({ ...g1, color: '#ef4444', icon: 'docker' });
+  assert.equal(grps.list().find((x) => x.id === id1).color, '#ef4444');
+  assert.equal(grps.list().find((x) => x.id === id1).icon, 'docker');
+  // Reorder
+  grps.reorder([id2, id1]);
+  const sorted = grps.list();
+  assert.equal(sorted[0].id, id2);
+  assert.equal(sorted[1].id, id1);
+  fs.rmSync(dir, { recursive: true, force: true });
+  console.log('groups ok');
+})();
+
 // Host klonen/verschieben zwischen Tresoren (gleiche Logik wie hosts:copy in main.js, hier mit echten Speichern)
 (() => {
-  const { plain, hosts: mkHosts } = require('./store');
+  const { plain, hosts: mkHosts } = require('./electron/store');
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'deck-copy-'));
   const crypt = { encrypt: (x) => 'enc:' + x, decrypt: (x) => String(x).replace(/^enc:/, '') };
   const hosts = mkHosts(path.join(dir, 'h.json'), crypt);
@@ -714,8 +818,8 @@ const mock = {
 
 // Cloud-Schlüsselbund: Passwort + Geheimschlüssel, zwei Geräte, Löschen, falsche Eingaben, Server sieht nur Chiffretext (echter Server)
 (async () => {
-  const kc = require('./keyvault');
-  const { keys: mkKeys } = require('./store');
+  const kc = require('./electron/keyvault');
+  const { keys: mkKeys } = require('./electron/store');
   const { srv, url } = await listen({});
   const crypt = { encrypt: (x) => 'enc:' + x, decrypt: (x) => String(x).replace(/^enc:/, '') };
   const k = sync.deriveKeys('kc@t.de', 'pw-kc');
@@ -770,7 +874,7 @@ const mock = {
 // Update-Kanäle: SemVer-Vergleich mit Dev-Builds, Dev-Kanal wählt das höchste Release inkl. Vorabversionen (lokaler Server)
 (async () => {
   const http = require('http');
-  const updater = require('./updater');
+  const updater = require('./electron/updater');
   const lt = (a, b) => assert(updater.cmp(a, b) < 0 && updater.cmp(b, a) > 0, `${a} < ${b}`);
   lt('0.1.3-dev.2', '0.1.3-dev.10'); lt('0.1.3-dev.9', '0.1.3'); lt('0.1.3', '0.1.4-dev.1'); lt('0.1.2', '0.1.3-dev.1');
   assert.equal(updater.cmp('0.1.3', 'v0.1.3'), 0);
@@ -798,14 +902,23 @@ const mock = {
   assert(dev.prerelease && dev.tarball.endsWith('/dev10'));
   assert(updater.isNewer(dev.version, '0.1.4-dev.2') && !updater.isNewer(dev.version, '0.1.4-dev.10'), 'Dev-Update nur bei höherer Build-Nummer');
   assert(updater.available('0.1.4-dev.16', '0.1.4', true) && !updater.available('0.1.4-dev.16', '0.1.4-dev.16', true) && !updater.available('0.1.4-dev.16', '0.1.4', false), 'Quell-Installation 0.1.4 bekommt Dev-Builds von 0.1.4');
+  const allRels = await updater.releases({ repo: 'o/r', fetch: f });
+  assert.equal(allRels.length, 3, 'Alle 3 gültigen Releases ohne Drafts');
+  const stableRels = await updater.releases({ repo: 'o/r', channel: 'stable', fetch: f });
+  assert.equal(stableRels.length, 1, 'Nur 1 stabiles Release');
+  assert.equal(stableRels[0].version, '0.1.3');
+  const devRels = await updater.releases({ repo: 'o/r', channel: 'dev', fetch: f });
+  assert.equal(devRels.length, 2, '2 Dev-Releases');
+  assert.equal(devRels[0].version, '0.1.4-dev.10');
+  assert.equal(devRels[1].version, '0.1.4-dev.2');
   srv.close();
   console.log('channels ok');
 })().catch((e) => { console.error(e); process.exit(1); });
 
 // Jump-Hosts: Kette, Schleifen, Tiefe; Telnet: IAC-Verhandlung
 (() => {
-  const jump = require('./jump');
-  const telnet = require('./telnet');
+  const jump = require('./electron/jump');
+  const telnet = require('./electron/telnet');
   const L = [{ id: 'a' }, { id: 'b', jumpId: 'a' }, { id: 'c', jumpId: 'b' }, { id: 'd', jumpId: 'c' }, { id: 'e', jumpId: 'd' }, { id: 't', protocol: 'telnet' }];
   const get = (id) => L.find((x) => x.id === id);
   assert.deepEqual(jump.chain(get, get('c')).map((x) => x.id), ['a', 'b'], 'außen zuerst');
@@ -837,7 +950,7 @@ const mock = {
 
 // Proxy-Kette / Cloudflare Tunnel
 {
-  const tp = require('./transport');
+  const tp = require('./electron/transport');
   const p = tp.parseProxies('# Kommentar\nsocks5://u:p%40w@a.example:9050\nsocks4://[::1]:1081\nb.example\n');
   assert.deepEqual(p[0], { host: 'a.example', port: 9050, type: 5, userId: 'u', password: 'p@w' });
   assert.deepEqual(p[1], { host: '::1', port: 1081, type: 4 });

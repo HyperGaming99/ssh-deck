@@ -1,11 +1,28 @@
 package io.github.hypergaming99.sshdeck;
 
+import android.app.Activity;
+import android.Manifest;
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Environment;
+import android.provider.Settings;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
+import com.google.android.gms.auth.api.signin.GoogleSignInStatusCodes;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.tasks.Task;
 import com.janeasystems.rn_nodejs_mobile.RNNodeJsMobileModule;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -28,9 +45,13 @@ public class NodeBridgePlugin extends Plugin {
   private static final String EVENTS = "_EVENTS_";
   private final RNNodeJsMobileModule node = new RNNodeJsMobileModule();
   private volatile boolean up = false; // erst wenn Node etwas gesendet hat, ist sein Kanal bereit
+  private volatile int pendingPermId = 0;
+  private static volatile NodeBridgePlugin activeInstance;
+  private volatile int pendingGoogleId = 0;
 
   @Override
   public void load() {
+    activeInstance = this;
     RNNodeJsMobileModule.listener = (channel, msg) -> {
       up = true;
       if (!EVENTS.equals(channel)) return;
@@ -39,6 +60,9 @@ public class NodeBridgePlugin extends Plugin {
         if (!"message".equals(env.optString("event"))) return;
         String inner = new JSONArray(env.getString("payload")).getString(0);
         if (inner.startsWith("{\"t\":\"ks\"")) { keystore(new JSONObject(inner)); return; } // Schlüssel ein-/auspacken bleibt in Java
+        if (inner.startsWith("{\"t\":\"perm\"")) { storagePerm(new JSONObject(inner)); return; } // Speicherzugriff für SFTP-Lokal anfordern
+        if (inner.startsWith("{\"t\":\"openurl\"")) { openUrl(new JSONObject(inner)); return; } // Externe URL im System-Browser öffnen (z. B. Google-Login)
+        if (inner.startsWith("{\"t\":\"gsignin\"")) { googleSignIn(new JSONObject(inner)); return; } // Nativer Google-Login über Google Play Services
         JSObject o = new JSObject();
         o.put("msg", inner);
         notifyListeners("message", o);
@@ -63,7 +87,8 @@ public class NodeBridgePlugin extends Plugin {
         java.nio.file.Files.write(stampFile.toPath(), stamp.getBytes());
       }
       node.registerNodeDataDirPath(files.getAbsolutePath());
-      node.startNodeWithArguments(new String[] {"node", new File(project, "entry.js").getAbsolutePath()}, builtin.getAbsolutePath(), true);
+      String torBin = new File(ctx.getApplicationInfo().nativeLibraryDir, "libtor.so").getAbsolutePath();
+      node.startNodeWithArguments(new String[] {"node", new File(project, "entry.js").getAbsolutePath(), torBin}, builtin.getAbsolutePath(), true);
     } catch (Exception e) {
       android.util.Log.e("SSHDeck", "Node-Start fehlgeschlagen", e);
     }
@@ -133,6 +158,140 @@ public class NodeBridgePlugin extends Plugin {
       try { res.put("error", String.valueOf(e.getMessage())); } catch (Exception x) { /* ignorieren */ }
     }
     toNode(res.toString());
+  }
+
+  private boolean hasStoragePermission() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+      return Environment.isExternalStorageManager();
+    }
+    return ContextCompat.checkSelfPermission(getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
+  }
+
+  private void sendPermResult(int id, boolean ok) {
+    try {
+      JSONObject res = new JSONObject();
+      res.put("t", "permres").put("id", id).put("ok", ok);
+      toNode(res.toString());
+    } catch (Exception e) { /* ignorieren */ }
+  }
+
+  private void storagePerm(JSONObject req) {
+    try {
+      int id = req.getInt("id");
+      if (hasStoragePermission() || getActivity() == null) {
+        sendPermResult(id, hasStoragePermission());
+        return;
+      }
+      pendingPermId = id;
+      getActivity().runOnUiThread(() -> {
+        try {
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+              Intent i = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, Uri.parse("package:" + getContext().getPackageName()));
+              getActivity().startActivity(i);
+            } catch (Exception ex) {
+              Intent i = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+              getActivity().startActivity(i);
+            }
+          } else {
+            ActivityCompat.requestPermissions(getActivity(), new String[] { Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE }, 9001);
+          }
+        } catch (Exception e) {
+          pendingPermId = 0;
+          sendPermResult(id, false);
+        }
+      });
+    } catch (Exception e) { /* ignorieren */ }
+  }
+
+  private void openUrl(JSONObject req) {
+    try {
+      String url = req.optString("url", "");
+      if (!url.startsWith("https://") && !url.startsWith("http://")) return;
+      Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+      i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+      getContext().startActivity(i);
+    } catch (Exception e) { /* ignorieren */ }
+  }
+
+  private void sendGoogleResult(int id, String idToken, boolean canceled, String error) {
+    try {
+      JSONObject res = new JSONObject();
+      res.put("t", "gres").put("id", id);
+      if (idToken != null) res.put("idToken", idToken);
+      if (canceled) res.put("canceled", true);
+      if (error != null) res.put("error", error);
+      toNode(res.toString());
+    } catch (Exception e) { /* ignorieren */ }
+  }
+
+  private void googleSignIn(JSONObject req) {
+    try {
+      int id = req.getInt("id");
+      String clientId = req.optString("clientId", "");
+      Activity act = getActivity();
+      if (act == null || clientId.isEmpty()) {
+        sendGoogleResult(id, null, false, "unavailable");
+        return;
+      }
+      pendingGoogleId = id;
+      act.runOnUiThread(() -> {
+        try {
+          GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestEmail()
+            .requestIdToken(clientId)
+            .build();
+          GoogleSignInClient client = GoogleSignIn.getClient(act, gso);
+          client.signOut().addOnCompleteListener(t -> {
+            try {
+              act.startActivityForResult(client.getSignInIntent(), 9002);
+            } catch (Exception ex) {
+              pendingGoogleId = 0;
+              sendGoogleResult(id, null, false, "start_failed");
+            }
+          });
+        } catch (Exception e) {
+          pendingGoogleId = 0;
+          sendGoogleResult(id, null, false, "init_failed");
+        }
+      });
+    } catch (Exception e) { /* ignorieren */ }
+  }
+
+  public static void onGoogleResult(int resultCode, Intent data) {
+    NodeBridgePlugin inst = activeInstance;
+    if (inst == null) return;
+    int id = inst.pendingGoogleId;
+    inst.pendingGoogleId = 0;
+    if (id == 0) return;
+    try {
+      Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+      GoogleSignInAccount account = task.getResult(ApiException.class);
+      String token = account != null ? account.getIdToken() : null;
+      if (token != null && !token.isEmpty()) {
+        inst.sendGoogleResult(id, token, false, null);
+      } else {
+        inst.sendGoogleResult(id, null, false, "no_token");
+      }
+    } catch (ApiException e) {
+      int code = e.getStatusCode();
+      android.util.Log.w("SSHDeck", "GoogleSignIn ApiException code=" + code, e);
+      boolean canceled = code == GoogleSignInStatusCodes.SIGN_IN_CANCELLED;
+      inst.sendGoogleResult(id, null, canceled, canceled ? null : ("api_" + code));
+    } catch (Exception e) {
+      android.util.Log.w("SSHDeck", "GoogleSignIn error", e);
+      inst.sendGoogleResult(id, null, false, "error");
+    }
+  }
+
+  @Override
+  protected void handleOnResume() {
+    super.handleOnResume();
+    int id = pendingPermId;
+    if (id != 0) {
+      pendingPermId = 0;
+      sendPermResult(id, hasStoragePermission());
+    }
   }
 
   @PluginMethod

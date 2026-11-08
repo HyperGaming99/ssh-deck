@@ -3,7 +3,11 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 const rd = (file) => { try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return []; } };
-const wr = (file, d) => fs.writeFileSync(file, JSON.stringify(d, null, 2), { mode: 0o600 });
+const wr = (file, d) => {
+  const tmp = `${file}.tmp.${process.pid}.${Date.now()}`;
+  fs.writeFileSync(tmp, JSON.stringify(d, null, 2), { mode: 0o600 });
+  fs.renameSync(tmp, file);
+};
 
 // Einfache Sammlung. Jeder Eintrag trägt updatedAt; Löschen hinterlässt einen Marker { id, deleted, updatedAt } für den Cloud-Sync.
 const plain = (file) => {
@@ -11,13 +15,41 @@ const plain = (file) => {
   return {
     raw: () => all().map((r) => (r.updatedAt ? r : { ...r, updatedAt: 1 })), // alte Einträge ohne Zeitstempel zählen als älteste
     setRaw: (arr) => wr(file, arr),
-    list: () => all().filter((r) => !r.deleted),
+    list: () => {
+      const items = all().filter((r) => !r.deleted);
+      return items.sort((a, b) => {
+        const oa = typeof a.order === 'number' ? a.order : Infinity;
+        const ob = typeof b.order === 'number' ? b.order : Infinity;
+        if (oa !== ob) return oa - ob;
+        return 0;
+      });
+    },
     save: (r) => {
       const rec = { ...r, id: r.id || crypto.randomUUID(), updatedAt: Date.now() };
       delete rec.deleted;
       const a = all();
       wr(file, a.some((x) => x.id === rec.id) ? a.map((x) => (x.id === rec.id ? rec : x)) : [...a, rec]);
       return rec.id;
+    },
+    reorder: (orderedIds) => {
+      const a = all();
+      const idToOrder = new Map(orderedIds.map((id, idx) => [id, idx]));
+      let changed = false;
+      const now = Date.now();
+      for (const item of a) {
+        if (idToOrder.has(item.id)) {
+          const newOrder = idToOrder.get(item.id);
+          if (item.order !== newOrder) {
+            item.order = newOrder;
+            item.updatedAt = now;
+            changed = true;
+          }
+        }
+      }
+      if (changed) {
+        wr(file, a);
+      }
+      return true;
     },
     // Löschmarker behält den Tresor (vault), damit er im richtigen Tresor weitersynct
     remove: (id) => wr(file, all().map((x) => (x.id === id ? { id, deleted: true, ...(x.vault && { vault: x.vault }), ...(x.cloud && { cloud: true }), updatedAt: Date.now() } : x))),
@@ -30,14 +62,43 @@ const tryDec = (crypt, v) => { try { return crypt.decrypt(v); } catch { return u
 const hosts = (file, crypt) => {
   const base = plain(file);
   return {
-    list: () => base.list().map(({ secret, ...h }) => ({ ...h, hasSecret: !!secret })),
+    list: () => {
+      const items = base.list().map(({ secret, ...h }) => ({ ...h, hasSecret: !!secret }));
+      return items.sort((a, b) => {
+        const oa = typeof a.order === 'number' ? a.order : Infinity;
+        const ob = typeof b.order === 'number' ? b.order : Infinity;
+        if (oa !== ob) return oa - ob;
+        return 0;
+      });
+    },
     // Passwort nicht entschlüsselbar (anderer System-Schlüsselbund): trotzdem liefern, damit „Bearbeiten“ aufgeht; Passwort neu eingeben
     get: (id) => { const h = base.list().find((x) => x.id === id); if (!h) return h; try { return { ...h, secret: h.secret ? crypt.decrypt(h.secret) : '' }; } catch { return { ...h, secret: '', secretLost: true }; } },
     // secret === undefined: bestehendes Geheimnis behalten
     save: (h) => {
       const old = base.list().find((x) => x.id === h.id);
       const secret = h.secret === undefined ? (old ? old.secret : '') : (h.secret ? crypt.encrypt(h.secret) : '');
-      return base.save({ id: h.id, name: h.name, group: h.group || '', host: h.host, protocol: h.protocol === 'telnet' ? 'telnet' : 'ssh', port: +h.port || (h.protocol === 'telnet' ? 23 : 22), jumpId: h.jumpId || '', via: ['proxy', 'cloudflared'].includes(h.via) ? h.via : '', proxies: h.via === 'proxy' ? String(h.proxies || '') : '', user: h.user || '', keyPath: h.keyPath || '', keyId: h.keyId || '', icon: h.icon || '', tags: Array.isArray(h.tags) ? h.tags.map(String) : (old ? old.tags || [] : []), autoIcon: old ? old.autoIcon || '' : '', fav: h.fav === undefined ? !!old?.fav : !!h.fav, lastUsed: h.lastUsed || old?.lastUsed || 0, secret, ...((h.vault || old?.vault) && { vault: h.vault || old.vault }) });
+      return base.save({ id: h.id, name: h.name, group: h.group || '', host: h.host, protocol: h.protocol === 'telnet' ? 'telnet' : 'ssh', port: +h.port || (h.protocol === 'telnet' ? 23 : 22), jumpId: h.jumpId || '', via: ['proxy', 'cloudflared'].includes(h.via) ? h.via : '', proxies: h.via === 'proxy' ? String(h.proxies || '') : '', user: h.user || '', keyPath: h.keyPath || '', keyId: h.keyId || '', icon: h.icon || '', tags: Array.isArray(h.tags) ? h.tags.map(String) : (old ? old.tags || [] : []), autoIcon: old ? old.autoIcon || '' : '', fav: h.fav === undefined ? !!old?.fav : !!h.fav, lastUsed: h.lastUsed || old?.lastUsed || 0, order: typeof h.order === 'number' ? h.order : (typeof old?.order === 'number' ? old.order : undefined), secret, ...((h.vault || old?.vault) && { vault: h.vault || old.vault }) });
+    },
+    // Reihenfolge der Hosts sortieren
+    reorder: (orderedIds) => {
+      const a = base.raw();
+      const idToOrder = new Map(orderedIds.map((id, idx) => [id, idx]));
+      let changed = false;
+      const now = Date.now();
+      for (const item of a) {
+        if (idToOrder.has(item.id)) {
+          const newOrder = idToOrder.get(item.id);
+          if (item.order !== newOrder) {
+            item.order = newOrder;
+            item.updatedAt = now;
+            changed = true;
+          }
+        }
+      }
+      if (changed) {
+        base.setRaw(a);
+      }
+      return true;
     },
     // Zuletzt verwendet: nur lokal speichern, updatedAt bleibt (löst keinen Sync aus; geht beim nächsten echten Speichern mit)
     touch: (id) => { const a = base.raw(); const h = a.find((x) => x.id === id && !x.deleted); if (h) { h.lastUsed = Date.now(); base.setRaw(a); } },

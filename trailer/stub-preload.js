@@ -54,7 +54,7 @@ const demo = { manual: false, teams: [], kcOn: false }; // true: Verbindungsstat
 const ok = (v) => Promise.resolve(v);
 
 contextBridge.exposeInMainWorld('api', {
-  hosts: { list: () => ok(hosts), get: (id) => ok(hosts.find((x) => x.id === id)), save: () => ok('new'), remove: () => ok() },
+  hosts: { list: () => ok(hosts), get: (id) => ok(hosts.find((x) => x.id === id)), save: () => ok('new'), remove: () => ok(), ping: () => ok({ online: true, ms: 25 }), pingAll: () => ok({}) },
   win: { minimize() {}, toggleMax() {}, close() {} },
   groups: { list: () => ok(groups), create: () => ok(null), rename: () => ok(null), remove: () => ok() },
   sync: { status: () => ok({ configured: true, email: 'alex@example.com', server: 'https://sync.example.com', defaultServer: 'https://sync.example.com', status: 'ok', lastSync: now - 120000, error: '' }),

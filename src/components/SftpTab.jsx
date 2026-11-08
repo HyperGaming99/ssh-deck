@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowDown, ArrowLeft, ArrowLeftRight, ArrowUp, Check, ChevronRight, Clock, Download,
-  File, FileArchive, FileCode, FileImage, FileText, Folder, FolderPlus, HardDrive,
-  Home, Minus, Pencil, RefreshCw, Search, Server, Trash2, Upload, X,
+  Eye, EyeOff, File, FileArchive, FileCode, FileImage, FileText, Folder, FolderPlus, HardDrive,
+  Home, Lock, Minus, Pencil, RefreshCw, Search, Server, Trash2, Upload, X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,12 +31,97 @@ const fmtEta = (sec) => {
   const h = Math.floor(m / 60), rm = m % 60;
   return `${h}h ${rm}m`;
 };
+const fmtMode = (mode) => {
+  if (mode == null) return '—';
+  const m = mode & 0o777;
+  const rwx = [0o400, 0o200, 0o100, 0o040, 0o020, 0o010, 0o004, 0o002, 0o001]
+    .map((b, i) => (m & b ? 'rwx'[i % 3] : '-'))
+    .join('');
+  return `${rwx} ${m.toString(8).padStart(3, '0')}`;
+};
 
 const DRAG = 'application/x-deck-pane';
 const ARCHIVE_EXT = /\.(zip|tar|gz|tgz|bz2|xz|7z|rar|deb|rpm|iso|apk|dmg)$/i;
+const EXTRACT_EXT = /\.(tar\.gz|tgz|tar|zip)$/i;
 const CODE_EXT = /\.(js|jsx|mjs|cjs|ts|tsx|py|sh|bash|zsh|json|yml|yaml|toml|xml|html|css|scss|rs|go|c|cpp|h|java|php|rb|sql|conf|ini|env|lock|dockerfile)$/i;
 const IMG_EXT = /\.(png|jpe?g|gif|svg|webp|ico|bmp|avif)$/i;
 const DOC_EXT = /\.(md|txt|log|csv|pdf|doc|docx|rtf)$/i;
+
+function ChmodDialog({ spec, onClose }) {
+  const t = useT();
+  const [oct, setOct] = useState('755');
+  useEffect(() => {
+    if (spec) setOct(((spec.mode ?? (spec.dir ? 0o755 : 0o644)) & 0o777).toString(8).padStart(3, '0'));
+  }, [spec]);
+  if (!spec) return null;
+  const mode = parseInt(oct, 8);
+  const valid = /^[0-7]{3,4}$/.test(oct) && !Number.isNaN(mode);
+  const bit = (b) => valid && (mode & b) !== 0;
+  const toggleBit = (b) => {
+    const cur = valid ? mode : 0o644;
+    const next = (cur ^ b) & 0o777;
+    setOct(next.toString(8).padStart(3, '0'));
+  };
+  const rows = [
+    [t('Besitzer'), 0o400, 0o200, 0o100],
+    [t('Gruppe'), 0o040, 0o020, 0o010],
+    [t('Andere'), 0o004, 0o002, 0o001],
+  ];
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={onClose}>
+      <form
+        onClick={(e) => e.stopPropagation()}
+        onSubmit={async (e) => {
+          e.preventDefault();
+          if (!valid) return;
+          await spec.onSubmit(mode & 0o777);
+          onClose();
+        }}
+        className="w-full max-w-sm space-y-4 rounded-2xl border bg-card p-5 shadow-xl"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-semibold">{t('Dateirechte')}</h3>
+            <p className="truncate font-mono text-xs text-muted-foreground">{spec.name}</p>
+          </div>
+          <Button type="button" variant="ghost" size="icon" className="size-7" onClick={onClose}><X className="size-4" /></Button>
+        </div>
+        <div className="overflow-hidden rounded-xl border">
+          <table className="w-full text-xs">
+            <thead className="bg-muted/50 text-muted-foreground">
+              <tr>
+                <th className="px-3 py-2 text-start font-medium" />
+                <th className="px-2 py-2 text-center font-medium">{t('Lesen')}</th>
+                <th className="px-2 py-2 text-center font-medium">{t('Schreiben')}</th>
+                <th className="px-2 py-2 text-center font-medium">{t('Ausführen')}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {rows.map(([label, r, w, x]) => (
+                <tr key={label}>
+                  <td className="px-3 py-2 font-medium">{label}</td>
+                  {[r, w, x].map((b) => (
+                    <td key={b} className="px-2 py-2 text-center">
+                      <input type="checkbox" checked={bit(b)} onChange={() => toggleBit(b)} className="size-4 accent-primary" />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs font-medium text-muted-foreground">{t('Oktalwert')}</span>
+          <Input value={oct} onChange={(e) => setOct(e.target.value.replace(/[^0-7]/g, '').slice(0, 4))} className="h-8 w-24 text-center font-mono text-sm" />
+        </div>
+        <div className="flex justify-end gap-2 pt-1">
+          <Button type="button" variant="outline" size="sm" onClick={onClose}>{t('Abbrechen')}</Button>
+          <Button type="submit" size="sm" disabled={!valid}>{t('Speichern')}</Button>
+        </div>
+      </form>
+    </div>
+  );
+}
 
 function EntryIcon({ entry }) {
   if (entry.dir) {
@@ -106,7 +191,7 @@ function pathSegments(p, sep) {
 }
 
 // Eine Spalte: Quelle ('local' oder Host-ID) mit eigener SFTP-Sitzung, Pfad, Einträge, Suche, Sortierung, Mehrfachauswahl.
-function usePane(side, tabSid, initialSrc, toast) {
+function usePane(side, tabSid, initialSrc, showDotfiles, toast) {
   const [src, setSrc] = useState(initialSrc);
   const [status, setStatus] = useState('connecting'); // 'ready' | 'connecting' | 'idle' | { error }
   const [path, setPath] = useState('');
@@ -120,15 +205,34 @@ function usePane(side, tabSid, initialSrc, toast) {
   const remote = src !== 'local' && !idle;
 
   const none = () => Promise.reject(new Error('Wähle zuerst einen Host.'));
-  const ops = useMemo(() => (idle ? { list: none, mkdir: none, rename: none, remove: none } : remote
-    ? { list: (p) => api.sftp.list(psid, p), mkdir: (p) => api.sftp.mkdir(psid, p), rename: (a, b) => api.sftp.rename(psid, a, b), remove: (p) => api.sftp.remove(psid, p) }
-    : { list: api.local.list, mkdir: api.local.mkdir, rename: api.local.rename, remove: api.local.remove }), [idle, remote, psid]);
+  const ops = useMemo(() => (idle ? { list: none, mkdir: none, rename: none, remove: none, chmod: none, archive: none, extract: none } : remote
+    ? {
+      list: (p) => api.sftp.list(psid, p),
+      mkdir: (p) => api.sftp.mkdir(psid, p),
+      rename: (a, b) => api.sftp.rename(psid, a, b),
+      remove: (p) => api.sftp.remove(psid, p),
+      chmod: (p, m) => api.sftp.chmod(psid, p, m),
+      archive: (dir, names, fmt) => api.sftp.archive(psid, dir, names, fmt),
+      extract: (dir, name) => api.sftp.extract(psid, dir, name),
+    }
+    : {
+      list: api.local.list,
+      mkdir: api.local.mkdir,
+      rename: api.local.rename,
+      remove: api.local.remove,
+      chmod: api.local.chmod,
+      archive: api.local.archive,
+      extract: api.local.extract,
+    }), [idle, remote, psid]);
 
   const go = useCallback(async (p) => {
     try {
-      const r = await ops.list(p);
-      setPath(r.path); setEntries(r.entries); setSel(new Set()); setQuery('');
-    } catch (e) { toast(e.message); }
+      const r = (await ops.list(p)) || {};
+      setPath(r.path || '');
+      setEntries(Array.isArray(r.entries) ? r.entries : []);
+      setSel(new Set());
+      setQuery('');
+    } catch (e) { toast(e?.message || 'Fehler beim Laden'); }
   }, [ops, toast]);
 
   useEffect(() => {
@@ -148,7 +252,8 @@ function usePane(side, tabSid, initialSrc, toast) {
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const filtered = q ? entries.filter((e) => e.name.toLowerCase().includes(q)) : entries;
+    const base = showDotfiles ? entries : entries.filter((e) => !e.name.startsWith('.'));
+    const filtered = q ? base.filter((e) => e.name.toLowerCase().includes(q)) : base;
     const dirFactor = sortAsc ? 1 : -1;
     return [...filtered].sort((a, b) => {
       if (a.dir !== b.dir) return b.dir - a.dir; // Ordner immer oben
@@ -156,7 +261,7 @@ function usePane(side, tabSid, initialSrc, toast) {
       if (sortBy === 'mtime') return ((a.mtime || 0) - (b.mtime || 0)) * dirFactor || a.name.localeCompare(b.name);
       return a.name.localeCompare(b.name) * dirFactor;
     });
-  }, [entries, query, sortBy, sortAsc]);
+  }, [entries, showDotfiles, query, sortBy, sortAsc]);
 
   const toggleSort = (col) => {
     if (sortBy === col) setSortAsc((v) => !v);
@@ -167,7 +272,7 @@ function usePane(side, tabSid, initialSrc, toast) {
   const sep = remote ? '/' : api.platform === 'win32' ? '\\' : '/'; // lokal: Trenner des Systems
   return {
     join: (n) => joinPath(path, n, sep),
-    up: () => parentPath(path, sep),
+    up: () => (!remote && api.mobile && path === '/storage/emulated/0' ? path : parentPath(path, sep)),
     home: () => (remote ? '.' : ''),
     shown: path === DRIVES ? '' : path,
     sep, side, src, setSrc, idle, status, path, entries, visible,
@@ -239,7 +344,7 @@ function TransferBanner({ transfer, onCancel }) {
   );
 }
 
-function Pane({ pane, hosts, editors, busy, onDropPane, onDropFiles, onTransfer, transferLabel, openForm, toast }) {
+function Pane({ pane, otherPane, otherSrc, hosts, editors, onReloadEditors, showDotfiles, onToggleDotfiles, showPerms = true, onOpenChmod, busy, onDropPane, onDropFiles, onTransfer, transferLabel, openForm, toast }) {
   const t = useT();
   const lang = useLang();
   const [draft, setDraft] = useState(null);
@@ -256,25 +361,55 @@ function Pane({ pane, hosts, editors, busy, onDropPane, onDropFiles, onTransfer,
     title: t('Umbenennen'), values: { name: only }, fields: [{ name: 'name', label: t('Neuer Name'), required: true }],
     onSubmit: (v) => act(() => pane.ops.rename(pane.join(only), pane.join(v.name))),
   });
+  const chmodSel = () => {
+    const entry = pane.entries.find((e) => e.name === only);
+    if (!entry) return;
+    onOpenChmod({
+      name: entry.name,
+      dir: entry.dir,
+      mode: entry.mode,
+      onSubmit: (mode) => act(() => pane.ops.chmod(pane.join(entry.name), mode)),
+    });
+  };
+  const archiveSel = (format) => act(async () => {
+    const out = await pane.ops.archive(pane.path, [...pane.sel], format);
+    toast(t('Archiv {name} erstellt.', { name: out }));
+  });
+  const extractSel = () => act(async () => {
+    await pane.ops.extract(pane.path, only);
+    toast(t('Archiv entpackt.'));
+  });
+  const downloadTarGz = async () => {
+    if (!pane.remote || otherPane?.remote) return;
+    try {
+      const out = await api.sftp.downloadArchive(pane.psid, pane.path, [...pane.sel], otherPane?.path || '');
+      toast(t('Archiv {name} erstellt.', { name: out }));
+      otherPane?.reload();
+    } catch (e) { toast(e.message); }
+  };
   const deleteSel = () => {
     const n = pane.sel.size;
     const msg = pane.remote ? t('{n} Element(e) auf dem Server endgültig löschen (Ordner samt Inhalt)?', { n }) : t('{n} Element(e) in den Papierkorb verschieben?', { n });
     if (confirm(msg)) act(async () => { for (const n of pane.sel) await pane.ops.remove(pane.join(n)); });
   };
-  // Dateien öffnen: cmd = 'default' (VS Code, sonst System) | 'system' | Editor-Befehl. Remote: Änderungen werden automatisch hochgeladen.
+  // Dateien öffnen: cmd = 'default' (VS Code, sonst System) | 'system' | 'custom' | 'choose' | Editor-Befehl. Remote: Änderungen werden automatisch hochgeladen.
   const openWith = async (cmd, names = [...pane.sel]) => {
     for (const n of names) {
       if (pane.entries.find((e) => e.name === n)?.dir) continue;
       const p = pane.join(n);
       try {
-        await (pane.remote ? api.sftp.edit(pane.psid, p, cmd) : api.local.open(p, cmd));
+        const ok = await (pane.remote ? api.sftp.edit(pane.psid, p, cmd) : api.local.open(p, cmd));
+        if (ok === false) return;
+        if (cmd === 'choose') onReloadEditors?.();
         if (pane.remote) toast(t('{name} geöffnet – Speichern lädt automatisch hoch.', { name: n }));
       } catch (e) { toast(e.message); }
     }
   };
 
   const hasFile = [...pane.sel].some((n) => !pane.entries.find((e) => e.name === n)?.dir);
-  const onlyIsDir = pane.entries.find((e) => e.name === only)?.dir;
+  const onlyEntry = pane.entries.find((e) => e.name === only);
+  const onlyIsDir = onlyEntry?.dir;
+  const onlyIsExtractable = pane.sel.size === 1 && !onlyIsDir && EXTRACT_EXT.test(only || '');
 
   // Mehrfachauswahl: Klick schaltet um, Shift+Klick wählt einen ganzen Bereich auf einmal aus
   const handleSelect = (ev, name) => {
@@ -371,9 +506,11 @@ function Pane({ pane, hosts, editors, busy, onDropPane, onDropFiles, onTransfer,
               </span>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="local">
-                <span className="flex items-center gap-2"><HardDrive className="size-3.5 text-primary" />{t('Lokal')}</span>
-              </SelectItem>
+              {otherSrc !== 'local' && (
+                <SelectItem value="local">
+                  <span className="flex items-center gap-2"><HardDrive className="size-3.5 text-primary" />{t('Lokal')}</span>
+                </SelectItem>
+              )}
               {hosts.filter((h) => h.protocol !== 'telnet').map((h) => (
                 <SelectItem key={h.id} value={h.id}>
                   <span className="flex items-center gap-2"><Server className="size-3.5 text-muted-foreground" />{h.name}</span>
@@ -432,6 +569,15 @@ function Pane({ pane, hosts, editors, busy, onDropPane, onDropFiles, onTransfer,
           )}
 
           <div className="flex items-center rounded-lg border bg-background p-0.5 shadow-2xs">
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn('size-7 rounded-md', showDotfiles && 'text-primary')}
+              title={t('Versteckte Dateien anzeigen')}
+              onClick={onToggleDotfiles}
+            >
+              {showDotfiles ? <Eye className="size-3.5" /> : <EyeOff className="size-3.5" />}
+            </Button>
             <Button variant="ghost" size="icon" className="size-7 rounded-md" title={t('Neuer Ordner')} disabled={pane.idle} onClick={newFolder}>
               <FolderPlus className="size-3.5" />
             </Button>
@@ -516,10 +662,12 @@ function Pane({ pane, hosts, editors, busy, onDropPane, onDropFiles, onTransfer,
             {pane.sortBy === 'size' && (pane.sortAsc ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />)}
           </button>
 
+          <span className="w-28 shrink-0 text-right">{t('Dateirechte')}</span>
+
           <button
             type="button"
             onClick={() => pane.toggleSort('mtime')}
-            className="hidden w-28 shrink-0 items-center justify-end gap-1 text-right hover:text-foreground xl:flex"
+            className="hidden w-24 shrink-0 items-center justify-end gap-1 text-right hover:text-foreground xl:flex"
           >
             <span>{t('Geändert')}</span>
             {pane.sortBy === 'mtime' && (pane.sortAsc ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />)}
@@ -554,6 +702,25 @@ function Pane({ pane, hosts, editors, busy, onDropPane, onDropFiles, onTransfer,
               <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
                 <p className="text-sm text-destructive">{t('Verbindungsfehler: {error}', { error: pane.status.error })}</p>
                 <Button variant="outline" size="sm" onClick={() => pane.setSrc(pane.src)}>{t('Aktualisieren')}</Button>
+              </div>
+            )}
+            {pane.status === 'ready' && pane.up() !== pane.path && (
+              <div
+                onClick={() => pane.go(pane.up())}
+                onDoubleClick={() => pane.go(pane.up())}
+                title={t('Übergeordneter Ordner')}
+                className="group flex cursor-pointer select-none items-center gap-2.5 px-3 py-1.5 text-sm transition-colors hover:bg-accent/60"
+              >
+                <span className="grid size-4 shrink-0 place-items-center text-muted-foreground">
+                  <ArrowUp className="size-3.5" />
+                </span>
+                <EntryIcon entry={{ dir: true, name: '..' }} />
+                <span className="min-w-0 flex-1 truncate font-medium text-muted-foreground group-hover:text-foreground">
+                  ..
+                </span>
+                <span className="w-20 shrink-0 text-right font-mono text-xs text-muted-foreground">—</span>
+                <span className="w-28 shrink-0 text-right font-mono text-xs text-muted-foreground">—</span>
+                <span className="hidden w-24 shrink-0 text-right text-xs text-muted-foreground xl:block" />
               </div>
             )}
             {pane.status === 'ready' && pane.visible.map((e) => {
@@ -594,7 +761,26 @@ function Pane({ pane, hosts, editors, busy, onDropPane, onDropFiles, onTransfer,
                     {e.dir ? '—' : size(e.size)}
                   </span>
 
-                  <span className="hidden w-28 shrink-0 text-right text-xs text-muted-foreground xl:block">
+                  {showPerms && (
+                    <button
+                      type="button"
+                      title={t('Dateirechte …')}
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        onOpenChmod({
+                          name: e.name,
+                          dir: e.dir,
+                          mode: e.mode,
+                          onSubmit: (mode) => act(() => pane.ops.chmod(pane.join(e.name), mode)),
+                        });
+                      }}
+                      className="w-28 shrink-0 rounded px-1 py-0.5 text-right font-mono text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    >
+                      {fmtMode(e.mode)}
+                    </button>
+                  )}
+
+                  <span className="hidden w-24 shrink-0 text-right text-xs text-muted-foreground xl:block">
                     {e.mtime ? new Date(e.mtime).toLocaleDateString(lang) : ''}
                   </span>
                 </div>
@@ -626,10 +812,24 @@ function Pane({ pane, hosts, editors, busy, onDropPane, onDropFiles, onTransfer,
                   <ContextMenuSubContent>
                     {editors.map((ed) => <ContextMenuItem key={ed.cmd} onSelect={() => openWith(ed.cmd)}>{ed.name}</ContextMenuItem>)}
                     <ContextMenuItem onSelect={() => openWith('system')}>{t('Standardprogramm')}</ContextMenuItem>
+                    <ContextMenuSeparator />
+                    <ContextMenuItem onSelect={() => openWith('choose')}>{t('Programm wählen …')}</ContextMenuItem>
                   </ContextMenuSubContent>
                 </ContextMenuSub>
               )}
               {transferLabel && <ContextMenuItem disabled={busy} onSelect={onTransfer}>{transferLabel}</ContextMenuItem>}
+              <ContextMenuSub>
+                <ContextMenuSubTrigger>{t('Archiv')}</ContextMenuSubTrigger>
+                <ContextMenuSubContent>
+                  <ContextMenuItem onSelect={() => archiveSel('tar.gz')}>{t('Als .tar.gz packen')}</ContextMenuItem>
+                  <ContextMenuItem onSelect={() => archiveSel('zip')}>{t('Als .zip packen')}</ContextMenuItem>
+                  {pane.remote && !otherPane?.remote && (
+                    <ContextMenuItem onSelect={downloadTarGz}>{t('Als .tar.gz herunterladen')}</ContextMenuItem>
+                  )}
+                </ContextMenuSubContent>
+              </ContextMenuSub>
+              {onlyIsExtractable && <ContextMenuItem onSelect={extractSel}>{t('Hier entpacken')}</ContextMenuItem>}
+              {pane.sel.size === 1 && <ContextMenuItem onSelect={chmodSel}>{t('Dateirechte …')}</ContextMenuItem>}
               {pane.sel.size === 1 && <ContextMenuItem onSelect={renameSel}>{t('Umbenennen')}</ContextMenuItem>}
               <ContextMenuItem variant="destructive" onSelect={deleteSel}>{pane.remote ? t('Löschen') : t('In den Papierkorb')}</ContextMenuItem>
               <ContextMenuSeparator />
@@ -693,10 +893,30 @@ export default function SftpTab({ sid, hostId, active = true, toast, openForm })
   const t = useT();
   const [hosts, setHosts] = useState([]);
   const [editors, setEditors] = useState([]);
+  const [chmodSpec, setChmodSpec] = useState(null);
+  const [showDotfiles, setShowDotfiles] = useState(() => { try { return localStorage.getItem('sftpDotfiles') !== '0'; } catch { return true; } });
+  const toggleDotfiles = () => setShowDotfiles((v) => {
+    const next = !v;
+    try { localStorage.setItem('sftpDotfiles', next ? '1' : '0'); window.dispatchEvent(new Event('sftp-dotfiles')); } catch { /* egal */ }
+    return next;
+  });
+  const [showPerms, setShowPerms] = useState(() => { try { return localStorage.getItem('sftpPermissions') !== '0'; } catch { return true; } });
+  useEffect(() => {
+    const sync = () => {
+      try { setShowDotfiles(localStorage.getItem('sftpDotfiles') !== '0'); } catch { /* egal */ }
+      try { setShowPerms(localStorage.getItem('sftpPermissions') !== '0'); } catch { /* egal */ }
+    };
+    window.addEventListener('sftp-dotfiles', sync);
+    window.addEventListener('sftp-permissions', sync);
+    return () => {
+      window.removeEventListener('sftp-dotfiles', sync);
+      window.removeEventListener('sftp-permissions', sync);
+    };
+  }, []);
   const [transfer, setTransfer] = useState(null);
   const transferringRef = useRef(false);
-  const left = usePane('L', sid, 'local', toast);
-  const right = usePane('R', sid, hostId ?? '', toast);
+  const left = usePane('L', sid, 'local', showDotfiles, toast);
+  const right = usePane('R', sid, hostId ?? '', showDotfiles, toast);
   const busy = !!transfer;
 
   useEffect(() => { if (active) api.hosts.list().then(setHosts); }, [active]);
@@ -802,11 +1022,19 @@ export default function SftpTab({ sid, hostId, active = true, toast, openForm })
   return (
     <div dir="ltr" className=" flex h-full flex-col gap-2.5 p-3">
       <TransferBanner transfer={transfer} onCancel={cancelTransfer} />
+      <ChmodDialog spec={chmodSpec} onClose={() => setChmodSpec(null)} />
       <div className="msftp flex min-h-0 flex-1 gap-2.5">
         <Pane
           pane={left}
+          otherPane={right}
+          otherSrc={right.src}
           hosts={hosts}
           editors={editors}
+          onReloadEditors={() => api.editors.list().then(setEditors)}
+          showDotfiles={showDotfiles}
+          onToggleDotfiles={toggleDotfiles}
+          showPerms={showPerms}
+          onOpenChmod={setChmodSpec}
           busy={busy}
           onDropPane={onDropPane}
           onDropFiles={onDropFiles}
@@ -848,8 +1076,15 @@ export default function SftpTab({ sid, hostId, active = true, toast, openForm })
         </div>
         <Pane
           pane={right}
+          otherPane={left}
+          otherSrc={left.src}
           hosts={hosts}
           editors={editors}
+          onReloadEditors={() => api.editors.list().then(setEditors)}
+          showDotfiles={showDotfiles}
+          onToggleDotfiles={toggleDotfiles}
+          showPerms={showPerms}
+          onOpenChmod={setChmodSpec}
           busy={busy}
           onDropPane={onDropPane}
           onDropFiles={onDropFiles}

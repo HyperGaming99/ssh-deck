@@ -32,6 +32,7 @@ export const ICONS = [
   'raspberry-pi',
   'rocky-linux',
   'synology',
+  'tor',
   'truenas-scale',
   'ubuntu-linux',
   'windows-11',

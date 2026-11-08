@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import HostIcon from '@/components/HostIcon';
+import GroupIcon from '@/components/GroupIcon';
 import { ICONS } from '@/icons';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -101,7 +102,22 @@ export default function HostSheet({ spec, onClose }) {
                   <SelectTrigger className={triggerCls}><SelectValue placeholder={t('Gruppe')} /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none">{t('Keine Gruppe')}</SelectItem>
-                    {spec.groups.filter((g) => (g.vault || 'personal') === cur).map((g) => <SelectItem key={g.id} value={g.name}>{g.name}</SelectItem>)}
+                    {spec.groups.filter((g) => (g.vault || 'personal') === cur).map((g) => (
+                      <SelectItem key={g.id} value={g.name}>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="flex size-4 shrink-0 items-center justify-center rounded overflow-hidden"
+                            style={{
+                              backgroundColor: g.color ? `${g.color}25` : undefined,
+                            }}
+                          >
+                            <GroupIcon group={g} className="size-3.5" />
+                          </div>
+                          <span>{g.name}</span>
+                          {g.color && <span className="size-1.5 rounded-full ml-auto" style={{ backgroundColor: g.color }} />}
+                        </div>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </Field>

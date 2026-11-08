@@ -15,7 +15,7 @@ const unwrap = async (promise) => {
 const sftpCall = (name) => (sid, ...a) => unwrap(ipcRenderer.invoke(`sftp:${name}`, sid, ...a));
 
 contextBridge.exposeInMainWorld('api', {
-  hosts: { ...coll('hosts'), get: (id) => ipcRenderer.invoke('hosts:get', id), copy: (id, vault, move, name) => ipcRenderer.invoke('hosts:copy', id, vault, move, name), jumpCandidates: (id, vault) => ipcRenderer.invoke('hosts:jumpCandidates', id, vault) },
+  hosts: { ...coll('hosts'), get: (id) => ipcRenderer.invoke('hosts:get', id), copy: (id, vault, move, name) => ipcRenderer.invoke('hosts:copy', id, vault, move, name), jumpCandidates: (id, vault) => ipcRenderer.invoke('hosts:jumpCandidates', id, vault), reorder: (ids) => ipcRenderer.invoke('hosts:reorder', ids), ping: (h) => ipcRenderer.invoke('hosts:ping', h), pingAll: () => ipcRenderer.invoke('hosts:pingAll') },
   saveText: (name, text) => ipcRenderer.invoke('saveText', name, text),
   win: {
     minimize: () => ipcRenderer.send('win:minimize'),
@@ -24,9 +24,11 @@ contextBridge.exposeInMainWorld('api', {
   },
   groups: {
     list: () => ipcRenderer.invoke('groups:list'),
-    create: (n, vault) => ipcRenderer.invoke('groups:create', n, vault),
+    create: (n, vault, extra) => ipcRenderer.invoke('groups:create', n, vault, extra),
+    save: (g) => ipcRenderer.invoke('groups:save', g),
     rename: (id, n) => ipcRenderer.invoke('groups:rename', id, n),
     remove: (id) => ipcRenderer.invoke('groups:remove', id),
+    reorder: (ids) => ipcRenderer.invoke('groups:reorder', ids),
   },
   sync: {
     status: () => ipcRenderer.invoke('sync:status'),
@@ -74,7 +76,8 @@ contextBridge.exposeInMainWorld('api', {
   },
   sftp: {
     open: sftpCall('open'), list: sftpCall('list'), mkdir: sftpCall('mkdir'), rename: sftpCall('rename'),
-    remove: sftpCall('remove'), upload: sftpCall('upload'), download: sftpCall('download'),
+    remove: sftpCall('remove'), chmod: sftpCall('chmod'), archive: sftpCall('archive'), extract: sftpCall('extract'),
+    downloadArchive: sftpCall('downloadArchive'), upload: sftpCall('upload'), download: sftpCall('download'),
     edit: (sid, p, cmd) => unwrap(ipcRenderer.invoke('sftp:edit', sid, p, cmd)),
     copy: (a, pa, b, db) => unwrap(ipcRenderer.invoke('sftp:copy', a, pa, b, db)),
     cancel: (sid) => ipcRenderer.send('sftp:cancel', sid),
@@ -89,14 +92,49 @@ contextBridge.exposeInMainWorld('api', {
     list: (d) => unwrap(ipcRenderer.invoke('local:list', d)),
     mkdir: (p) => unwrap(ipcRenderer.invoke('local:mkdir', p)),
     rename: (a, b) => unwrap(ipcRenderer.invoke('local:rename', a, b)),
+    chmod: (p, mode) => unwrap(ipcRenderer.invoke('local:chmod', p, mode)),
+    archive: (dir, names, format) => unwrap(ipcRenderer.invoke('local:archive', dir, names, format)),
+    extract: (dir, name) => unwrap(ipcRenderer.invoke('local:extract', dir, name)),
     remove: (p) => unwrap(ipcRenderer.invoke('local:remove', p)),
     open: (p, cmd) => unwrap(ipcRenderer.invoke('local:open', p, cmd)),
   },
-  editors: { list: () => ipcRenderer.invoke('editors:list') },
+  editors: { list: () => ipcRenderer.invoke('editors:list'), pick: () => ipcRenderer.invoke('editors:pick') },
   onEdit: (cb) => { ipcRenderer.on('edit:saved', (_, n) => cb(`${n} gespeichert und hochgeladen.`)); ipcRenderer.on('edit:error', (_, m) => cb(m)); },
   platform: process.platform, // 'win32' | 'darwin' | 'linux': für Pfad-Trenner, Fensterknöpfe, Tastenkürzel
   pathOf: (file) => webUtils.getPathForFile(file), // Pfad einer aus dem Dateimanager gezogenen Datei
   fwd: { ...coll('fwd'), toggle: (id) => ipcRenderer.invoke('fwd:toggle', id) },
+  k8s: {
+    overview: (hostId) => unwrap(ipcRenderer.invoke('k8s:overview', hostId)),
+    run: (hostId, spec) => unwrap(ipcRenderer.invoke('k8s:run', hostId, spec)),
+    scale: (hostId, spec) => unwrap(ipcRenderer.invoke('k8s:scale', hostId, spec)),
+    restart: (hostId, spec) => unwrap(ipcRenderer.invoke('k8s:restart', hostId, spec)),
+    delete: (hostId, spec) => unwrap(ipcRenderer.invoke('k8s:delete', hostId, spec)),
+    logs: (hostId, spec) => unwrap(ipcRenderer.invoke('k8s:logs', hostId, spec)),
+    describe: (hostId, spec) => unwrap(ipcRenderer.invoke('k8s:describe', hostId, spec)),
+  },
+  docker: {
+    overview: (hostId) => unwrap(ipcRenderer.invoke('docker:overview', hostId)),
+    start: (hostId, spec) => unwrap(ipcRenderer.invoke('docker:start', hostId, spec)),
+    stop: (hostId, spec) => unwrap(ipcRenderer.invoke('docker:stop', hostId, spec)),
+    restart: (hostId, spec) => unwrap(ipcRenderer.invoke('docker:restart', hostId, spec)),
+    pause: (hostId, spec) => unwrap(ipcRenderer.invoke('docker:pause', hostId, spec)),
+    unpause: (hostId, spec) => unwrap(ipcRenderer.invoke('docker:unpause', hostId, spec)),
+    remove: (hostId, spec) => unwrap(ipcRenderer.invoke('docker:remove', hostId, spec)),
+    logs: (hostId, spec) => unwrap(ipcRenderer.invoke('docker:logs', hostId, spec)),
+    inspect: (hostId, spec) => unwrap(ipcRenderer.invoke('docker:inspect', hostId, spec)),
+    run: (hostId, spec) => unwrap(ipcRenderer.invoke('docker:run', hostId, spec)),
+    pull: (hostId, spec) => unwrap(ipcRenderer.invoke('docker:pull', hostId, spec)),
+    removeImage: (hostId, spec) => unwrap(ipcRenderer.invoke('docker:removeImage', hostId, spec)),
+    removeVolume: (hostId, spec) => unwrap(ipcRenderer.invoke('docker:removeVolume', hostId, spec)),
+    removeNetwork: (hostId, spec) => unwrap(ipcRenderer.invoke('docker:removeNetwork', hostId, spec)),
+    prune: (hostId, spec) => unwrap(ipcRenderer.invoke('docker:prune', hostId, spec)),
+  },
+  share: {
+    start: (sid, title) => ipcRenderer.invoke('share:start', sid, title),
+    stop: (sid) => ipcRenderer.invoke('share:stop', sid),
+    setInteractive: (sid, interactive) => ipcRenderer.invoke('share:setInteractive', sid, interactive),
+    status: (sid) => ipcRenderer.invoke('share:status', sid),
+  },
   open: (sid, id, cols, rows) => ipcRenderer.send('ssh:open', sid, id, cols, rows),
   stats: (sid) => ipcRenderer.invoke('stats:get', sid),
   input: (sid, d) => ipcRenderer.send('ssh:input', sid, d),

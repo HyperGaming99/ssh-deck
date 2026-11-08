@@ -4,15 +4,19 @@
   "updates": {
     "repo": "HyperGaming99/ssh-deck"
   },
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Minimaler SSH-Client im Stil von Termius",
-  "main": "main.js",
+  "main": "electron/main.js",
   "scripts": {
-    "start": "node start.js",
+    "dev": "vite",
+    "start": "node electron/start.js",
     "test": "node test.js",
     "build": "vite build",
     "server": "node server/server.js",
-    "dist": "electron-builder --publish never"
+    "dist": "electron-builder --publish never",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
   "dependencies": {
     "socks": "^2.8.10",
@@ -27,6 +31,8 @@
     "@fontsource/jetbrains-mono": "^5.3.0",
     "@fontsource/source-code-pro": "^5.3.1",
     "@tailwindcss/vite": "^4.3.3",
+    "@tauri-apps/api": "^2.12.4",
+    "@tauri-apps/cli": "^2.12.4",
     "@vitejs/plugin-react": "^6.1.2",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-search": "^0.15.0",
@@ -64,10 +70,7 @@
     "npmRebuild": false,
     "asar": true,
     "files": [
-      "*.js",
-      "!test.js",
-      "!start.js",
-      "!vite.config.js",
+      "electron/**/*.js",
       "dist/**/*",
       "assets/icon-512.png",
       "package.json"

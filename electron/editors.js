@@ -51,11 +51,21 @@ function detect({ platform = process.platform, pathEnv = process.env.PATH || '',
 // Standard: VS Code, wenn vorhanden; sonst null (= Systemstandard).
 const defaultEditor = (list) => list.find((e) => e.cmd === 'code') || null;
 
-// Wählt den Editor: cmd 'default' folgt der Einstellung pref ('auto' | 'system' | Editor-Befehl). null = Systemstandard.
-function pick(cmd, pref, list) {
+// Frei gewähltes Programm (Pfad oder Befehl) als Editor-Eintrag
+function customEntry(customBin, { platform = process.platform } = {}) {
+  const b = String(customBin || '').trim();
+  if (!b) return null;
+  const base = (platform === 'win32' ? path.win32 : path.posix).basename(b).replace(/\.(exe|app|cmd|bat|sh)$/i, '') || b;
+  if (platform === 'darwin' && /\.app$/i.test(b)) return { cmd: 'custom', name: base, bin: '/usr/bin/open', args: ['-a', b] };
+  return { cmd: 'custom', name: base, bin: b };
+}
+
+// Wählt den Editor: cmd 'default' folgt der Einstellung pref ('auto' | 'system' | 'custom' | Editor-Befehl). null = Systemstandard.
+function pick(cmd, pref, list, customBin = '', opts = {}) {
   if (cmd === 'default') cmd = pref && pref !== 'auto' ? pref : 'auto';
+  if (cmd === 'custom') return customEntry(customBin, opts);
   if (cmd === 'auto') return defaultEditor(list);
   return list.find((e) => e.cmd === cmd) || null;
 }
 
-module.exports = { detect, defaultEditor, pick };
+module.exports = { detect, defaultEditor, customEntry, pick };

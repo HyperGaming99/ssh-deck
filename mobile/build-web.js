@@ -3,7 +3,10 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const root = path.join(__dirname, '..');
-const pre = fs.readFileSync(path.join(root, 'preload.js'), 'utf8')
+const preloadPath = fs.existsSync(path.join(root, 'electron', 'preload.js'))
+  ? path.join(root, 'electron', 'preload.js')
+  : path.join(root, 'preload.js');
+const pre = fs.readFileSync(preloadPath, 'utf8')
   .replace("const { contextBridge, ipcRenderer, webUtils } = require('electron');", "import { contextBridge, ipcRenderer, webUtils } from './electron-web.js';")
   .replace(/process\.platform/g, "'linux'");
 if (pre.includes("require('electron')")) throw new Error('preload.js: Kopfzeile geändert, build-web.js anpassen');
