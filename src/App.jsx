@@ -404,7 +404,7 @@ export default function App() {
               <h1 className="mb-6 text-2xl font-semibold">
                 <ShinyText text={t((visibleSections.find(([id]) => id === section) || SECTIONS[0])[1])} color={dark ? '#8a8a8a' : '#52525b'} shineColor={dark ? '#ffffff' : '#2563eb'} speed={4} />
               </h1>
-              <ErrorBoundary key={section + vault}><View settingsTab={settingsTab} teams={teams} refreshTeams={refreshTeams} vault={activeV.id} setVault={setVault} lang={lang} setLang={setLang} st={st} setDark={setDark} side={side} setSide={setSide} onLogin={() => chooseSkip(false)} onLogout={() => chooseSkip(false)} dark={dark} connect={connect} openSftp={(h) => connect(h, 'sftp')} runSnippet={runSnippet} openForm={setForm} openHost={setHostForm} toast={toast} rev={rev} /></ErrorBoundary>
+              <ErrorBoundary key={section + vault}><View settingsTab={settingsTab} teams={teams} refreshTeams={refreshTeams} vault={activeV.id} setVault={setVault} lang={lang} setLang={setLang} st={st} setDark={setDark} side={side} setSide={setSide} onLogin={() => chooseSkip(false)} onLogout={() => chooseSkip(false)} dark={dark} connect={connect} openSftp={(h) => connect(h, 'sftp')} runSnippet={runSnippet} openForm={setForm} openHost={setHostForm} toast={toast} rev={rev} termTheme={termTheme} setTheme={setTheme} font={font} setFont={setFont} /></ErrorBoundary>
             </div>
             <div className={cn('absolute inset-0 p-2', active !== 'sftp' && 'hidden')}>
               {sftpMounted && <Suspense fallback={null}><SftpTab sid="sftp" hostId={null} active={active === 'sftp'} toast={toast} openForm={setForm} /></Suspense>}

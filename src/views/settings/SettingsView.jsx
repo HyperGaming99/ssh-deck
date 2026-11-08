@@ -1,21 +1,29 @@
 import { useEffect, useState } from 'react';
 import {
+  AppWindowMac,
   Check,
+  Columns,
   Download,
   FileText,
   FolderOpen,
   KeyRound,
   Languages,
+  Layout,
   Lock,
+  Minus,
   Moon,
   Palette,
+  Plus,
   Server,
   ShieldCheck,
   SlidersHorizontal,
+  Sparkles,
   Sun,
   Terminal as TermIcon,
+  Type,
   User,
   Users,
+  ZapOff,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +34,7 @@ import TeamsSettings from '@/components/TeamsSettings';
 import { LANGS, T, useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { getPaste, getSuggest, setPaste, setSuggest } from '@/lib/termState';
+import { AUTO, FONTS, THEMES } from '@/lib/termThemes';
 import SyncView from './SyncView';
 import TorSettings from './TorSettings';
 import UpdatesSettings from './UpdatesSettings';
@@ -56,10 +65,14 @@ const SETTINGS_TABS = [ // Updates/Editor gibt es nur am Desktop
 ].filter((x) => !(mobile && x[3]));
 
 // Einstellungen mit eigener Seitenleiste (links Kategorien, rechts Inhalt)
-export function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lang, setLang, settingsTab, teams, refreshTeams, vault, setVault, toast }) {
+export function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogout, lang, setLang, settingsTab, teams, refreshTeams, vault, setVault, toast, termTheme, setTheme, font, setFont }) {
   const t = useT();
   const [tab, setTab] = useState(settingsTab || 'account');
   useEffect(() => { if (settingsTab) setTab(settingsTab); }, [settingsTab]);
+  const currentTheme = termTheme || 'auto';
+  const pickTheme = setTheme || ((v) => { try { localStorage.setItem('termTheme', v); window.dispatchEvent(new Event('theme-cfg')); } catch {} });
+  const currentFont = font || { family: FONTS[0][0], size: mobile ? 12 : 14 };
+  const pickFont = setFont || ((v) => { try { localStorage.setItem('termFont', JSON.stringify(v)); window.dispatchEvent(new Event('font-cfg')); } catch {} });
   const [editors, setEditors] = useState([]);
   const [editor, setEditor] = useState('auto');
   const [customEditor, setCustomEditor] = useState('');
@@ -111,20 +124,440 @@ export function SettingsView({ st, dark, setDark, side, setSide, onLogin, onLogo
       <div className="min-w-0 max-w-2xl flex-1 space-y-3">
         {tab === 'account' && <SyncView st={st} onLogin={onLogin} onLogout={onLogout} toast={toast} />}
         {tab === 'appearance' && (
-          <>
-            <div className={row}>
-              <div><p className="text-sm font-medium">{t('Design')}</p><p className="text-xs text-muted-foreground">{t('Hell oder dunkel')}</p></div>
-              {seg([[false, t('Hell'), Sun], [true, t('Dunkel'), Moon]], dark, setDark)}
+          <div className="space-y-6">
+            {/* 1. Design-Modus: Hell / Dunkel mit echten Fenster-Vorschauen */}
+            <div className="space-y-3">
+              <div>
+                <h3 className="text-sm font-semibold">{t('Design')}</h3>
+                <p className="text-xs text-muted-foreground">{t('Hell oder dunkel')}</p>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {/* Hell */}
+                <button
+                  type="button"
+                  onClick={() => setDark(false)}
+                  className={cn(
+                    'group relative flex flex-col overflow-hidden rounded-2xl border p-3.5 text-start transition-all',
+                    !dark
+                      ? 'border-primary bg-primary/5 ring-2 ring-primary/20 shadow-md'
+                      : 'border-border/60 bg-card hover:border-border hover:bg-accent/40'
+                  )}
+                >
+                  <div className="relative mb-3 h-28 w-full overflow-hidden rounded-xl border border-zinc-200 bg-white p-2 text-zinc-900 shadow-sm transition-transform group-hover:scale-[1.01]">
+                    <div className="mb-2 flex items-center gap-1.5 border-b border-zinc-100 pb-1.5">
+                      <div className="size-2 rounded-full bg-red-400" />
+                      <div className="size-2 rounded-full bg-amber-400" />
+                      <div className="size-2 rounded-full bg-emerald-400" />
+                      <div className="mx-auto text-[9px] font-semibold text-zinc-400 tracking-wider">SSH DECK</div>
+                    </div>
+                    <div className="flex h-[calc(100%-24px)] gap-2">
+                      <div className="flex w-12 flex-col gap-1.5 rounded-lg bg-zinc-100 p-1.5">
+                        <div className="h-2 w-full rounded bg-blue-600" />
+                        <div className="h-2 w-full rounded bg-zinc-200" />
+                        <div className="h-2 w-full rounded bg-zinc-200" />
+                      </div>
+                      <div className="flex flex-1 flex-col gap-1.5">
+                        <div className="flex items-center justify-between rounded-lg border border-zinc-100 bg-zinc-50 px-2 py-1">
+                          <div className="flex items-center gap-1.5">
+                            <div className="size-2 rounded-full bg-emerald-500" />
+                            <div className="h-2 w-12 rounded bg-zinc-300" />
+                          </div>
+                          <div className="h-2 w-6 rounded bg-zinc-200" />
+                        </div>
+                        <div className="flex items-center justify-between rounded-lg border border-zinc-100 bg-zinc-50 px-2 py-1">
+                          <div className="flex items-center gap-1.5">
+                            <div className="size-2 rounded-full bg-emerald-500" />
+                            <div className="h-2 w-10 rounded bg-zinc-300" />
+                          </div>
+                          <div className="h-2 w-6 rounded bg-zinc-200" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="grid size-7 place-items-center rounded-lg bg-amber-500/15 text-amber-500">
+                        <Sun className="size-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">{t('Hell')}</p>
+                      </div>
+                    </div>
+                    {!dark && (
+                      <span className="grid size-5 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                        <Check className="size-3" />
+                      </span>
+                    )}
+                  </div>
+                </button>
+
+                {/* Dunkel */}
+                <button
+                  type="button"
+                  onClick={() => setDark(true)}
+                  className={cn(
+                    'group relative flex flex-col overflow-hidden rounded-2xl border p-3.5 text-start transition-all',
+                    dark
+                      ? 'border-primary bg-primary/5 ring-2 ring-primary/20 shadow-md'
+                      : 'border-border/60 bg-card hover:border-border hover:bg-accent/40'
+                  )}
+                >
+                  <div className="relative mb-3 h-28 w-full overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 p-2 text-zinc-100 shadow-sm transition-transform group-hover:scale-[1.01]">
+                    <div className="mb-2 flex items-center gap-1.5 border-b border-zinc-800 pb-1.5">
+                      <div className="size-2 rounded-full bg-red-500/80" />
+                      <div className="size-2 rounded-full bg-amber-500/80" />
+                      <div className="size-2 rounded-full bg-emerald-500/80" />
+                      <div className="mx-auto text-[9px] font-semibold text-zinc-500 tracking-wider">SSH DECK</div>
+                    </div>
+                    <div className="flex h-[calc(100%-24px)] gap-2">
+                      <div className="flex w-12 flex-col gap-1.5 rounded-lg bg-zinc-900 p-1.5">
+                        <div className="h-2 w-full rounded bg-blue-500" />
+                        <div className="h-2 w-full rounded bg-zinc-800" />
+                        <div className="h-2 w-full rounded bg-zinc-800" />
+                      </div>
+                      <div className="flex flex-1 flex-col gap-1.5">
+                        <div className="flex items-center justify-between rounded-lg border border-zinc-800/80 bg-zinc-900/60 px-2 py-1">
+                          <div className="flex items-center gap-1.5">
+                            <div className="size-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)]" />
+                            <div className="h-2 w-12 rounded bg-zinc-700" />
+                          </div>
+                          <div className="h-2 w-6 rounded bg-zinc-800" />
+                        </div>
+                        <div className="flex items-center justify-between rounded-lg border border-zinc-800/80 bg-zinc-900/60 px-2 py-1">
+                          <div className="flex items-center gap-1.5">
+                            <div className="size-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)]" />
+                            <div className="h-2 w-10 rounded bg-zinc-700" />
+                          </div>
+                          <div className="h-2 w-6 rounded bg-zinc-800" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="grid size-7 place-items-center rounded-lg bg-blue-500/15 text-blue-400">
+                        <Moon className="size-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">{t('Dunkel')}</p>
+                      </div>
+                    </div>
+                    {dark && (
+                      <span className="grid size-5 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                        <Check className="size-3" />
+                      </span>
+                    )}
+                  </div>
+                </button>
+              </div>
             </div>
-            <div className={cn(row, 'mhide')}>
-              <div><p className="text-sm font-medium">{t('Seitenleiste')}</p><p className="text-xs text-muted-foreground">{t('Stil der linken Navigation')}</p></div>
-              {seg([['compact', t('Kompakt')], ['wide', t('Breit')], ['float', t('Schwebend')]], side, setSide)}
+
+            {/* 2. Seitenleisten-Stil mit Vorschau-Mockups */}
+            <div className={cn('space-y-3', 'mhide')}>
+              <div>
+                <h3 className="text-sm font-semibold">{t('Seitenleiste')}</h3>
+                <p className="text-xs text-muted-foreground">{t('Stil der linken Navigation')}</p>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {[
+                  {
+                    id: 'compact',
+                    title: t('Kompakt'),
+                    preview: (
+                      <div className="flex h-16 w-full gap-1.5 rounded-lg border bg-background/50 p-1.5">
+                        <div className="flex w-6 flex-col items-center gap-1.5 rounded bg-muted/60 py-1">
+                          <div className="size-2 rounded bg-primary" />
+                          <div className="size-2 rounded bg-muted-foreground/30" />
+                          <div className="size-2 rounded bg-muted-foreground/30" />
+                        </div>
+                        <div className="flex flex-1 flex-col gap-1 rounded bg-muted/20 p-1">
+                          <div className="h-1.5 w-1/2 rounded bg-muted-foreground/30" />
+                          <div className="h-5 rounded border border-border/40 bg-card/60" />
+                        </div>
+                      </div>
+                    ),
+                  },
+                  {
+                    id: 'wide',
+                    title: t('Breit'),
+                    preview: (
+                      <div className="flex h-16 w-full gap-1.5 rounded-lg border bg-background/50 p-1.5">
+                        <div className="flex w-14 flex-col gap-1.5 rounded bg-muted/60 p-1">
+                          <div className="flex items-center gap-1"><div className="size-1.5 rounded bg-primary" /><div className="h-1 w-7 rounded bg-primary/70" /></div>
+                          <div className="flex items-center gap-1"><div className="size-1.5 rounded bg-muted-foreground/30" /><div className="h-1 w-6 rounded bg-muted-foreground/20" /></div>
+                          <div className="flex items-center gap-1"><div className="size-1.5 rounded bg-muted-foreground/30" /><div className="h-1 w-8 rounded bg-muted-foreground/20" /></div>
+                        </div>
+                        <div className="flex flex-1 flex-col gap-1 rounded bg-muted/20 p-1">
+                          <div className="h-1.5 w-1/2 rounded bg-muted-foreground/30" />
+                          <div className="h-5 rounded border border-border/40 bg-card/60" />
+                        </div>
+                      </div>
+                    ),
+                  },
+                  {
+                    id: 'float',
+                    title: t('Schwebend'),
+                    preview: (
+                      <div className="relative flex h-16 w-full gap-1.5 rounded-lg border bg-background/50 p-1.5">
+                        <div className="my-0.5 flex w-10 flex-col items-center gap-1 rounded-lg border border-border/80 bg-card shadow-sm py-1">
+                          <div className="size-2 rounded bg-primary" />
+                          <div className="size-2 rounded bg-muted-foreground/30" />
+                          <div className="size-2 rounded bg-muted-foreground/30" />
+                        </div>
+                        <div className="flex flex-1 flex-col gap-1 rounded bg-muted/20 p-1">
+                          <div className="h-1.5 w-1/2 rounded bg-muted-foreground/30" />
+                          <div className="h-5 rounded border border-border/40 bg-card/60" />
+                        </div>
+                      </div>
+                    ),
+                  },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setSide(item.id)}
+                    className={cn(
+                      'group relative flex flex-col justify-between overflow-hidden rounded-2xl border p-3 text-start transition-all',
+                      side === item.id
+                        ? 'border-primary bg-primary/5 ring-2 ring-primary/20 shadow-sm'
+                        : 'border-border/60 bg-card hover:border-border hover:bg-accent/40'
+                    )}
+                  >
+                    <div className="mb-2.5 transition-transform group-hover:scale-[1.01]">{item.preview}</div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold">{item.title}</p>
+                      </div>
+                      {side === item.id && (
+                        <span className="grid size-4 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                          <Check className="size-2.5" />
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className={row}>
-              <div><p className="text-sm font-medium">{t('Animationen')}</p><p className="text-xs text-muted-foreground">{t('Glow bei Hosts und Gruppen sowie Übergänge')}</p></div>
-              {seg([['on', t('An')], ['off', t('Aus')]], anim, pickAnim)}
+
+            {/* 3. Animationen & Glow-Effekte */}
+            <div className="space-y-3">
+              <div>
+                <h3 className="text-sm font-semibold">{t('Animationen')}</h3>
+                <p className="text-xs text-muted-foreground">{t('Glow bei Hosts und Gruppen sowie Übergänge')}</p>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => pickAnim('on')}
+                  className={cn(
+                    'group relative flex flex-col justify-between overflow-hidden rounded-2xl border p-3.5 text-start transition-all',
+                    anim === 'on'
+                      ? 'border-primary bg-primary/5 ring-2 ring-primary/20 shadow-sm'
+                      : 'border-border/60 bg-card hover:border-border hover:bg-accent/40'
+                  )}
+                >
+                  <div className="mb-3 flex h-16 w-full items-center justify-center rounded-xl border border-primary/40 bg-card/80 p-3 shadow-[0_0_15px_rgba(59,130,246,0.25)] transition-all">
+                    <div className="flex items-center gap-2.5">
+                      <div className="size-3 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.7)]" />
+                      <div className="space-y-1">
+                        <div className="h-2 w-24 rounded bg-primary/80 animate-pulse" />
+                        <div className="h-1.5 w-16 rounded bg-muted-foreground/40" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="grid size-7 place-items-center rounded-lg bg-emerald-500/15 text-emerald-500">
+                        <Sparkles className="size-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">{t('An')}</p>
+                      </div>
+                    </div>
+                    {anim === 'on' && (
+                      <span className="grid size-5 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                        <Check className="size-3" />
+                      </span>
+                    )}
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => pickAnim('off')}
+                  className={cn(
+                    'group relative flex flex-col justify-between overflow-hidden rounded-2xl border p-3.5 text-start transition-all',
+                    anim === 'off'
+                      ? 'border-primary bg-primary/5 ring-2 ring-primary/20 shadow-sm'
+                      : 'border-border/60 bg-card hover:border-border hover:bg-accent/40'
+                  )}
+                >
+                  <div className="mb-3 flex h-16 w-full items-center justify-center rounded-xl border border-border bg-card/40 p-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="size-3 rounded-full bg-emerald-500" />
+                      <div className="space-y-1">
+                        <div className="h-2 w-24 rounded bg-zinc-400" />
+                        <div className="h-1.5 w-16 rounded bg-muted-foreground/30" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="grid size-7 place-items-center rounded-lg bg-muted text-muted-foreground">
+                        <ZapOff className="size-4" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">{t('Aus')}</p>
+                      </div>
+                    </div>
+                    {anim === 'off' && (
+                      <span className="grid size-5 place-items-center rounded-full bg-primary text-primary-foreground shadow-sm">
+                        <Check className="size-3" />
+                      </span>
+                    )}
+                  </div>
+                </button>
+              </div>
             </div>
-          </>
+
+            {/* 4. Terminal-Farbschemata mit echten Terminal-Preview-Fenstern */}
+            <div className="space-y-3 pt-2 border-t">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
+                    <Palette className="size-4 text-primary" />
+                    {t('Terminal-Themes')}
+                  </h3>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {[{ id: 'auto', name: t('Automatisch (App-Design)'), theme: dark ? AUTO.dark : AUTO.light }, ...THEMES].map((x) => {
+                  const isSelected = currentTheme === x.id;
+                  const th = x.theme;
+                  return (
+                    <button
+                      key={x.id}
+                      type="button"
+                      onClick={() => pickTheme(x.id)}
+                      className={cn(
+                        'group relative flex flex-col overflow-hidden rounded-2xl border text-start transition-all',
+                        isSelected
+                          ? 'border-primary ring-2 ring-primary/25 shadow-md scale-[1.01]'
+                          : 'border-border/60 hover:border-border hover:bg-card/60'
+                      )}
+                    >
+                      {/* Theme Header */}
+                      <div className="flex items-center justify-between border-b bg-card/80 px-3 py-2 text-xs font-semibold backdrop-blur">
+                        <span className="truncate">{x.name}</span>
+                        {isSelected && (
+                          <span className="grid size-4 place-items-center rounded-full bg-primary text-primary-foreground">
+                            <Check className="size-2.5" />
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Mini Terminal Preview */}
+                      <div className="p-3 font-mono text-[11px] leading-tight flex-1 flex flex-col justify-between" style={{ background: th.background, color: th.foreground }}>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1 opacity-90 text-[10px]">
+                            <span style={{ color: th.green ?? '#22c55e' }}>deck@server</span>
+                            <span>:</span>
+                            <span style={{ color: th.blue ?? '#3b82f6' }}>~</span>
+                            <span>$ uptime</span>
+                          </div>
+                          <div className="text-[10px] opacity-80 pl-1 flex items-center gap-1.5">
+                            <span className="size-1.5 rounded-full" style={{ background: th.green ?? '#22c55e' }} />
+                            <span>up 34d, 0.08 load</span>
+                          </div>
+                        </div>
+
+                        {/* Palette Color Dots */}
+                        <div className="mt-3 flex items-center gap-1 pt-1.5 border-t border-white/10">
+                          {[th.black, th.red, th.green, th.yellow, th.blue, th.magenta, th.cyan, th.white].filter(Boolean).map((col, idx) => (
+                            <span key={idx} className="size-2 rounded-full shadow-sm" style={{ background: col }} />
+                          ))}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 5. Terminal-Typografie & Schriftart-Vorschau */}
+            <div className="space-y-3 pt-2 border-t">
+              <div>
+                <h3 className="text-sm font-semibold flex items-center gap-2">
+                  <Type className="size-4 text-primary" />
+                  {t('Schriftart')}
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className={cn(row, 'flex-col items-stretch')}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">{t('Schriftart')}</p>
+                    </div>
+                  </div>
+                  <Select value={currentFont.family} onValueChange={(v) => pickFont({ ...currentFont, family: v })}>
+                    <SelectTrigger className="h-9 w-full mt-2"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {FONTS.map(([v, n]) => (
+                        <SelectItem key={v} value={v}>
+                          <span style={{ fontFamily: v }}>{n}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className={cn(row, 'flex-col items-stretch')}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">{t('Schriftgröße')}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        className="grid size-8 place-items-center rounded-lg border hover:bg-accent transition-colors"
+                        onClick={() => pickFont({ ...currentFont, size: Math.max(9, currentFont.size - 1) })}
+                      >
+                        <Minus className="size-3.5" />
+                      </button>
+                      <span className="w-8 text-center font-mono text-sm font-semibold tabular-nums">{currentFont.size}px</span>
+                      <button
+                        type="button"
+                        className="grid size-8 place-items-center rounded-lg border hover:bg-accent transition-colors"
+                        onClick={() => pickFont({ ...currentFont, size: Math.min(28, currentFont.size + 1) })}
+                      >
+                        <Plus className="size-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Live Typography Code Box */}
+              <div
+                className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-zinc-100 shadow-inner"
+                style={{ fontFamily: currentFont.family, fontSize: `${currentFont.size}px`, lineHeight: 1.5 }}
+              >
+                <div className="mb-2 flex items-center justify-between border-b border-zinc-800/80 pb-2 text-[11px] font-sans text-zinc-400 select-none">
+                  <span className="flex items-center gap-1.5">
+                    <span className="size-2 rounded-full bg-emerald-500 inline-block" />
+                    Live Terminal Vorschau
+                  </span>
+                  <span>{currentFont.family.replace(/"/g, '').split(',')[0]} · {currentFont.size}px</span>
+                </div>
+                <div className="overflow-x-auto [scrollbar-width:none]">
+                  <div><span className="text-purple-400">const</span> sshDeck = <span className="text-blue-400">await</span> connect({'{'} host: <span className="text-emerald-400">"10.0.0.51"</span>, port: <span className="text-amber-400">22</span> {'}'});</div>
+                  <div><span className="text-purple-400">if</span> (sshDeck.connected) console.<span className="text-amber-300">log</span>(<span className="text-emerald-400">"=&gt; Online [Latency: 4.2ms] != null"</span>);</div>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
         {tab === 'features' && (
           <>
