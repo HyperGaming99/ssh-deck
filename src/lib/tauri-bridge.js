@@ -1,6 +1,8 @@
 // Tauri Bridge: initialisiert window.api und globalThis.api, wenn die App innerhalb von Tauri oder Web läuft
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import * as dockerTools from './docker-tools.js';
+import * as k8sTools from './k8s-tools.js';
 
 const mapCollectionName = (n) => {
   if (n === 'fwd' || n === 'forwards') return 'forwards';
@@ -96,6 +98,15 @@ function detectInitialPlatform() {
 }
 
 const DEFAULT_SERVER = 'https://ssh.arolg.dev';
+
+const execRemoteOrLocal = async (hostId, cmd) => {
+  try {
+    const res = await invoke('exec_remote_or_local', { hostId: hostId || null, cmd });
+    return res;
+  } catch (e) {
+    return { code: 1, stdout: '', stderr: e?.message || String(e), error: e?.message || String(e) };
+  }
+};
 
 export function createTauriBridge() {
   const isTauri = typeof window !== 'undefined' && (!!window.__TAURI_INTERNALS__ || !!window.__TAURI__);
@@ -222,13 +233,26 @@ export function createTauriBridge() {
     forwards: coll('forwards'),
     fwd: {
       ...coll('fwd'),
-      toggle: async () => true,
+      toggle: async (id) => {
+        try {
+          await invoke('fwd_toggle', { id });
+          return null;
+        } catch (e) {
+          return e?.message || String(e);
+        }
+      },
     },
     keys: {
       ...coll('keys'),
       create: async () => ({ id: 'k_' + Date.now() }),
       generate: async (o) => ({ id: 'k_' + Date.now(), name: o?.name || 'Generated Key', type: o?.type || 'ed25519' }),
-      rescan: async () => 0,
+      rescan: async () => {
+        try {
+          return await invoke('keys_rescan');
+        } catch {
+          return 0;
+        }
+      },
       setPassphrase: async () => {},
       import: async (o) => ({ id: 'k_' + Date.now(), ...o }),
       rename: async (id, name) => {
@@ -246,7 +270,13 @@ export function createTauriBridge() {
         return await coll('keys').save(copyItem);
       },
       exportPrivate: async () => null,
-      toHost: async () => null,
+      toHost: async (keyId, hostId) => {
+        try {
+          return await invoke('keys_to_host', { keyId, hostId });
+        } catch (e) {
+          return e?.message || String(e);
+        }
+      },
       readPublic: async () => '',
     },
     known: {
@@ -391,20 +421,49 @@ export function createTauriBridge() {
         } catch {}
         return { path: d || '/', entries: [] };
       },
-      mkdir: async () => {},
-      rename: async () => {},
-      chmod: async () => {},
+      mkdir: async (p) => {
+        try {
+          await invoke('local_mkdir', { path: p });
+        } catch {}
+      },
+      rename: async (a, b) => {
+        try {
+          await invoke('local_rename', { oldPath: a, newPath: b });
+        } catch {}
+      },
+      chmod: async (p, mode) => {
+        try {
+          await invoke('local_chmod', { path: p, mode: Number(mode) });
+        } catch {}
+      },
       archive: async () => '',
       extract: async () => {},
-      remove: async () => {},
+      remove: async (p) => {
+        try {
+          await invoke('local_remove', { path: p });
+        } catch {}
+      },
       open: async () => {},
     },
     editors: {
-      list: async () => [],
+      list: async () => [
+        { cmd: 'code', name: 'VS Code' },
+        { cmd: 'gedit', name: 'Gedit' },
+        { cmd: 'nano', name: 'Nano' },
+        { cmd: 'vim', name: 'Vim' },
+      ],
       pick: async () => '',
     },
     tor: {
-      test: async () => ({ state: 'ok', ip: '127.0.0.1' }),
+      test: async () => {
+        try {
+          const res = await fetch('https://check.torproject.org/api/ip', { cache: 'no-store' });
+          const json = await res.json();
+          return { state: json.IsTor ? 'ok' : 'notor', ip: json.IP || '127.0.0.1' };
+        } catch {
+          return { state: 'ok', ip: '127.0.0.1' };
+        }
+      },
     },
     kc: {
       status: async () => ({ active: false }),
@@ -419,30 +478,138 @@ export function createTauriBridge() {
       set: async () => {},
     },
     docker: {
-      overview: async () => ({ containers: [], images: [], volumes: [], networks: [], info: {} }),
-      start: async () => {},
-      stop: async () => {},
-      restart: async () => {},
-      pause: async () => {},
-      unpause: async () => {},
-      remove: async () => {},
-      logs: async () => '',
-      inspect: async () => '{}',
-      run: async () => {},
-      pull: async () => {},
-      removeImage: async () => {},
-      removeVolume: async () => {},
-      removeNetwork: async () => {},
-      prune: async () => {},
+      overview: async (hostId) => {
+        const res = await execRemoteOrLocal(hostId, dockerTools.overviewCmd());
+        if (res.error) throw new Error(res.error);
+        const parsed = dockerTools.parseOverview(res.stdout);
+        if (!parsed) throw new Error(res.stderr || 'Kein Docker-Daemon gefunden oder keine Berechtigung.');
+        return parsed;
+      },
+      start: async (hostId, spec) => {
+        const res = await execRemoteOrLocal(hostId, dockerTools.startCmd(spec));
+        if (res.error) throw new Error(res.error);
+        if (res.code !== 0) throw new Error(res.stderr || 'Starten fehlgeschlagen');
+        return res.stdout;
+      },
+      stop: async (hostId, spec) => {
+        const res = await execRemoteOrLocal(hostId, dockerTools.stopCmd(spec));
+        if (res.error) throw new Error(res.error);
+        if (res.code !== 0) throw new Error(res.stderr || 'Stoppen fehlgeschlagen');
+        return res.stdout;
+      },
+      restart: async (hostId, spec) => {
+        const res = await execRemoteOrLocal(hostId, dockerTools.restartCmd(spec));
+        if (res.error) throw new Error(res.error);
+        if (res.code !== 0) throw new Error(res.stderr || 'Neustart fehlgeschlagen');
+        return res.stdout;
+      },
+      pause: async (hostId, spec) => {
+        const res = await execRemoteOrLocal(hostId, dockerTools.pauseCmd(spec));
+        if (res.error) throw new Error(res.error);
+        if (res.code !== 0) throw new Error(res.stderr || 'Pausieren fehlgeschlagen');
+        return res.stdout;
+      },
+      unpause: async (hostId, spec) => {
+        const res = await execRemoteOrLocal(hostId, dockerTools.unpauseCmd(spec));
+        if (res.error) throw new Error(res.error);
+        if (res.code !== 0) throw new Error(res.stderr || 'Fortsetzen fehlgeschlagen');
+        return res.stdout;
+      },
+      remove: async (hostId, spec) => {
+        const res = await execRemoteOrLocal(hostId, dockerTools.removeCmd(spec));
+        if (res.error) throw new Error(res.error);
+        if (res.code !== 0) throw new Error(res.stderr || 'Löschen fehlgeschlagen');
+        return res.stdout;
+      },
+      logs: async (hostId, spec) => {
+        const res = await execRemoteOrLocal(hostId, dockerTools.logsCmd(spec));
+        if (res.error) throw new Error(res.error);
+        return res.stdout || res.stderr || 'Keine Logs vorhanden';
+      },
+      inspect: async (hostId, spec) => {
+        const res = await execRemoteOrLocal(hostId, dockerTools.inspectCmd(spec));
+        if (res.error) throw new Error(res.error);
+        return res.stdout;
+      },
+      run: async (hostId, spec) => {
+        const res = await execRemoteOrLocal(hostId, dockerTools.runCmd(spec));
+        if (res.error) throw new Error(res.error);
+        if (res.code !== 0) throw new Error(res.stderr || 'Container-Erstellung fehlgeschlagen');
+        return res.stdout;
+      },
+      pull: async (hostId, spec) => {
+        const res = await execRemoteOrLocal(hostId, dockerTools.pullCmd(spec));
+        if (res.error) throw new Error(res.error);
+        if (res.code !== 0) throw new Error(res.stderr || 'Pull fehlgeschlagen');
+        return res.stdout;
+      },
+      removeImage: async (hostId, spec) => {
+        const res = await execRemoteOrLocal(hostId, dockerTools.removeImageCmd(spec));
+        if (res.error) throw new Error(res.error);
+        if (res.code !== 0) throw new Error(res.stderr || 'Image löschen fehlgeschlagen');
+        return res.stdout;
+      },
+      removeVolume: async (hostId, spec) => {
+        const res = await execRemoteOrLocal(hostId, dockerTools.removeVolumeCmd(spec));
+        if (res.error) throw new Error(res.error);
+        if (res.code !== 0) throw new Error(res.stderr || 'Volume löschen fehlgeschlagen');
+        return res.stdout;
+      },
+      removeNetwork: async (hostId, spec) => {
+        const res = await execRemoteOrLocal(hostId, dockerTools.removeNetworkCmd(spec));
+        if (res.error) throw new Error(res.error);
+        if (res.code !== 0) throw new Error(res.stderr || 'Netzwerk löschen fehlgeschlagen');
+        return res.stdout;
+      },
+      prune: async (hostId, spec) => {
+        const res = await execRemoteOrLocal(hostId, dockerTools.pruneCmd(spec));
+        if (res.error) throw new Error(res.error);
+        if (res.code !== 0) throw new Error(res.stderr || 'Bereinigen fehlgeschlagen');
+        return res.stdout;
+      },
     },
     k8s: {
-      overview: async () => ({ nodes: [], pods: [], deployments: [], services: [], namespaces: [] }),
-      run: async () => {},
-      scale: async () => {},
-      restart: async () => {},
-      delete: async () => {},
-      logs: async () => '',
-      describe: async () => '',
+      overview: async (hostId) => {
+        const res = await execRemoteOrLocal(hostId, k8sTools.overviewCmd());
+        if (res.error) throw new Error(res.error);
+        const parsed = k8sTools.parseOverview(res.stdout);
+        if (!parsed) throw new Error(res.stderr || 'Kein Kubernetes-Cluster gefunden oder kubectl nicht verfügbar.');
+        return parsed;
+      },
+      run: async (hostId, spec) => {
+        const res = await execRemoteOrLocal(hostId, k8sTools.runCmd(spec));
+        if (res.error) throw new Error(res.error);
+        if (res.code !== 0) throw new Error(res.stderr || 'Erstellung fehlgeschlagen');
+        return res.stdout;
+      },
+      scale: async (hostId, spec) => {
+        const res = await execRemoteOrLocal(hostId, k8sTools.scaleCmd(spec));
+        if (res.error) throw new Error(res.error);
+        if (res.code !== 0) throw new Error(res.stderr || 'Skalieren fehlgeschlagen');
+        return res.stdout;
+      },
+      restart: async (hostId, spec) => {
+        const res = await execRemoteOrLocal(hostId, k8sTools.restartCmd(spec));
+        if (res.error) throw new Error(res.error);
+        if (res.code !== 0) throw new Error(res.stderr || 'Neustart fehlgeschlagen');
+        return res.stdout;
+      },
+      delete: async (hostId, spec) => {
+        const res = await execRemoteOrLocal(hostId, k8sTools.deleteCmd(spec));
+        if (res.error) throw new Error(res.error);
+        if (res.code !== 0) throw new Error(res.stderr || 'Löschen fehlgeschlagen');
+        return res.stdout;
+      },
+      logs: async (hostId, spec) => {
+        const res = await execRemoteOrLocal(hostId, k8sTools.logsCmd(spec));
+        if (res.error) throw new Error(res.error);
+        return res.stdout || res.stderr || 'Keine Logs vorhanden';
+      },
+      describe: async (hostId, spec) => {
+        const res = await execRemoteOrLocal(hostId, k8sTools.describeCmd(spec));
+        if (res.error) throw new Error(res.error);
+        return res.stdout || res.stderr || '';
+      },
     },
     share: {
       start: async () => ({ active: false }),

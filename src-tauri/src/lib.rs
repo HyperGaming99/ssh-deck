@@ -30,6 +30,14 @@ pub struct LocalListResult {
     pub entries: Vec<FileEntry>,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ExecResult {
+    pub code: i32,
+    pub stdout: String,
+    pub stderr: String,
+    pub error: Option<String>,
+}
+
 #[derive(Serialize, Clone, Debug)]
 pub struct SshDataPayload {
     pub sid: String,
@@ -54,6 +62,9 @@ struct PtySession {
 }
 
 static SESSIONS: std::sync::LazyLock<Mutex<HashMap<String, PtySession>>> =
+    std::sync::LazyLock::new(|| Mutex::new(HashMap::new()));
+
+static FORWARDS: std::sync::LazyLock<Mutex<HashMap<String, std::process::Child>>> =
     std::sync::LazyLock::new(|| Mutex::new(HashMap::new()));
 
 fn get_deck_data_dir() -> PathBuf {
@@ -99,6 +110,280 @@ fn deck_store_write(collection: String, data: serde_json::Value) -> Result<(), S
     let content = serde_json::to_string_pretty(&data).map_err(|e| e.to_string())?;
     std::fs::write(&file, content).map_err(|e| e.to_string())?;
     Ok(())
+}
+
+#[tauri::command]
+fn exec_remote_or_local(host_id: Option<String>, cmd: String) -> Result<ExecResult, String> {
+    if host_id.is_none() || host_id.as_deref() == Some("local") || host_id.as_deref() == Some("") {
+        let output = std::process::Command::new("sh")
+            .arg("-c")
+            .arg(&cmd)
+            .output()
+            .map_err(|e| e.to_string())?;
+
+        return Ok(ExecResult {
+            code: output.status.code().unwrap_or(0),
+            stdout: String::from_utf8_lossy(&output.stdout).to_string(),
+            stderr: String::from_utf8_lossy(&output.stderr).to_string(),
+            error: None,
+        });
+    }
+
+    let hid = host_id.unwrap();
+    let hosts_val = deck_store_read("hosts".into()).map_err(|e| e.to_string())?;
+    let hosts_arr = hosts_val.as_array().ok_or("hosts is not an array")?;
+    let host_obj = hosts_arr
+        .iter()
+        .find(|h| h.get("id").and_then(|v| v.as_str()) == Some(&hid))
+        .ok_or("Host not found")?;
+
+    let host_str = host_obj.get("host").and_then(|v| v.as_str()).unwrap_or("");
+    let port = host_obj.get("port").and_then(|v| v.as_u64()).unwrap_or(22);
+    let user = host_obj.get("user").and_then(|v| v.as_str()).unwrap_or("");
+    let key_id = host_obj.get("keyId").and_then(|v| v.as_str()).unwrap_or("");
+
+    let mut key_path: Option<String> = None;
+    if !key_id.is_empty() {
+        if let Ok(keys_val) = deck_store_read("keys".into()) {
+            if let Some(keys_arr) = keys_val.as_array() {
+                if let Some(k) = keys_arr.iter().find(|k| k.get("id").and_then(|v| v.as_str()) == Some(key_id)) {
+                    if let Some(p) = k.get("path").and_then(|v| v.as_str()) {
+                        if !p.is_empty() {
+                            key_path = Some(p.to_string());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let mut command = std::process::Command::new("ssh");
+    command.arg("-p").arg(port.to_string());
+    command.arg("-o").arg("StrictHostKeyChecking=accept-new");
+    command.arg("-o").arg("BatchMode=yes");
+    command.arg("-o").arg("ConnectTimeout=5");
+    if let Some(ref kp) = key_path {
+        command.arg("-i").arg(kp);
+    }
+    if !user.is_empty() {
+        command.arg(format!("{}@{}", user, host_str));
+    } else {
+        command.arg(host_str);
+    }
+    command.arg(&cmd);
+
+    let output = command.output().map_err(|e| e.to_string())?;
+    Ok(ExecResult {
+        code: output.status.code().unwrap_or(0),
+        stdout: String::from_utf8_lossy(&output.stdout).to_string(),
+        stderr: String::from_utf8_lossy(&output.stderr).to_string(),
+        error: None,
+    })
+}
+
+#[tauri::command]
+fn local_mkdir(path: String) -> Result<(), String> {
+    std::fs::create_dir_all(&path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn local_rename(old_path: String, new_path: String) -> Result<(), String> {
+    std::fs::rename(&old_path, &new_path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn local_remove(path: String) -> Result<(), String> {
+    let p = std::path::Path::new(&path);
+    if p.is_dir() {
+        std::fs::remove_dir_all(p).map_err(|e| e.to_string())
+    } else {
+        std::fs::remove_file(p).map_err(|e| e.to_string())
+    }
+}
+
+#[tauri::command]
+fn local_chmod(path: String, mode: u32) -> Result<(), String> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let perm = std::fs::Permissions::from_mode(mode & 0o777);
+        std::fs::set_permissions(&path, perm).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn keys_rescan() -> Result<usize, String> {
+    let home = std::env::var("HOME").map_err(|e| e.to_string())?;
+    let ssh_dir = PathBuf::from(&home).join(".ssh");
+    if !ssh_dir.exists() {
+        return Ok(0);
+    }
+
+    let mut keys_val = deck_store_read("keys".into()).unwrap_or(serde_json::json!([]));
+    let mut keys_list = keys_val.as_array().cloned().unwrap_or_default();
+
+    let mut known_paths: std::collections::HashSet<String> = keys_list
+        .iter()
+        .filter_map(|k| k.get("path").and_then(|v| v.as_str()).map(|s| s.to_string()))
+        .collect();
+
+    let mut added = 0;
+    if let Ok(rd) = std::fs::read_dir(&ssh_dir) {
+        for entry in rd.flatten() {
+            let file_name = entry.file_name().to_string_lossy().to_string();
+            let path = entry.path();
+            if file_name.ends_with(".pub") || !path.is_file() {
+                continue;
+            }
+            let path_str = path.to_string_lossy().to_string();
+            if known_paths.contains(&path_str) {
+                continue;
+            }
+
+            let pub_path = PathBuf::from(format!("{}.pub", path_str));
+            let pub_content = if pub_path.exists() {
+                std::fs::read_to_string(&pub_path).unwrap_or_default().trim().to_string()
+            } else {
+                String::new()
+            };
+
+            let key_type = if pub_content.contains("ssh-ed25519") {
+                "ssh-ed25519"
+            } else if pub_content.contains("ssh-rsa") {
+                "ssh-rsa"
+            } else if pub_content.contains("ecdsa") {
+                "ecdsa-sha2-nistp256"
+            } else {
+                "ssh-ed25519"
+            };
+
+            let new_key = serde_json::json!({
+                "id": format!("k_{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis()),
+                "name": file_name,
+                "source": "imported",
+                "path": path_str.clone(),
+                "type": key_type,
+                "publicKey": pub_content,
+                "encrypted": false,
+                "cloud": false,
+                "updatedAt": std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis(),
+            });
+
+            known_paths.insert(path_str);
+            keys_list.push(new_key);
+            added += 1;
+        }
+    }
+
+    if added > 0 {
+        deck_store_write("keys".into(), serde_json::Value::Array(keys_list))?;
+    }
+
+    Ok(added)
+}
+
+#[tauri::command]
+fn keys_to_host(key_id: String, host_id: String) -> Result<String, String> {
+    let hosts_val = deck_store_read("hosts".into()).map_err(|e| e.to_string())?;
+    let hosts_arr = hosts_val.as_array().ok_or("hosts is not an array")?;
+    let host_obj = hosts_arr
+        .iter()
+        .find(|h| h.get("id").and_then(|v| v.as_str()) == Some(&host_id))
+        .ok_or("Host not found")?;
+
+    let host_str = host_obj.get("host").and_then(|v| v.as_str()).unwrap_or("");
+    let port = host_obj.get("port").and_then(|v| v.as_u64()).unwrap_or(22);
+    let user = host_obj.get("user").and_then(|v| v.as_str()).unwrap_or("");
+
+    let keys_val = deck_store_read("keys".into()).map_err(|e| e.to_string())?;
+    let keys_arr = keys_val.as_array().ok_or("keys is not an array")?;
+    let key_obj = keys_arr
+        .iter()
+        .find(|k| k.get("id").and_then(|v| v.as_str()) == Some(&key_id))
+        .ok_or("Key not found")?;
+
+    let key_path = key_obj.get("path").and_then(|v| v.as_str()).unwrap_or("");
+    let pub_key = key_obj.get("publicKey").and_then(|v| v.as_str()).unwrap_or("");
+
+    if key_path.is_empty() && pub_key.is_empty() {
+        return Err("Kein öffentlicher Schlüssel vorhanden".into());
+    }
+
+    let target = if user.is_empty() { host_str.to_string() } else { format!("{}@{}", user, host_str) };
+
+    let mut cmd = std::process::Command::new("ssh-copy-id");
+    cmd.arg("-p").arg(port.to_string());
+    if !key_path.is_empty() {
+        cmd.arg("-i").arg(key_path);
+    }
+    cmd.arg(&target);
+
+    let output = cmd.output().map_err(|e| e.to_string())?;
+    if output.status.success() {
+        Ok("Schlüssel erfolgreich auf dem Host installiert.".into())
+    } else {
+        let err_msg = String::from_utf8_lossy(&output.stderr).to_string();
+        Err(if err_msg.is_empty() { "Installation fehlgeschlagen".into() } else { err_msg })
+    }
+}
+
+#[tauri::command]
+fn fwd_toggle(id: String) -> Result<bool, String> {
+    let mut fwds = FORWARDS.lock().unwrap();
+    if let Some(mut child) = fwds.remove(&id) {
+        let _ = child.kill();
+        return Ok(false);
+    }
+
+    let fwd_val = deck_store_read("forwards".into()).map_err(|e| e.to_string())?;
+    let fwd_arr = fwd_val.as_array().ok_or("forwards is not an array")?;
+    let rule = fwd_arr
+        .iter()
+        .find(|r| r.get("id").and_then(|v| v.as_str()) == Some(&id))
+        .ok_or("Forward rule not found")?;
+
+    let host_id = rule.get("hostId").and_then(|v| v.as_str()).unwrap_or("");
+    let fwd_type = rule.get("type").and_then(|v| v.as_str()).unwrap_or("local");
+    let local_port = rule.get("localPort").and_then(|v| v.as_u64()).unwrap_or(0);
+    let remote_port = rule.get("remotePort").and_then(|v| v.as_u64()).unwrap_or(0);
+    let remote_host = rule.get("remoteHost").and_then(|v| v.as_str()).unwrap_or("127.0.0.1");
+
+    let hosts_val = deck_store_read("hosts".into()).map_err(|e| e.to_string())?;
+    let hosts_arr = hosts_val.as_array().ok_or("hosts is not an array")?;
+    let host_obj = hosts_arr
+        .iter()
+        .find(|h| h.get("id").and_then(|v| v.as_str()) == Some(host_id))
+        .ok_or("Host not found")?;
+
+    let host_str = host_obj.get("host").and_then(|v| v.as_str()).unwrap_or("");
+    let port = host_obj.get("port").and_then(|v| v.as_u64()).unwrap_or(22);
+    let user = host_obj.get("user").and_then(|v| v.as_str()).unwrap_or("");
+
+    let mut cmd = std::process::Command::new("ssh");
+    cmd.arg("-N");
+    cmd.arg("-p").arg(port.to_string());
+    cmd.arg("-o").arg("StrictHostKeyChecking=accept-new");
+
+    match fwd_type {
+        "remote" => {
+            cmd.arg("-R").arg(format!("{}:{}:{}", remote_port, remote_host, local_port));
+        }
+        "dynamic" => {
+            cmd.arg("-D").arg(local_port.to_string());
+        }
+        _ => {
+            cmd.arg("-L").arg(format!("{}:{}:{}", local_port, remote_host, remote_port));
+        }
+    }
+
+    let target = if user.is_empty() { host_str.to_string() } else { format!("{}@{}", user, host_str) };
+    cmd.arg(&target);
+
+    let child = cmd.spawn().map_err(|e| e.to_string())?;
+    fwds.insert(id, child);
+
+    Ok(true)
 }
 
 #[tauri::command]
@@ -396,6 +681,14 @@ pub fn run() {
             get_platform,
             hosts_ping,
             local_list,
+            local_mkdir,
+            local_rename,
+            local_remove,
+            local_chmod,
+            exec_remote_or_local,
+            keys_rescan,
+            keys_to_host,
+            fwd_toggle,
             deck_store_read,
             deck_store_write,
             ssh_open,
