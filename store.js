@@ -15,13 +15,41 @@ const plain = (file) => {
   return {
     raw: () => all().map((r) => (r.updatedAt ? r : { ...r, updatedAt: 1 })), // alte Einträge ohne Zeitstempel zählen als älteste
     setRaw: (arr) => wr(file, arr),
-    list: () => all().filter((r) => !r.deleted),
+    list: () => {
+      const items = all().filter((r) => !r.deleted);
+      return items.sort((a, b) => {
+        const oa = typeof a.order === 'number' ? a.order : Infinity;
+        const ob = typeof b.order === 'number' ? b.order : Infinity;
+        if (oa !== ob) return oa - ob;
+        return 0;
+      });
+    },
     save: (r) => {
       const rec = { ...r, id: r.id || crypto.randomUUID(), updatedAt: Date.now() };
       delete rec.deleted;
       const a = all();
       wr(file, a.some((x) => x.id === rec.id) ? a.map((x) => (x.id === rec.id ? rec : x)) : [...a, rec]);
       return rec.id;
+    },
+    reorder: (orderedIds) => {
+      const a = all();
+      const idToOrder = new Map(orderedIds.map((id, idx) => [id, idx]));
+      let changed = false;
+      const now = Date.now();
+      for (const item of a) {
+        if (idToOrder.has(item.id)) {
+          const newOrder = idToOrder.get(item.id);
+          if (item.order !== newOrder) {
+            item.order = newOrder;
+            item.updatedAt = now;
+            changed = true;
+          }
+        }
+      }
+      if (changed) {
+        wr(file, a);
+      }
+      return true;
     },
     // Löschmarker behält den Tresor (vault), damit er im richtigen Tresor weitersynct
     remove: (id) => wr(file, all().map((x) => (x.id === id ? { id, deleted: true, ...(x.vault && { vault: x.vault }), ...(x.cloud && { cloud: true }), updatedAt: Date.now() } : x))),

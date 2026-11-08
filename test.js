@@ -782,6 +782,11 @@ const mock = {
   grps.save({ ...g1, color: '#ef4444', icon: 'docker' });
   assert.equal(grps.list().find((x) => x.id === id1).color, '#ef4444');
   assert.equal(grps.list().find((x) => x.id === id1).icon, 'docker');
+  // Reorder
+  grps.reorder([id2, id1]);
+  const sorted = grps.list();
+  assert.equal(sorted[0].id, id2);
+  assert.equal(sorted[1].id, id1);
   fs.rmSync(dir, { recursive: true, force: true });
   console.log('groups ok');
 })();

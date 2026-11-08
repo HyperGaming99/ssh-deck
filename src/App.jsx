@@ -140,6 +140,8 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
   const [importOpen, setImportOpen] = useState(false);
   const [draggedHost, setDraggedHost] = useState(null);
   const [dropTarget, setDropTarget] = useState(null); // { id, pos: 'before' | 'after' }
+  const [draggedGroup, setDraggedGroup] = useState(null);
+  const [groupDropTarget, setGroupDropTarget] = useState(null); // { id, pos: 'before' | 'after' }
   const [dragOverGroup, setDragOverGroup] = useState(null);
   const [dragOverBreadcrumb, setDragOverBreadcrumb] = useState(false);
   const load = useCallback(() => { api.hosts.list().then((l) => setHosts(l.filter((h) => inV(h, vault)))); api.groups.list().then((l) => setGroups(l.filter((g) => inV(g, vault)))); }, [vault]);
@@ -164,11 +166,36 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
     load();
   };
 
+  const reorderGroup = async (sourceId, targetId, pos = 'before') => {
+    const currentGroups = [...groups];
+    const sIdx = currentGroups.findIndex((g) => g.id === sourceId);
+    const tIdx = currentGroups.findIndex((g) => g.id === targetId);
+    if (sIdx === -1 || tIdx === -1) return;
+
+    const [moved] = currentGroups.splice(sIdx, 1);
+    const newTIdx = currentGroups.findIndex((g) => g.id === targetId);
+    const insertIdx = pos === 'after' ? newTIdx + 1 : newTIdx;
+    currentGroups.splice(insertIdx, 0, moved);
+
+    setGroups(currentGroups);
+
+    const ids = currentGroups.map((g) => g.id);
+    await api.groups.reorder(ids);
+    load();
+  };
+
   const onDragStartHost = (e, h) => {
     e.dataTransfer.setData('text/plain', h.id);
     e.dataTransfer.setData('application/x-deck-host', h.id);
     e.dataTransfer.effectAllowed = 'move';
     setDraggedHost(h);
+  };
+
+  const onDragStartGroup = (e, g) => {
+    e.dataTransfer.setData('text/plain', g.id);
+    e.dataTransfer.setData('application/x-deck-group', g.id);
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedGroup(g);
   };
 
   const onDragOverHost = (e, targetH) => {
@@ -204,24 +231,49 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
   const onDragEnd = () => {
     setDraggedHost(null);
     setDropTarget(null);
+    setDraggedGroup(null);
+    setGroupDropTarget(null);
     setDragOverGroup(null);
     setDragOverBreadcrumb(false);
   };
 
   const onDragOverGroupCard = (e, g) => {
-    if (!draggedHost) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    if (dragOverGroup !== g.id) setDragOverGroup(g.id);
+    if (draggedGroup && draggedGroup.id !== g.id) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const rect = e.currentTarget.getBoundingClientRect();
+      const midX = rect.left + rect.width / 2;
+      const pos = e.clientX < midX ? 'before' : 'after';
+      if (groupDropTarget?.id !== g.id || groupDropTarget?.pos !== pos) {
+        setGroupDropTarget({ id: g.id, pos });
+      }
+      return;
+    }
+    if (draggedHost) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (dragOverGroup !== g.id) setDragOverGroup(g.id);
+    }
   };
 
   const onDragLeaveGroupCard = (e, g) => {
     if (e.currentTarget.contains(e.relatedTarget)) return;
+    if (groupDropTarget?.id === g.id) setGroupDropTarget(null);
     if (dragOverGroup === g.id) setDragOverGroup(null);
   };
 
   const onDropGroupCard = async (e, g) => {
     e.preventDefault();
+    if (draggedGroup) {
+      const sId = draggedGroup.id;
+      const pos = groupDropTarget?.pos || 'before';
+      setDraggedGroup(null);
+      setGroupDropTarget(null);
+      if (sId && sId !== g.id) {
+        await reorderGroup(sId, g.id, pos);
+      }
+      return;
+    }
     const sId = draggedHost?.id || e.dataTransfer.getData('application/x-deck-host');
     setDraggedHost(null);
     setDropTarget(null);
@@ -468,10 +520,29 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
               {heading(t('Gruppen'))}
               {grid(groups.map((g) => {
                 const n = hosts.filter((h) => h.group === g.name).length;
+                const isGroupDragging = draggedGroup?.id === g.id;
+                const isGroupTarget = groupDropTarget?.id === g.id;
+                const canDragGroup = writable && !searching && !mobile;
                 return (
                   <Item
                     key={g.id}
                     dark={dark}
+                    leading={
+                      canDragGroup ? (
+                        <div
+                          className="drag-handle -ml-1 mr-0.5 flex shrink-0 cursor-grab items-center text-muted-foreground/35 transition-colors hover:text-foreground active:cursor-grabbing"
+                          title={t('Ziehen zum Sortieren')}
+                        >
+                          <GripVertical className="size-4" />
+                        </div>
+                      ) : null
+                    }
+                    draggable={canDragGroup}
+                    onDragStart={(e) => onDragStartGroup(e, g)}
+                    onDragOver={(e) => onDragOverGroupCard(e, g)}
+                    onDragLeave={(e) => onDragLeaveGroupCard(e, g)}
+                    onDrop={(e) => onDropGroupCard(e, g)}
+                    onDragEnd={onDragEnd}
                     icon={<GroupIcon group={g} className="size-7" />}
                     iconStyle={g.color ? {
                       backgroundColor: `${g.color}18`,
@@ -484,11 +555,10 @@ function HostsView({ dark, connect, openSftp, openForm, openHost, toast, rev }) 
                     </span>}
                     sub={t('{n} Server', { n })}
                     onClick={() => setCurrent(g.name)}
-                    onDragOver={(e) => onDragOverGroupCard(e, g)}
-                    onDragLeave={(e) => onDragLeaveGroupCard(e, g)}
-                    onDrop={(e) => onDropGroupCard(e, g)}
                     className={cn(
                       'transition-all duration-150',
+                      isGroupDragging && 'opacity-35 scale-[0.98] border-dashed',
+                      isGroupTarget && 'ring-2 ring-primary border-primary bg-primary/5 shadow-md scale-[1.01]',
                       dragOverGroup === g.id && 'ring-2 ring-primary bg-primary/10 border-primary scale-[1.02]',
                     )}
                     actions={<>{!mobile && <IconButton label={t('Als SSH-Config exportieren')} onClick={() => exportConfig(hosts.filter((h) => h.group === g.name), g.name)}><FileText className="size-3.5" /></IconButton>}

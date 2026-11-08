@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld('api', {
     save: (g) => ipcRenderer.invoke('groups:save', g),
     rename: (id, n) => ipcRenderer.invoke('groups:rename', id, n),
     remove: (id) => ipcRenderer.invoke('groups:remove', id),
+    reorder: (ids) => ipcRenderer.invoke('groups:reorder', ids),
   },
   sync: {
     status: () => ipcRenderer.invoke('sync:status'),

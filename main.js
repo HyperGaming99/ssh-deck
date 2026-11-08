@@ -195,7 +195,7 @@ async function runSync() {
 const scheduleSync = () => { if (!loadSyncCfg()) return; clearTimeout(syncTimer); syncTimer = setTimeout(runSync, 3000); };
 
 // Änderungen über diese Kanäle lösen einen Sync aus
-const MUTATING = new Set(['hosts:save', 'hosts:copy', 'hosts:remove', 'hosts:reorder', 'override:set', 'keys:copy', 'keys:generate', 'keys:import', 'keys:remove', 'keys:rename', 'keys:setPassphrase', 'groups:create', 'groups:rename', 'groups:save', 'groups:remove', 'snippets:save', 'snippets:remove', 'fwd:save', 'fwd:remove', 'known:remove', 'known:import', 'import:commit']);
+const MUTATING = new Set(['hosts:save', 'hosts:copy', 'hosts:remove', 'hosts:reorder', 'override:set', 'keys:copy', 'keys:generate', 'keys:import', 'keys:remove', 'keys:rename', 'keys:setPassphrase', 'groups:create', 'groups:rename', 'groups:save', 'groups:remove', 'groups:reorder', 'snippets:save', 'snippets:remove', 'fwd:save', 'fwd:remove', 'known:remove', 'known:import', 'import:commit']);
 const handle = (ch, fn) => ipcMain.handle(ch, MUTATING.has(ch) ? async (...a) => { const r = await fn(...a); scheduleSync(); return r; } : fn);
 
 
@@ -971,6 +971,7 @@ app.whenReady().then(() => {
     const g = groups.list().find((x) => x.id === id);
     if (g) { reGroup(g.name, '', vOf(g)); groups.remove(id); }
   });
+  handle('groups:reorder', (_, ids) => groups.reorder(ids));
   handle('snippets:list', () => snippets.list());
   handle('snippets:save', (_, s) => snippets.save(s));
   handle('snippets:remove', (_, id) => snippets.remove(id));
