@@ -85,8 +85,16 @@ jobs:
       - run: npm ci --no-audit --no-fund --prefer-offline
       - run: npm test
         if: matrix.name == 'linux'
+      - name: Test release configuration
+        run: node --test tests/release-config.test.cjs
       - name: Build Tauri
-        run: npx tauri build --config "{\"version\":\"${{ needs.prepare.outputs.build_version }}\"}"
+        env:
+          APP_VERSION: ${{ needs.prepare.outputs.build_version }}
+          PACKAGE_VERSION: ${{ needs.prepare.outputs.version }}
+          RELEASE_PLATFORM: ${{ matrix.name }}
+        run: |
+          node scripts/tauri-release-config.cjs "$APP_VERSION" "$PACKAGE_VERSION" "$GITHUB_RUN_NUMBER" "$RELEASE_PLATFORM" > "$RUNNER_TEMP/tauri-release.json"
+          npx tauri build --config "$RUNNER_TEMP/tauri-release.json"
       - name: Collect artifacts
         run: |
           mkdir -p release-artifacts
