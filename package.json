@@ -4,7 +4,7 @@
   "updates": {
     "repo": "HyperGaming99/ssh-deck"
   },
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Minimaler SSH-Client im Stil von Termius",
   "main": "electron/main.js",
   "scripts": {

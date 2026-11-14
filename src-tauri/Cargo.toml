@@ -1,6 +1,6 @@
 [package]
 name = "ssh-deck"
-version = "0.1.8"
+version = "0.1.9"
 description = "SSH client with SFTP, keychain and themes"
 authors = ["HyperGaming99"]
 edition = "2024"
