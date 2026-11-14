@@ -71,7 +71,7 @@ export function UpdatesSettings() {
     }
   }, [channelList, rel.pick]);
 
-  const currentVer = res?.current || '0.1.8';
+  const currentVer = res?.current || '…';
 
   return (
     <div className="max-w-xl space-y-4">

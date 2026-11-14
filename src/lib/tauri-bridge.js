@@ -1,6 +1,8 @@
 // Tauri Bridge: initialisiert window.api und globalThis.api, wenn die App innerhalb von Tauri oder Web läuft
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { getVersion } from '@tauri-apps/api/app';
+import packageInfo from '../../package.json';
 import * as dockerTools from './docker-tools.js';
 import * as k8sTools from './k8s-tools.js';
 
@@ -155,7 +157,8 @@ export function createTauriBridge() {
     }
   }).catch(() => {});
 
-  const CURRENT_APP_VERSION = '0.1.8';
+  // Query the running native binary, not a version hardcoded in the web bundle.
+  const currentVersion = () => isTauri ? getVersion() : Promise.resolve(packageInfo.version);
   let cachedReleases = [];
   let lastUpdInfo = null;
   const updateListeners = [];
@@ -245,8 +248,9 @@ export function createTauriBridge() {
   }
 
   async function doCheckUpdate() {
-    const cur = CURRENT_APP_VERSION;
+    let cur;
     try {
+      cur = await currentVersion();
       const s = await bridge.settings.get().catch(() => ({}));
       const upCfg = s?.updates || {};
       const repo = (upCfg.repo || 'HyperGaming99/ssh-deck').trim();
@@ -298,8 +302,9 @@ export function createTauriBridge() {
   }
 
   async function doListReleases() {
-    const cur = CURRENT_APP_VERSION;
+    let cur;
     try {
+      cur = await currentVersion();
       const s = await bridge.settings.get().catch(() => ({}));
       const upCfg = s?.updates || {};
       const repo = (upCfg.repo || 'HyperGaming99/ssh-deck').trim();

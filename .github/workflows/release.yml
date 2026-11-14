@@ -86,7 +86,7 @@ jobs:
       - run: npm test
         if: matrix.name == 'linux'
       - name: Build Tauri
-        run: npx tauri build --config "{\"version\":\"${{ needs.prepare.outputs.version }}\"}"
+        run: npx tauri build --config "{\"version\":\"${{ needs.prepare.outputs.build_version }}\"}"
       - name: Collect artifacts
         run: |
           mkdir -p release-artifacts

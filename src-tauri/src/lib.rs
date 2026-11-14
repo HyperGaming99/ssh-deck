@@ -10,6 +10,7 @@ use tokio::net::TcpStream;
 use tokio::time::{timeout, Duration};
 
 mod hostkeys;
+mod updates;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct PingResult {
@@ -836,129 +837,9 @@ fn ssh_close(sid: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn deck_update_apply(download_url: String, filename: String) -> Result<String, String> {
-    let tmp_dir = std::env::temp_dir().join("ssh-deck-update");
-    let _ = std::fs::create_dir_all(&tmp_dir);
-    let target_file = tmp_dir.join(&filename);
-
-    let curl_status = std::process::Command::new("curl")
-        .arg("-fSL")
-        .arg("-o")
-        .arg(&target_file)
-        .arg(&download_url)
-        .status()
-        .map_err(|e| format!("Fehler beim Ausführen von curl: {e}"))?;
-
-    if !curl_status.success() {
-        return Err(format!("Download fehlgeschlagen (curl exit code: {:?})", curl_status.code()));
-    }
-
-    if filename.ends_with(".deb") {
-        let has_pkexec = std::process::Command::new("which")
-            .arg("pkexec")
-            .output()
-            .map(|o| o.status.success())
-            .unwrap_or(false);
-        let has_dpkg = std::process::Command::new("which")
-            .arg("dpkg")
-            .output()
-            .map(|o| o.status.success())
-            .unwrap_or(false);
-
-        let mut installed_deb = false;
-        if has_pkexec && has_dpkg {
-            let deb_status = std::process::Command::new("pkexec")
-                .arg("dpkg")
-                .arg("-i")
-                .arg(&target_file)
-                .status();
-
-            if let Ok(st) = deb_status {
-                if st.success() {
-                    installed_deb = true;
-                } else if st.code() == Some(126) || st.code() == Some(127) {
-                    return Err("Authentifizierung für Paketinstallation abgebrochen.".to_string());
-                }
-            }
-        }
-
-        #[cfg(unix)]
-        if let Some(home) = std::env::var_os("HOME") {
-            let local_bin = std::path::Path::new(&home).join(".local").join("bin").join("ssh-deck");
-            let extract_dir = tmp_dir.join("extracted");
-            let _ = std::fs::remove_dir_all(&extract_dir);
-            let _ = std::fs::create_dir_all(&extract_dir);
-
-            let ext_status = std::process::Command::new("dpkg-deb")
-                .arg("-x")
-                .arg(&target_file)
-                .arg(&extract_dir)
-                .status();
-
-            if let Ok(st) = ext_status {
-                if st.success() {
-                    let extracted_bin = extract_dir.join("usr").join("bin").join("ssh-deck");
-                    if extracted_bin.exists() {
-                        let _ = std::fs::create_dir_all(local_bin.parent().unwrap());
-                        let _ = std::fs::remove_file(&local_bin);
-                        let _ = std::fs::copy(&extracted_bin, &local_bin);
-                        use std::os::unix::fs::PermissionsExt;
-                        let _ = std::fs::set_permissions(&local_bin, std::fs::Permissions::from_mode(0o755));
-                    }
-                }
-            }
-        }
-
-        if !installed_deb && !has_pkexec {
-            // deb could not be installed via pkexec, but user binary was updated
-        }
-
-        restart_application();
-        Ok("Update erfolgreich installiert".to_string())
-    } else if filename.ends_with(".AppImage") {
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            let _ = std::fs::set_permissions(&target_file, std::fs::Permissions::from_mode(0o755));
-        }
-
-        if let Ok(appimage_path) = std::env::var("APPIMAGE") {
-            let target_dest = std::path::PathBuf::from(&appimage_path);
-            let backup = target_dest.with_extension("AppImage.old");
-            let _ = std::fs::rename(&target_dest, &backup);
-            let _ = std::fs::copy(&target_file, &target_dest);
-            let _ = std::fs::remove_file(backup);
-        } else if let Some(home) = std::env::var_os("HOME") {
-            let local_appimage = std::path::Path::new(&home).join(".local").join("bin").join("ssh-deck.AppImage");
-            let _ = std::fs::create_dir_all(local_appimage.parent().unwrap());
-            let _ = std::fs::copy(&target_file, &local_appimage);
-        }
-
-        restart_application();
-        Ok("Update erfolgreich installiert".to_string())
-    } else if filename.ends_with(".exe") {
-        let _ = std::process::Command::new(&target_file).spawn();
-        std::process::exit(0);
-    } else {
-        Err(format!("Nicht unterstütztes Format: {filename}"))
-    }
-}
-
-fn restart_application() {
-    let mut exe_to_run = std::env::current_exe().ok();
-
-    #[cfg(unix)]
-    if let Some(home) = std::env::var_os("HOME") {
-        let local_bin = std::path::Path::new(&home).join(".local").join("bin").join("ssh-deck");
-        if local_bin.exists() {
-            exe_to_run = Some(local_bin);
-        }
-    }
-
-    if let Some(exe) = exe_to_run {
-        let _ = std::process::Command::new(exe).spawn();
-    }
-    std::process::exit(0);
+async fn deck_update_apply(download_url: String, filename: String) -> Result<String, String> {
+    tokio::task::spawn_blocking(move || updates::apply(&download_url, &filename))
+        .await.map_err(|e| e.to_string())?
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
