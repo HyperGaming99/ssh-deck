@@ -14,6 +14,7 @@ function setup(key, answer) {
   let bridge;
   const context = vm.createContext({
     console, setTimeout: (cb) => { queueMicrotask(cb); },
+    getVersion: async () => '0.1.8', packageInfo: { version: '0.1.8' },
     window: { api: {}, __TAURI_INTERNALS__: {} },
     navigator: { platform: 'Linux', userAgent: 'Linux' },
     localStorage: { getItem: () => null },
