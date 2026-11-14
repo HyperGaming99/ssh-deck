@@ -9,6 +9,8 @@ use tauri::{AppHandle, Emitter, Manager};
 use tokio::net::TcpStream;
 use tokio::time::{timeout, Duration};
 
+mod hostkeys;
+
 #[derive(Serialize, Deserialize, Debug)]
 struct PingResult {
     ok: bool,
@@ -59,7 +61,13 @@ pub struct SshSimplePayload {
 struct PtySession {
     writer: Arc<Mutex<Box<dyn Write + Send>>>,
     master: Arc<Mutex<Box<dyn MasterPty + Send>>>,
+    // Keep the approved key file alive for the lifetime of this SSH process.
+    _host_key_pin: Option<tempfile::NamedTempFile>,
 }
+
+static HOST_KEYS: std::sync::LazyLock<Mutex<HashMap<String, hostkeys::Prepared>>> =
+    std::sync::LazyLock::new(|| Mutex::new(HashMap::new()));
+static HOST_KEY_SAVE: Mutex<()> = Mutex::new(());
 
 static SESSIONS: std::sync::LazyLock<Mutex<HashMap<String, PtySession>>> =
     std::sync::LazyLock::new(|| Mutex::new(HashMap::new()));
@@ -612,6 +620,26 @@ fn local_list(dir: Option<String>) -> Result<LocalListResult, String> {
 }
 
 #[tauri::command]
+async fn ssh_host_key(sid: String, host_id: String, user_override: Option<String>) -> Result<hostkeys::Info, String> {
+    tokio::task::spawn_blocking(move || {
+        let hosts = deck_store_read("hosts".into())?;
+        let host = hosts.as_array().and_then(|a| a.iter().find(|h| h["id"].as_str() == Some(&host_id)))
+            .ok_or("Host not found")?;
+        let address = host["host"].as_str().ok_or("Host address missing")?;
+        let port = u16::try_from(host["port"].as_u64().unwrap_or(22)).map_err(|_| "Invalid SSH port")?;
+        if port == 0 { return Err("Invalid SSH port".into()); }
+        let (info, prepared) = hostkeys::prepare(host_id, address, port, user_override)?;
+        let mut pending = HOST_KEYS.lock().unwrap();
+        pending.retain(|_, key| !key.expired());
+        pending.insert(sid, prepared);
+        Ok(info)
+    }).await.map_err(|e| e.to_string())?
+}
+
+#[derive(Deserialize)]
+struct HostKeyAnswer { save: bool }
+
+#[tauri::command]
 fn ssh_open(
     app: AppHandle,
     sid: String,
@@ -619,6 +647,7 @@ fn ssh_open(
     cols: Option<u16>,
     rows: Option<u16>,
     user_override: Option<String>,
+    host_key_answer: Option<HostKeyAnswer>,
 ) -> Result<(), String> {
     let hosts_val = deck_store_read("hosts".into()).map_err(|e| e.to_string())?;
     let hosts_arr = hosts_val.as_array().ok_or("hosts is not an array")?;
@@ -636,6 +665,21 @@ fn ssh_open(
     };
     let protocol = host_obj.get("protocol").and_then(|v| v.as_str()).unwrap_or("ssh");
     let key_id = host_obj.get("keyId").and_then(|v| v.as_str()).unwrap_or("");
+
+    let prepared = if protocol == "telnet" { None } else {
+        let key = HOST_KEYS.lock().unwrap().remove(&sid).ok_or("SSH-Host-Schlüssel wurde noch nicht geprüft")?;
+        if key.expired() || key.host_id != host_id || key.user != user_override {
+            return Err("Host-Schlüsselprüfung abgelaufen. Bitte erneut verbinden.".into());
+        }
+        if key.needs_answer {
+            let answer = host_key_answer.ok_or("Host-Schlüssel wurde nicht bestätigt")?;
+            if answer.save {
+                let _lock = HOST_KEY_SAVE.lock().unwrap();
+                key.save()?;
+            }
+        }
+        Some(key)
+    };
 
     let mut key_path: Option<String> = None;
     if !key_id.is_empty() {
@@ -673,7 +717,21 @@ fn ssh_open(
         c.arg("-p");
         c.arg(port.to_string());
         c.arg("-o");
-        c.arg("StrictHostKeyChecking=accept-new");
+        c.arg("StrictHostKeyChecking=yes");
+        let key = prepared.as_ref().ok_or("SSH-Host-Schlüssel fehlt")?;
+        c.arg("-o");
+        c.arg(format!("UserKnownHostsFile=\"{}\"", key.pin.path().display()));
+        // Only the key checked/approved for this session may authenticate it.
+        // Other trust sources must not accept a different key after the scan.
+        for option in ["GlobalKnownHostsFile=none", "KnownHostsCommand=none", "VerifyHostKeyDNS=no"] {
+            c.arg("-o");
+            c.arg(option);
+        }
+        c.arg("-o");
+        c.arg(format!("HostKeyAlgorithms={}", key.algorithm));
+        // The pinned hostname was resolved by ssh -G, including HostKeyAlias.
+        c.arg("-o");
+        c.arg("CheckHostIP=no");
         c.arg("-o");
         c.arg("LogLevel=ERROR");
         if let Some(ref kp) = key_path {
@@ -698,6 +756,7 @@ fn ssh_open(
     let pty_session = PtySession {
         writer: Arc::new(Mutex::new(writer)),
         master: Arc::new(Mutex::new(pair.master)),
+        _host_key_pin: prepared.map(|key| key.pin),
     };
 
     {
@@ -764,6 +823,7 @@ fn ssh_resize(sid: String, cols: u16, rows: u16) -> Result<(), String> {
 
 #[tauri::command]
 fn ssh_close(sid: String) -> Result<(), String> {
+    HOST_KEYS.lock().unwrap().remove(&sid);
     let mut sessions = SESSIONS.lock().unwrap();
     sessions.remove(&sid);
     Ok(())
@@ -927,6 +987,7 @@ pub fn run() {
             deck_store_write,
             deck_update_apply,
             ssh_open,
+            ssh_host_key,
             ssh_input,
             ssh_resize,
             ssh_close,

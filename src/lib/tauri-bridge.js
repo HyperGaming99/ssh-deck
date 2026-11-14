@@ -1181,6 +1181,7 @@ except Exception as e:
       // Falls SSH und kein Benutzer konfiguriert ist -> Benutzer abfragen
       if (h.protocol !== 'telnet' && !h.user) {
         const a = await ask('user');
+        if (!activeSessions.has(sid)) return;
         if (!a || !a.user) {
           fail('Verbindung abgebrochen');
           return;
@@ -1195,33 +1196,40 @@ except Exception as e:
 
       // 2. Adressauflösung / Erreichbarkeit prüfen
       log(`Starting address resolution of "${h.host}"`);
-      await new Promise((r) => setTimeout(r, 80));
 
       const pingRes = await invoke('hosts_ping', { host: h.host, port }).catch(() => ({ ok: false }));
+      if (!activeSessions.has(sid)) return;
       if (!pingRes.ok) {
         fail(`Connection refused or host unreachable (${h.host}:${port})`);
         return;
       }
       log(`Address resolved to ${h.host}${pingRes.latency != null ? ` (${pingRes.latency} ms)` : ''}`);
-      await new Promise((r) => setTimeout(r, 100));
-
-      if (h.protocol !== 'telnet') {
-        log(`Authenticating as "${h.user || 'root'}"`);
-        await new Promise((r) => setTimeout(r, 100));
-      }
-
-      // 3. Handshake & Shell öffnen
-      log('SSH handshake completed, host key accepted');
-      await new Promise((r) => setTimeout(r, 120));
-
-      log('Authenticated, opening shell');
 
       try {
-        await invoke('ssh_open', { sid, hostId, cols, rows, userOverride: h.user });
+        let hostKeyAnswer = null;
+        if (h.protocol !== 'telnet') {
+          log('Checking SSH host key');
+          const key = await invoke('ssh_host_key', { sid, hostId, userOverride: h.user });
+          if (!activeSessions.has(sid)) {
+            await invoke('ssh_close', { sid });
+            return;
+          }
+          if (key.status !== 'known') {
+            hostKeyAnswer = await ask('hostkey', key);
+            if (!hostKeyAnswer || !activeSessions.has(sid)) {
+              await invoke('ssh_close', { sid });
+              return;
+            }
+          }
+          log('SSH host key accepted');
+          log(`Authenticating as "${h.user || 'root'}"`);
+        }
+        await invoke('ssh_open', { sid, hostId, cols, rows, userOverride: h.user, hostKeyAnswer });
+        if (!activeSessions.has(sid)) return;
         await new Promise((r) => setTimeout(r, 200));
-        sendStatus('ready');
+        if (activeSessions.has(sid)) sendStatus('ready');
       } catch (err) {
-        fail(err?.message || String(err));
+        if (activeSessions.has(sid)) fail(err?.message || String(err));
       }
     },
     input: (sid, data) => {
@@ -1231,6 +1239,7 @@ except Exception as e:
       invoke('ssh_resize', { sid, cols, rows }).catch(() => {});
     },
     close: (sid) => {
+      pendingAnswers.get(sid)?.(null);
       pendingAnswers.delete(sid);
       activeSessions.delete(sid);
       invoke('ssh_close', { sid }).catch(() => {});
