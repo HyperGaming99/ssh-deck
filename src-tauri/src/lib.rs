@@ -177,6 +177,7 @@ fn exec_remote_or_local(host_id: Option<String>, cmd: String) -> Result<ExecResu
     command.arg("-o").arg("BatchMode=yes");
     command.arg("-o").arg("ConnectTimeout=5");
     if let Some(ref kp) = key_path {
+        command.arg("-o").arg("IdentitiesOnly=yes");
         command.arg("-i").arg(kp);
     }
     if !user.is_empty() {
@@ -208,6 +209,7 @@ fn scp_upload(
     cmd.arg("-o").arg("StrictHostKeyChecking=accept-new");
     cmd.arg("-o").arg("BatchMode=yes");
     if let Some(ref kp) = key_path {
+        cmd.arg("-o").arg("IdentitiesOnly=yes");
         cmd.arg("-i").arg(kp);
     }
     for lp in local_paths {
@@ -240,6 +242,7 @@ fn scp_download(
     cmd.arg("-o").arg("StrictHostKeyChecking=accept-new");
     cmd.arg("-o").arg("BatchMode=yes");
     if let Some(ref kp) = key_path {
+        cmd.arg("-o").arg("IdentitiesOnly=yes");
         cmd.arg("-i").arg(kp);
     }
     for rp in remote_paths {
@@ -282,6 +285,7 @@ fn scp_download_archive(
     cmd.arg("-o").arg("StrictHostKeyChecking=accept-new");
     cmd.arg("-o").arg("BatchMode=yes");
     if let Some(ref kp) = key_path {
+        cmd.arg("-o").arg("IdentitiesOnly=yes");
         cmd.arg("-i").arg(kp);
     }
     if !user.is_empty() {
@@ -735,6 +739,8 @@ fn ssh_open(
         c.arg("-o");
         c.arg("LogLevel=ERROR");
         if let Some(ref kp) = key_path {
+            c.arg("-o");
+            c.arg("IdentitiesOnly=yes");
             c.arg("-i");
             c.arg(kp);
         }
