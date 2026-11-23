@@ -418,15 +418,21 @@ export default function App() {
                     : (() => { const fp = tab.panes.find((p) => p.sid === tab.focus) || tab.panes[0]; const ready = fp.conn?.state === 'ready' || !fp.conn; return (
                       <div className="flex size-full">
                         <Wrap {...(mobile && { className: 'flex min-h-0 min-w-0 flex-1 flex-col' })}>
+                        <ErrorBoundary key={tab.sid}>
                         <SplitView tab={tab} active={active === tab.sid} theme={xtheme} font={font} onCommand={onCommand} setFocus={(sid) => setFocus(tab.sid, sid)} closePane={(sid) => closePane(tab.sid, sid)}
                           overlay={(p) => <>{p.lost && !p.conn && <ReconnectBar key={p.tries || 0} tries={p.tries || 0} onNow={() => reconnect(p.sid)} onCancel={() => updPane(p.sid, () => ({ lost: false, closed: true }))} />}{p.conn && p.conn.state !== 'ready' && <ConnectScreen conn={p.conn} onClose={() => (tab.panes.length > 1 ? closePane(tab.sid, p.sid) : closeTab(tab.sid))}
                             onAnswer={(a) => { api.answer(p.sid, a); updPane(p.sid, (q) => ({ conn: { ...q.conn, state: 'connecting' } })); }}
                             onEdit={() => editHost(tab.hostId)}
                             onRetry={() => updPane(p.sid, (q) => ({ conn: null, attempt: (q.attempt || 0) + 1 }))} />}</>} />
+                        </ErrorBoundary>
                         {mobile && ready && <KeyBar sid={fp.sid} />}
                         </Wrap>
                         {panel && ready && fp.conn && mobile && <div className="fixed inset-0 z-30 bg-black/40" onClick={togglePanel} />}
-                        {panel && ready && fp.conn && <TermPanel onClose={togglePanel} sid={fp.sid} hostId={tab.hostId} dark={dark} history={history[fp.sid] || []} themeId={termTheme} setThemeId={setTheme} font={font} setFont={setFont} toast={toast} rev={rev} />}
+                        {panel && ready && fp.conn && (
+                          <ErrorBoundary>
+                            <TermPanel onClose={togglePanel} sid={fp.sid} hostId={tab.hostId} dark={dark} history={history[fp.sid] || []} themeId={termTheme} setThemeId={setTheme} font={font} setFont={setFont} toast={toast} rev={rev} />
+                          </ErrorBoundary>
+                        )}
                       </div>); })()}
               </div>
             ))}

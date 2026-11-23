@@ -725,7 +725,7 @@ fn ssh_open(
         c.arg("StrictHostKeyChecking=yes");
         let key = prepared.as_ref().ok_or("SSH-Host-Schlüssel fehlt")?;
         c.arg("-o");
-        c.arg(format!("UserKnownHostsFile=\"{}\"", key.pin.path().display()));
+        c.arg(format!("UserKnownHostsFile={}", key.pin.path().display()));
         // Only the key checked/approved for this session may authenticate it.
         // Other trust sources must not accept a different key after the scan.
         for option in ["GlobalKnownHostsFile=none", "KnownHostsCommand=none", "VerifyHostKeyDNS=no"] {
