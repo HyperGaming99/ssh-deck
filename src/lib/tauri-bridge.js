@@ -360,7 +360,7 @@ export function createTauriBridge() {
     isTauri,
     saveText: async () => true,
     saveRec: async () => true,
-    stats: async () => ({ cpu: 0, ram: 0 }),
+    stats: async () => null,
     importer: { pick: async () => [], commit: async () => 0 },
     onHostKey: () => {},
     answerHostKey: () => {},

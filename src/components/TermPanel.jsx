@@ -33,13 +33,13 @@ function StatusTab({ sid }) {
     return () => { alive = false; clearInterval(iv); };
   }, [sid]);
   if (st === undefined) return <p className="p-3 text-sm text-muted-foreground">{t('Lädt …')}</p>;
-  if (!st) return <p className="p-3 text-sm text-muted-foreground">{t('Server-Status nicht verfügbar (nur Linux).')}</p>;
-  const d = Math.floor(st.uptime / 86400), h = Math.floor((st.uptime % 86400) / 3600), m = Math.floor((st.uptime % 3600) / 60);
+  if (!st || !Array.isArray(st.load) || !st.cores) return <p className="p-3 text-sm text-muted-foreground">{t('Server-Status nicht verfügbar (nur Linux).')}</p>;
+  const d = Math.floor((st.uptime || 0) / 86400), h = Math.floor(((st.uptime || 0) % 86400) / 3600), m = Math.floor(((st.uptime || 0) % 3600) / 60);
   return (
     <>
-      <Stat title={t('CPU-Last')} value={`${st.load.map((x) => x.toFixed(2)).join(' · ')} (${st.cores} ${t('Kerne')})`} pct={(st.load[0] / st.cores) * 100} />
-      <Stat title={t('Arbeitsspeicher')} value={`${gb(st.memUsed)} / ${gb(st.memTotal)} GB`} pct={(st.memUsed / st.memTotal) * 100} />
-      <Stat title={t('Festplatte (/)')} value={`${gb(st.diskUsed)} / ${gb(st.diskTotal)} GB`} pct={st.diskPct} />
+      <Stat title={t('CPU-Last')} value={`${st.load.map((x) => x.toFixed(2)).join(' · ')} (${st.cores} ${t('Kerne')})`} pct={((st.load[0] || 0) / (st.cores || 1)) * 100} />
+      <Stat title={t('Arbeitsspeicher')} value={`${gb(st.memUsed || 0)} / ${gb(st.memTotal || 1)} GB`} pct={((st.memUsed || 0) / (st.memTotal || 1)) * 100} />
+      <Stat title={t('Festplatte (/)')} value={`${gb(st.diskUsed || 0)} / ${gb(st.diskTotal || 1)} GB`} pct={st.diskPct || 0} />
       <Stat title={t('Laufzeit')} value={`${d} ${t('Tage')} ${h} h ${m} min`} />
     </>
   );
