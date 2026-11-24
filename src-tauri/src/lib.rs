@@ -539,6 +539,13 @@ fn win_close(app: AppHandle) {
 }
 
 #[tauri::command]
+fn win_start_dragging(app: AppHandle) {
+    if let Some(win) = app.get_webview_window("main") {
+        let _ = win.start_dragging();
+    }
+}
+
+#[tauri::command]
 fn get_platform() -> &'static str {
     if cfg!(target_os = "windows") {
         "win32"
@@ -859,6 +866,7 @@ pub fn run() {
             win_minimize,
             win_toggle_maximize,
             win_close,
+            win_start_dragging,
             get_platform,
             hosts_ping,
             local_list,

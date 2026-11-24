@@ -371,6 +371,7 @@ export function createTauriBridge() {
       minimize: () => invoke('win_minimize').catch(() => {}),
       toggleMax: () => invoke('win_toggle_maximize').catch(() => {}),
       close: () => invoke('win_close').catch(() => {}),
+      startDragging: () => invoke('win_start_dragging').catch(() => {}),
     },
     hosts: {
       ...coll('hosts'),
