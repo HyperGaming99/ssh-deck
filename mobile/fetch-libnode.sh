@@ -5,9 +5,11 @@
 set -e
 cd "$(dirname "$0")/../android/app"
 rm -rf libnode && mkdir libnode
-curl -fL -o libnode/node.zip "https://github.com/HyperGaming99/nodejs-mobile/releases/download/v18.20.4-16kb/nodejs-mobile-v18.20.4-16kb-android.zip"
+curl -fL --retry 3 --retry-delay 2 -o libnode/node.zip "https://github.com/HyperGaming99/nodejs-mobile/releases/download/v18.20.4-16kb/nodejs-mobile-v18.20.4-16kb-android.zip"
 (cd libnode && unzip -q node.zip && rm node.zip)
-curl -fL -o libnode/tor.aar "https://repo1.maven.org/maven2/info/guardianproject/tor-android/0.4.9.14/tor-android-0.4.9.14.aar"
+if ! curl -fL --retry 3 --retry-delay 2 --retry-all-errors -o libnode/tor.aar "https://maven-central.storage-download.googleapis.com/maven2/info/guardianproject/tor-android/0.4.9.14/tor-android-0.4.9.14.aar"; then
+  curl -fL --retry 3 --retry-delay 2 --retry-all-errors -o libnode/tor.aar "https://repo1.maven.org/maven2/info/guardianproject/tor-android/0.4.9.14/tor-android-0.4.9.14.aar"
+fi
 unzip -p libnode/tor.aar jni/arm64-v8a/libtor.so > libnode/bin/arm64-v8a/libtor.so
 unzip -p libnode/tor.aar jni/x86_64/libtor.so > libnode/bin/x86_64/libtor.so
 rm -f libnode/tor.aar
