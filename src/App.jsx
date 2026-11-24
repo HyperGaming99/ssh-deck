@@ -330,20 +330,20 @@ export default function App() {
         <header
           data-tauri-drag-region
           dir="ltr"
-          className={cn('mhead flex h-12 shrink-0 items-center gap-2 border-b bg-sidebar select-none [-webkit-app-region:drag]', mac ? 'pl-[88px]' : 'pl-2')}
+          className={cn('mhead flex h-12 shrink-0 items-center gap-2 border-b bg-sidebar select-none cursor-default [-webkit-app-region:drag]', mac ? 'pl-[88px]' : 'pl-2')}
           onMouseDown={(e) => {
-            if (e.button === 0 && !e.target.closest('button, input, textarea, a, [role="button"], [-webkit-app-region:no-drag]')) {
+            if (e.button === 0 && !e.target.closest('button, input, textarea, a, [role="button"], [data-no-drag]')) {
               api.win?.startDragging?.();
             }
           }}
           onDoubleClick={(e) => {
-            if (!e.target.closest('button, input, textarea, a, [role="button"], [-webkit-app-region:no-drag]')) {
+            if (!e.target.closest('button, input, textarea, a, [role="button"], [data-no-drag]')) {
               api.win?.toggleMax?.();
             }
           }}
         >
           {gate && <Logo className="ml-2 h-6 w-[19px]" />}
-          {!gate && <div className="mtabs flex min-w-0 items-center gap-1.5 [-webkit-app-region:no-drag]">
+          {!gate && <div className="mtabs flex min-w-0 items-center gap-1.5">
             <Button variant="ghost" size="icon" className="mhide size-8 shrink-0" onClick={() => setNavOpen(!navOpen)} aria-label={t('Navigation')}><Menu className="size-4" /></Button>
             <Logo className="mhide mx-1 h-6 w-[19px] shrink-0" />
             <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto [scrollbar-width:none]">
@@ -361,7 +361,8 @@ export default function App() {
             </div>
             <IconButton label={t('Neue Verbindung')} onClick={openNewTab}><Plus className="size-4" /></IconButton>
           </div>}
-          <div className="ml-auto flex h-full items-center [-webkit-app-region:no-drag]">
+          <div data-tauri-drag-region className="flex-1 h-full min-w-8" />
+          <div className="ml-auto flex h-full items-center">
             {bc.on && <span className="mr-2 rounded-md bg-orange-500 px-2 py-1 text-xs font-semibold text-white">{t('Broadcast an {n}', { n: bcTargets.length })}</span>}
             {tabs.find((x) => x.sid === active && x.panes) && <SplitTools tab={tabs.find((x) => x.sid === active)} split={split} bc={bc} setBc={setBc} sessions={sessions} />}
             {tabs.find((x) => x.sid === active && (x.kind === 'ssh' || !x.kind)) && (() => { const tb = tabs.find((x) => x.sid === active); const on = recs[tb.focus || tb.panes[0].sid]; return <Button variant="ghost" size="icon" className={cn('mhide mr-1 size-8', on && 'text-red-500')} onClick={() => toggleRec(tb)} aria-label={on ? t('Aufzeichnung beenden') : t('Aufzeichnen')} title={on ? t('Aufzeichnung beenden') : t('Aufzeichnen')}><Circle className={cn('size-4', on && 'fill-current')} /></Button>; })()}

@@ -4,7 +4,10 @@ import { cn } from '@/lib/utils';
 // Tab als abgerundete Pille; onClose zeigt ein X
 export function Pill({ active, onClick, onClose, children }) {
   return (
-    <div onClick={onClick}
+    <div
+      role="button"
+      data-no-drag
+      onClick={onClick}
       className={cn('flex h-8 shrink-0 cursor-pointer items-center gap-2 rounded-lg border border-transparent px-3 text-sm text-muted-foreground transition-colors hover:bg-accent',
         active && 'border-border bg-background text-foreground shadow-sm')}>
       {children}
