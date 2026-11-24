@@ -327,7 +327,21 @@ export default function App() {
     <TooltipProvider delayDuration={300}>
     <VaultCtx.Provider value={vctx}>
       <div className="flex h-full flex-col">
-        <header dir="ltr" className={cn('mhead flex h-12 shrink-0 items-center gap-2 border-b bg-sidebar [-webkit-app-region:drag]', mac ? 'pl-[88px]' : 'pl-2')}>
+        <header
+          data-tauri-drag-region
+          dir="ltr"
+          className={cn('mhead flex h-12 shrink-0 items-center gap-2 border-b bg-sidebar select-none [-webkit-app-region:drag]', mac ? 'pl-[88px]' : 'pl-2')}
+          onMouseDown={(e) => {
+            if (e.button === 0 && !e.target.closest('button, input, textarea, a, [role="button"], [-webkit-app-region:no-drag]')) {
+              api.win?.startDragging?.();
+            }
+          }}
+          onDoubleClick={(e) => {
+            if (!e.target.closest('button, input, textarea, a, [role="button"], [-webkit-app-region:no-drag]')) {
+              api.win?.toggleMax?.();
+            }
+          }}
+        >
           {gate && <Logo className="ml-2 h-6 w-[19px]" />}
           {!gate && <div className="mtabs flex min-w-0 items-center gap-1.5 [-webkit-app-region:no-drag]">
             <Button variant="ghost" size="icon" className="mhide size-8 shrink-0" onClick={() => setNavOpen(!navOpen)} aria-label={t('Navigation')}><Menu className="size-4" /></Button>
